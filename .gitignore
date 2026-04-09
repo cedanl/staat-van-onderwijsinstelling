@@ -1,0 +1,20 @@
+# Data en output
+Output/
+*.csv
+*.xlsx
+*.xls
+*.rds
+*.RDS
+*.parquet
+*.feather
+*.sqlite
+*.db
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# Omgeving
+.env
