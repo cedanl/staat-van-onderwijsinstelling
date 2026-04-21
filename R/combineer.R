@@ -29,20 +29,10 @@ combineer_indicatoren <- function(
       by = "persoonsgebonden_nummer"
     ) |>
 
-    ## Vestigingsnummer omzetten naar leesbare locatienaam
-    dplyr::mutate(
-      locatie = dplyr::case_when(
-        vestigingsnummer_actueel == 0 ~ "Breda",
-        vestigingsnummer_actueel == 4 ~ "Tilburg",
-        vestigingsnummer_actueel == 6 ~ "Den Bosch",
-        vestigingsnummer_actueel == 7 ~ "Roosendaal"
-      )
-    ) |>
-
     dplyr::select(
       inschrijvingsjaar,
       geslacht = geslacht_label,
-      locatie,
+      locatie = locatie_label,
       opleidingscode = opleiding_actueel_equivalent,
       opleidingsvorm = opleidingsvorm_label,
       opleidingsniveau = type_hoger_onderwijs_binnen_soort_hoger_onderwijs,

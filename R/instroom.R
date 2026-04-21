@@ -19,7 +19,8 @@ maak_basisbestand <- function(pad_invoer) {
       indicatie_internationale_student_label = indicatie_internationale_student,
       indicatie_eer_actueel_label = indicatie_eer_actueel,
       croho_onderdeel_actuele_opleiding_label = croho_onderdeel_actuele_opleiding,
-      soort_diploma_instelling_label = soort_diploma_instelling
+      soort_diploma_instelling_label = soort_diploma_instelling,
+      locatie_label = vestigingsnummer_gemeentenaam_per_1_januari_2025
     )
 }
 
