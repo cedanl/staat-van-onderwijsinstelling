@@ -82,27 +82,28 @@ bereken_rendement <- function(cohorten_instroom, diploma_behaald) {
       rendement_xjaar = jaar_eerste_diploma - eerstejaar_instelling + 1,
 
       rendement_3jr = dplyr::case_when(
-        rendement_xjaar <= 3 ~ "Diploma binnen 3 jaar",
-        rendement_xjaar > 3 ~ "Diploma na 3 jaar",
         is.na(jaar_eerste_diploma) ~ "Geen diploma",
+        ## diplomajaar voor instroomjaar kan voorkomen door data-inconsistentie
         jaar_eerste_diploma <
-          eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans"
+          eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans",
+        rendement_xjaar <= 3 ~ "Diploma binnen 3 jaar",
+        rendement_xjaar > 3 ~ "Diploma na 3 jaar"
       ),
 
       rendement_5jr = dplyr::case_when(
-        rendement_xjaar <= 5 ~ "Diploma binnen 5 jaar",
-        rendement_xjaar > 5 ~ "Diploma na 5 jaar",
         is.na(jaar_eerste_diploma) ~ "Geen diploma",
         jaar_eerste_diploma <
-          eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans"
+          eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans",
+        rendement_xjaar <= 5 ~ "Diploma binnen 5 jaar",
+        rendement_xjaar > 5 ~ "Diploma na 5 jaar"
       ),
 
       rendement_8jr = dplyr::case_when(
-        rendement_xjaar <= 8 ~ "Diploma binnen 8 jaar",
-        rendement_xjaar > 8 ~ "Diploma na 8 jaar",
         is.na(jaar_eerste_diploma) ~ "Geen diploma",
         jaar_eerste_diploma <
-          eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans"
+          eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans",
+        rendement_xjaar <= 8 ~ "Diploma binnen 8 jaar",
+        rendement_xjaar > 8 ~ "Diploma na 8 jaar"
       )
     ) |>
     dplyr::mutate(dplyr::across(dplyr::starts_with("rendement"), as.factor))

@@ -1,4 +1,4 @@
-maak_basis_uitval <- function(pgn, inschrijvingsjaar) {
+maak_basis <- function(pgn, inschrijvingsjaar) {
   tibble(
     persoonsgebonden_nummer = pgn,
     inschrijvingsjaar = inschrijvingsjaar,
@@ -6,7 +6,7 @@ maak_basis_uitval <- function(pgn, inschrijvingsjaar) {
   )
 }
 
-maak_cohort_uitval <- function(pgn, eerstejaar) {
+maak_cohort <- function(pgn, eerstejaar) {
   tibble(
     persoonsgebonden_nummer = pgn,
     eerstejaar_instelling = eerstejaar
@@ -20,62 +20,190 @@ geen_diplomas <- tibble(
   diploma = character(0)
 )
 
-test_that("bereken_uitval markeert zittende student correct", {
-  jaar <- 2025
-
-  result <- bereken_uitval(
-    basisbestand = maak_basis_uitval("A", jaar - 1),
-    diploma_behaald = geen_diplomas,
-    cohorten_instroom = maak_cohort_uitval("A", 2022),
-    jaar = jaar
-  )
-
-  expect_equal(as.character(result$status), "Zittend")
-  expect_true(is.na(result$uitval_xjr))
-})
-
-test_that("bereken_uitval markeert gediplomeerde student correct", {
-  jaar <- 2025
-
-  diploma_behaald <- tibble(
-    persoonsgebonden_nummer = "A",
+met_diploma <- function(pgn) {
+  tibble(
+    persoonsgebonden_nummer = pgn,
     jaar_eerste_diploma = 2022,
     verblijfsjaar_eerste_diploma = 3L,
     diploma = "Diploma behaald (excl. propedeuse)"
   )
+}
 
-  result <- bereken_uitval(
-    basisbestand = maak_basis_uitval("A", 2022),
-    diploma_behaald = diploma_behaald,
-    cohorten_instroom = maak_cohort_uitval("A", 2020),
-    jaar = jaar
-  )
+## --- status ---
 
-  expect_equal(as.character(result$status), "Diploma behaald")
-  expect_true(is.na(result$uitval_xjr))
-})
-
-test_that("bereken_uitval markeert uitgevallen student correct en berekent uitval_xjr", {
+test_that("markeert zittende student correct", {
   jaar <- 2025
 
   result <- bereken_uitval(
-    basisbestand = maak_basis_uitval("A", 2021),
-    diploma_behaald = geen_diplomas,
-    cohorten_instroom = maak_cohort_uitval("A", 2020),
-    jaar = jaar
+    maak_basis("A", jaar - 1),
+    geen_diplomas,
+    maak_cohort("A", 2022),
+    jaar
+  )
+
+  expect_equal(as.character(result$status), "Zittend")
+})
+
+test_that("markeert gediplomeerde student correct", {
+  jaar <- 2025
+
+  result <- bereken_uitval(
+    maak_basis("A", 2022),
+    met_diploma("A"),
+    maak_cohort("A", 2020),
+    jaar
+  )
+
+  expect_equal(as.character(result$status), "Diploma behaald")
+})
+
+test_that("markeert uitgevallen student correct", {
+  jaar <- 2025
+
+  result <- bereken_uitval(
+    maak_basis("A", 2021),
+    geen_diplomas,
+    maak_cohort("A", 2020),
+    jaar
   )
 
   expect_equal(as.character(result$status), "Uitgevallen")
+})
+
+test_that("diploma heeft voorrang boven zittend als student ook ingeschreven is", {
+  ## Student staat in jaar - 1 ingeschreven maar heeft ook een diploma
+  jaar <- 2025
+
+  result <- bereken_uitval(
+    maak_basis("A", jaar - 1),
+    met_diploma("A"),
+    maak_cohort("A", 2020),
+    jaar
+  )
+
+  expect_equal(as.character(result$status), "Diploma behaald")
+})
+
+test_that("status is een factor", {
+  jaar <- 2025
+
+  result <- bereken_uitval(
+    maak_basis("A", 2021),
+    geen_diplomas,
+    maak_cohort("A", 2020),
+    jaar
+  )
+
+  expect_true(is.factor(result$status))
+})
+
+## --- uitval_xjr ---
+
+test_that("berekent uitval_xjr correct", {
+  jaar <- 2025
+
+  result <- bereken_uitval(
+    maak_basis("A", 2021),
+    geen_diplomas,
+    maak_cohort("A", 2020),
+    jaar
+  )
+
   ## 2021 + 1 - 2020 = 2
   expect_equal(result$uitval_xjr, 2)
 })
 
-test_that("bereken_uitval categoriseert uitval_1jr en uitval_3jr correct", {
+test_that("uitval_xjr is NA voor zittende student", {
   jaar <- 2025
 
+  result <- bereken_uitval(
+    maak_basis("A", jaar - 1),
+    geen_diplomas,
+    maak_cohort("A", 2022),
+    jaar
+  )
+
+  expect_true(is.na(result$uitval_xjr))
+})
+
+test_that("uitval_xjr is NA voor gediplomeerde student", {
+  jaar <- 2025
+
+  result <- bereken_uitval(
+    maak_basis("A", 2022),
+    met_diploma("A"),
+    maak_cohort("A", 2020),
+    jaar
+  )
+
+  expect_true(is.na(result$uitval_xjr))
+})
+
+## --- uitval_1jr en uitval_3jr ---
+
+test_that("categoriseert uitval_1jr correct", {
+  jaar <- 2025
+  basisbestand <- tibble(
+    persoonsgebonden_nummer = c("A", "B"),
+    inschrijvingsjaar = c(2020, 2021),
+    soort_inschrijving_actuele_instelling = "hoofdinschrijving"
+  )
+  cohorten_instroom <- tibble(
+    persoonsgebonden_nummer = c("A", "B"),
+    eerstejaar_instelling = 2020
+  )
+
+  result <- bereken_uitval(basisbestand, geen_diplomas, cohorten_instroom, jaar)
+
+  ## A: xjr = 1 -> uitgevallen binnen 1 jaar
+  expect_equal(
+    as.character(result$uitval_1jr[result$persoonsgebonden_nummer == "A"]),
+    "Uitgevallen binnen 1 jaar"
+  )
+  ## B: xjr = 2 -> niet binnen 1 jaar
+  expect_equal(
+    as.character(result$uitval_1jr[result$persoonsgebonden_nummer == "B"]),
+    "Na 1 jaar nog ingeschreven of diploma behaald"
+  )
+})
+
+test_that("categoriseert uitval_3jr correct inclusief grenswaarde", {
+  jaar <- 2025
   basisbestand <- tibble(
     persoonsgebonden_nummer = c("A", "B", "C"),
-    inschrijvingsjaar = c(2020, 2021, 2017),
+    ## A: xjr = 2020 + 1 - 2020 = 1, B: xjr = 2022 + 1 - 2020 = 3, C: xjr = 2015 + 1 - 2010 = 6
+    inschrijvingsjaar = c(2020, 2022, 2015),
+    soort_inschrijving_actuele_instelling = "hoofdinschrijving"
+  )
+  cohorten_instroom <- tibble(
+    persoonsgebonden_nummer = c("A", "B", "C"),
+    eerstejaar_instelling = c(2020, 2020, 2010)
+  )
+
+  result <- bereken_uitval(basisbestand, geen_diplomas, cohorten_instroom, jaar)
+
+  ## A: xjr = 1 -> uitgevallen binnen 3 jaar
+  expect_equal(
+    as.character(result$uitval_3jr[result$persoonsgebonden_nummer == "A"]),
+    "Uitgevallen binnen 3 jaar"
+  )
+  ## B: xjr = 3 (exact op grens) -> uitgevallen binnen 3 jaar
+  expect_equal(
+    as.character(result$uitval_3jr[result$persoonsgebonden_nummer == "B"]),
+    "Uitgevallen binnen 3 jaar"
+  )
+  ## C: xjr = 6 -> na 3 jaar
+  expect_equal(
+    as.character(result$uitval_3jr[result$persoonsgebonden_nummer == "C"]),
+    "Na 3 jaar nog ingeschreven of diploma behaald"
+  )
+})
+
+test_that("verwerkt meerdere studenten tegelijk correct", {
+  jaar <- 2025
+  basisbestand <- tibble(
+    persoonsgebonden_nummer = c("A", "B", "C"),
+    inschrijvingsjaar = c(jaar - 1, 2022, 2021),
     soort_inschrijving_actuele_instelling = "hoofdinschrijving"
   )
   cohorten_instroom <- tibble(
@@ -84,56 +212,35 @@ test_that("bereken_uitval categoriseert uitval_1jr en uitval_3jr correct", {
   )
 
   result <- bereken_uitval(
-    basisbestand = basisbestand,
-    diploma_behaald = geen_diplomas,
-    cohorten_instroom = cohorten_instroom,
-    jaar = jaar
+    basisbestand,
+    met_diploma("B"),
+    cohorten_instroom,
+    jaar
   )
 
-  a <- result[result$persoonsgebonden_nummer == "A", ]
-  b <- result[result$persoonsgebonden_nummer == "B", ]
-  c_ <- result[result$persoonsgebonden_nummer == "C", ]
-
-  ## A: uitval_xjr = 2020 + 1 - 2020 = 1 -> uitgevallen binnen 1 jaar
-  expect_equal(
-    as.character(a$uitval_1jr),
-    "Uitgevallen binnen 1 jaar"
+  statussen <- setNames(
+    as.character(result$status),
+    result$persoonsgebonden_nummer
   )
-  ## B: uitval_xjr = 2021 + 1 - 2020 = 2 -> niet binnen 1 jaar, wel binnen 3 jaar
-  expect_equal(
-    as.character(b$uitval_1jr),
-    "Na 1 jaar nog ingeschreven of diploma behaald"
-  )
-  expect_equal(
-    as.character(b$uitval_3jr),
-    "Uitgevallen binnen 3 jaar"
-  )
-  ## C: uitval_xjr = 2017 + 1 - 2020 = -2 -> na 3 jaar (negatief, dus > 3 is FALSE, <= 3 is TRUE)
-  ## Wacht - uitval_xjr = 2017 + 1 - 2020 = -2, wat < 3 is -> "Uitgevallen binnen 3 jaar"
-  ## Maar dit is een data-edge-case (diplomajaar voor instroomjaar)
-  ## Laten we C vervangen door een duidelijker geval
+  expect_equal(statussen[["A"]], "Zittend")
+  expect_equal(statussen[["B"]], "Diploma behaald")
+  expect_equal(statussen[["C"]], "Uitgevallen")
 })
 
-test_that("bereken_uitval categoriseert uitval na 3 jaar correct", {
+test_that("behoudt student in uitval die niet in cohorten_instroom zit", {
+  ## basisbestand bevat meer studenten dan cohorten_instroom
   jaar <- 2025
-
   basisbestand <- tibble(
-    persoonsgebonden_nummer = "A",
-    inschrijvingsjaar = 2015,
+    persoonsgebonden_nummer = c("A", "B"),
+    inschrijvingsjaar = c(2021, 2021),
     soort_inschrijving_actuele_instelling = "hoofdinschrijving"
   )
-  cohorten_instroom <- maak_cohort_uitval("A", 2010)
+  ## Alleen A in cohort
+  cohorten_instroom <- maak_cohort("A", 2020)
 
-  result <- bereken_uitval(
-    basisbestand = basisbestand,
-    diploma_behaald = geen_diplomas,
-    cohorten_instroom = cohorten_instroom,
-    jaar = jaar
-  )
+  result <- bereken_uitval(basisbestand, geen_diplomas, cohorten_instroom, jaar)
 
-  ## 2015 + 1 - 2010 = 6 -> uitval_3jr = "Na 3 jaar nog ingeschreven of diploma behaald"
-  expect_equal(
-    as.character(result$uitval_3jr),
-    "Na 3 jaar nog ingeschreven of diploma behaald"
-  )
+  expect_equal(nrow(result), 2)
+  ## B heeft geen eerstejaar_instelling (NA na left_join) -> uitval_xjr wordt NA
+  expect_true(is.na(result$uitval_xjr[result$persoonsgebonden_nummer == "B"]))
 })
