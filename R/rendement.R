@@ -1,3 +1,16 @@
+#' Maak een bestand met het vroegst behaalde diploma per student
+#'
+#' Filtert het basisbestand op diplomasoorten die gelden als afgeronde opleiding
+#' en behoudt per student alleen het eerste diploma op basis van diplomajaar.
+#'
+#' @param basisbestand Tibble zoals gemaakt door [maak_basisbestand()]
+#'
+#' @return Een tibble met één rij per student met kolommen
+#'   `persoonsgebonden_nummer`, `jaar_eerste_diploma`,
+#'   `verblijfsjaar_eerste_diploma` en `diploma`. Gooit een fout bij
+#'   dubbele persoonsgebonden nummers.
+#'
+#' @export
 maak_diploma_behaald <- function(basisbestand) {
   diplomas <- c(
     "Hoofd-bachelor-diploma binnen de actuele instelling",
@@ -15,18 +28,19 @@ maak_diploma_behaald <- function(basisbestand) {
   )
 
   diploma_behaald <- basisbestand |>
-    filter(soort_diploma_instelling %in% diplomas) |>
-    mutate(diplomajaar = na_if(diplomajaar, 0)) |>
-    group_by(persoonsgebonden_nummer) |>
-    arrange(diplomajaar, .by_group = TRUE) |>
-    distinct(persoonsgebonden_nummer, .keep_all = TRUE) |>
-    ungroup() |>
-    mutate(
+    dplyr::filter(soort_diploma_instelling %in% diplomas) |>
+    ## diplomajaar == 0 betekent geen jaar geregistreerd in de 1CHO-data
+    dplyr::mutate(diplomajaar = dplyr::na_if(diplomajaar, 0)) |>
+    dplyr::group_by(persoonsgebonden_nummer) |>
+    dplyr::arrange(diplomajaar, .by_group = TRUE) |>
+    dplyr::distinct(persoonsgebonden_nummer, .keep_all = TRUE) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(
       jaar_eerste_diploma = diplomajaar,
       verblijfsjaar_eerste_diploma = verblijfsjaar_actuele_instelling,
       diploma = "Diploma behaald (excl. propedeuse)"
     ) |>
-    select(
+    dplyr::select(
       persoonsgebonden_nummer,
       jaar_eerste_diploma,
       verblijfsjaar_eerste_diploma,
@@ -40,20 +54,34 @@ maak_diploma_behaald <- function(basisbestand) {
   diploma_behaald
 }
 
+#' Bereken rendementsindicatoren per cohort
+#'
+#' Koppelt diplomagegevens aan het instroomcohort en berekent of een student
+#' binnen 3, 5 of 8 jaar een diploma heeft behaald.
+#'
+#' @param cohorten_instroom Tibble zoals gemaakt door [maak_instroom_cohort()]
+#' @param diploma_behaald Tibble zoals gemaakt door [maak_diploma_behaald()]
+#'
+#' @return Een tibble met kolommen `persoonsgebonden_nummer`,
+#'   `eerstejaar_instelling`, `jaar_eerste_diploma`,
+#'   `verblijfsjaar_eerste_diploma`, `diploma`, `rendement_xjaar`,
+#'   en factorkolommen `rendement_3jr`, `rendement_5jr`, `rendement_8jr`
+#'
+#' @export
 bereken_rendement <- function(cohorten_instroom, diploma_behaald) {
   cohorten_instroom |>
-    left_join(diploma_behaald, by = "persoonsgebonden_nummer") |>
-    select(
+    dplyr::left_join(diploma_behaald, by = "persoonsgebonden_nummer") |>
+    dplyr::select(
       persoonsgebonden_nummer,
       eerstejaar_instelling,
       jaar_eerste_diploma,
       verblijfsjaar_eerste_diploma,
       diploma
     ) |>
-    mutate(
+    dplyr::mutate(
       rendement_xjaar = jaar_eerste_diploma - eerstejaar_instelling + 1,
 
-      rendement_3jr = case_when(
+      rendement_3jr = dplyr::case_when(
         rendement_xjaar <= 3 ~ "Diploma binnen 3 jaar",
         rendement_xjaar > 3 ~ "Diploma na 3 jaar",
         is.na(jaar_eerste_diploma) ~ "Geen diploma",
@@ -61,7 +89,7 @@ bereken_rendement <- function(cohorten_instroom, diploma_behaald) {
           eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans"
       ),
 
-      rendement_5jr = case_when(
+      rendement_5jr = dplyr::case_when(
         rendement_xjaar <= 5 ~ "Diploma binnen 5 jaar",
         rendement_xjaar > 5 ~ "Diploma na 5 jaar",
         is.na(jaar_eerste_diploma) ~ "Geen diploma",
@@ -69,7 +97,7 @@ bereken_rendement <- function(cohorten_instroom, diploma_behaald) {
           eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans"
       ),
 
-      rendement_8jr = case_when(
+      rendement_8jr = dplyr::case_when(
         rendement_xjaar <= 8 ~ "Diploma binnen 8 jaar",
         rendement_xjaar > 8 ~ "Diploma na 8 jaar",
         is.na(jaar_eerste_diploma) ~ "Geen diploma",
@@ -77,5 +105,5 @@ bereken_rendement <- function(cohorten_instroom, diploma_behaald) {
           eerstejaar_instelling ~ "Onbekend, want diplomajaar ligt voor eerste jaar bij Avans"
       )
     ) |>
-    mutate(across(starts_with("rendement"), as.factor))
+    dplyr::mutate(dplyr::across(dplyr::starts_with("rendement"), as.factor))
 }
