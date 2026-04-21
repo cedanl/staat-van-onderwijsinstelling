@@ -10,10 +10,11 @@ De scripts berekenen vier indicatoren per instroomcohort: instroom, rendement, u
 
 ## Gebruik
 
-Stel eerst het jaartal in bovenaan elk script:
+Stel bovenaan `01_Instroom.R` het jaartal en het type instelling in:
 
 ```r
-jaar = 2025
+jaar     = 2025
+soort_ho = c("hoger beroepsonderwijs", "hbo")  # gebruik c("wetenschappelijk onderwijs", "wo") voor WO
 ```
 
 Draai de scripts daarna in volgorde:
@@ -28,11 +29,15 @@ Draai de scripts daarna in volgorde:
 
 ## Invoerdata
 
-Script 01 leest een gecombineerd 1CHO-bestand in vanuit de CEDA tool:
+Script 01 leest een verrijkt 1CHO-bestand uit de `data/` map:
 
 ```
-../2025/Output CEDA tool/EV07GR25_combined.csv
+data/<bestandsnaam>.csv
 ```
+
+Het invoerbestand moet de **enriched** output zijn van de [1cijferho tool](https://github.com/cedanl/1cijferho). Dat is het bestand met `_enriched` in de naam, waarbij codes al zijn omgezet naar leesbare labels (zoals "man"/"vrouw", "voltijd"/"deeltijd", "hoofdinschrijving...").
+
+Pas de bestandsnaam aan in `01_Instroom.R` als je een ander bestand gebruikt.
 
 De overige scripts lezen tussenbestanden uit de `Output/` map die door de vorige scripts zijn aangemaakt.
 

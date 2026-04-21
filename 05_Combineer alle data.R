@@ -77,7 +77,7 @@ Data_1cHO_indicatoren = Cohorten_Instroom  %>%
          leeftijd_bij_instroom = leeftijd_per_peildatum_1_oktober,
          # leeftijdgroep_instroom = leeftijdgroep_instroom1okt,
          postcode4_student_1okt = postcodecijfers_student_op_1_oktober,
-         postcode4_vooropleiding_voorHO = postcodecijfers_van_de_hoogste_vooropl._voor_het_ho,
+         postcode4_vooropleiding_voorHO = postcodecijfers_van_de_hoogste_vooropl_voor_het_ho,
          status, 
          # jaar_eerste_diploma_avans = firstdiplomajaar1, 
          soortdiploma = soort_diploma_instelling_label,
@@ -102,7 +102,7 @@ Data_1cHO_indicatoren = Cohorten_Instroom  %>%
     #                                 "onbekend / overig" = "overig"),
          
          opleidingsvorm = fct_recode(opleidingsvorm, 
-                                     "duaal" = "coop-student of duaal onderwijs (vanaf het studiejaar 1998-1999)"),
+                                     "duaal" = "coöp-student of duaal onderwijs (vanaf het studiejaar 1998-1999)"),
          
          HBOsector = fct_recode(HBOsector, 
                                 "gedrag & maatschappij" = "gedrag en maatschappij",

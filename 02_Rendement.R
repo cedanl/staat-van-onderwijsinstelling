@@ -39,7 +39,7 @@ message("\nRENDEMENT --- Diplomabestand wordt aangemaakt")
 Diploma_behaald = Basisbestand1CHO %>% 
   
   # Selecteer juiste diploma's (niet propedeuse)
-  filter(soort_diploma_instelling %in% c(3,4,5,13,15)) %>% 
+  filter(soort_diploma_instelling %in% diplomas) %>%
   
   # Sorteer per persoonsnummer en diplomajaar, behoud alleen eerstbehaalde diploma
   mutate(diplomajaar = na_if(diplomajaar, 0)) %>% 
