@@ -9,7 +9,10 @@ Authors@R: c(
 Description: Berekent instroom-, rendement-, uitval- en
     studiewisselindicatoren vanuit de 1CHO-aanlevering van DUO.
 License: MIT + file LICENSE
+URL: https://github.com/cedanl/staat-van-onderwijsinstelling
+BugReports: https://github.com/cedanl/staat-van-onderwijsinstelling/issues
 Encoding: UTF-8
+Language: nl
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: R (>= 4.1.0)

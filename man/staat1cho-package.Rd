@@ -9,6 +9,14 @@
 Berekent instroom-, rendement-, uitval- en studiewisselindicatoren
 vanuit de 1CHO-aanlevering van DUO.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/cedanl/staat-van-onderwijsinstelling}
+  \item Report bugs at \url{https://github.com/cedanl/staat-van-onderwijsinstelling/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Aslam
 
