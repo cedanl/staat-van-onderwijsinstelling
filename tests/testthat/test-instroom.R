@@ -23,7 +23,10 @@ test_that("accepteert meerdere soort_ho-waarden", {
     inschrijvingsjaar = 2020
   )
 
-  result <- maak_instroom_cohort(basisbestand, c("hoger beroepsonderwijs", "hbo"))
+  result <- maak_instroom_cohort(
+    basisbestand,
+    c("hoger beroepsonderwijs", "hbo")
+  )
 
   expect_setequal(result$persoonsgebonden_nummer, c("A", "B"))
 })

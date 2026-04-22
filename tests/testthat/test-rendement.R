@@ -112,7 +112,10 @@ test_that("bevat de juiste uitvoerkolommen", {
 ## --- bereken_rendement ---
 
 test_that("berekent rendement_xjaar correct", {
-  cohorten_instroom <- tibble(persoonsgebonden_nummer = "A", eerstejaar_instelling = 2019)
+  cohorten_instroom <- tibble(
+    persoonsgebonden_nummer = "A",
+    eerstejaar_instelling = 2019
+  )
   diploma_behaald <- tibble(
     persoonsgebonden_nummer = "A",
     jaar_eerste_diploma = 2022,
@@ -207,7 +210,10 @@ test_that("categoriseert rendement_8jr correct inclusief grenswaarden", {
 })
 
 test_that("geeft 'Geen diploma' voor studenten zonder diploma", {
-  cohorten_instroom <- tibble(persoonsgebonden_nummer = "A", eerstejaar_instelling = 2019)
+  cohorten_instroom <- tibble(
+    persoonsgebonden_nummer = "A",
+    eerstejaar_instelling = 2019
+  )
   diploma_behaald <- tibble(
     persoonsgebonden_nummer = character(0),
     jaar_eerste_diploma = integer(0),
@@ -223,7 +229,10 @@ test_that("geeft 'Geen diploma' voor studenten zonder diploma", {
 })
 
 test_that("geeft factorkolommen terug voor alle rendement-indicatoren", {
-  cohorten_instroom <- tibble(persoonsgebonden_nummer = "A", eerstejaar_instelling = 2019)
+  cohorten_instroom <- tibble(
+    persoonsgebonden_nummer = "A",
+    eerstejaar_instelling = 2019
+  )
   diploma_behaald <- tibble(
     persoonsgebonden_nummer = "A",
     jaar_eerste_diploma = 2022,
@@ -239,7 +248,10 @@ test_that("geeft factorkolommen terug voor alle rendement-indicatoren", {
 })
 
 test_that("markeert als 'Onbekend' als diplomajaar voor instroomjaar ligt", {
-  cohorten_instroom <- tibble(persoonsgebonden_nummer = "A", eerstejaar_instelling = 2020)
+  cohorten_instroom <- tibble(
+    persoonsgebonden_nummer = "A",
+    eerstejaar_instelling = 2020
+  )
   diploma_behaald <- tibble(
     persoonsgebonden_nummer = "A",
     jaar_eerste_diploma = 2018,

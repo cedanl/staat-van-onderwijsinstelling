@@ -4,14 +4,10 @@
 \alias{maak_basisbestand}
 \title{Lees het 1CHO-bestand in en voeg label-kolommen toe}
 \usage{
-maak_basisbestand(pad_invoer, jaar)
+maak_basisbestand(pad_invoer)
 }
 \arguments{
 \item{pad_invoer}{Pad naar het semicolongescheiden CSV-bestand (UTF-8)}
-
-\item{jaar}{Peiljaar van de 1CHO-aanlevering, bijv. \code{2025}. Bepaalt welke
-\verb{vestigingsnummer_gemeentenaam_per_1_januari_<jaar>}-kolom als
-\code{locatie_label} wordt gebruikt.}
 }
 \value{
 Een tibble met alle 1CHO-regels plus extra \verb{_label}-kolommen die de

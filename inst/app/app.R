@@ -11,19 +11,7 @@ library(plotly)
 library(DT)
 library(readr)
 
-if (!requireNamespace("staat1cho", quietly = TRUE)) {
-  r_dirs <- c(file.path(getwd(), "R"), file.path(getwd(), "..", "R"))
-  r_dir <- r_dirs[dir.exists(r_dirs)][1]
-  if (is.na(r_dir)) {
-    stop("Kan de R/ map van staat1cho niet vinden.")
-  }
-  invisible(lapply(
-    list.files(r_dir, pattern = "\\.R$", full.names = TRUE),
-    source
-  ))
-} else {
-  library(staat1cho)
-}
+library(staat1cho)
 
 ## Fonts ----
 
