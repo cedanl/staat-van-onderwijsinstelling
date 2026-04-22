@@ -109,7 +109,8 @@ combineer_indicatoren <- function(
         rendement_5jr == "Diploma binnen 5 jaar" ~ "Diploma binnen 5 jaar",
         rendement_8jr == "Diploma binnen 8 jaar" ~ "Diploma binnen 5-8 jaar",
         rendement_8jr == "Diploma na 8 jaar" ~ "Diploma na 8 jaar",
-        rendement_8jr == "Geen diploma" ~ "Geen diploma"
+        rendement_8jr == "Geen diploma" ~ "Geen diploma",
+        rendement_8jr == "Onbekend (diplomajaar voor instroomjaar)" ~ "Onbekend"
       )
     )
 }

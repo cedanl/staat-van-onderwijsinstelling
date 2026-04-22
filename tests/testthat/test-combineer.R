@@ -211,6 +211,14 @@ test_that("bepaalt studiewissel correct op basis van studiewissel_1jr en _3jr", 
   expect_equal(r3$studiewissel, "Niet gewisseld")
 })
 
+test_that("geeft 'Onbekend' als rendement_8jr de onbekend-waarde heeft", {
+  result <- roep_combineer(maak_input(
+    rendement_5jr = "Onbekend (diplomajaar voor instroomjaar)",
+    rendement_8jr = "Onbekend (diplomajaar voor instroomjaar)"
+  ))
+  expect_equal(result$rendement, "Onbekend")
+})
+
 test_that("bepaalt rendement correct op basis van rendement_5jr en _8jr", {
   r1 <- roep_combineer(maak_input(
     rendement_5jr = "Diploma binnen 5 jaar",

@@ -1,13 +1,27 @@
 #' Lees het 1CHO-bestand in en voeg label-kolommen toe
 #'
 #' @param pad_invoer Pad naar het semicolongescheiden CSV-bestand (UTF-8)
+#' @param jaar Peiljaar van de 1CHO-aanlevering, bijv. `2025`. Bepaalt welke
+#'   `vestigingsnummer_gemeentenaam_per_1_januari_<jaar>`-kolom als
+#'   `locatie_label` wordt gebruikt.
 #'
 #' @return Een tibble met alle 1CHO-regels plus extra `_label`-kolommen die de
 #'   originele categorische waarden bewaren voor gebruik in rapportages
 #'
 #' @export
-maak_basisbestand <- function(pad_invoer) {
-  readr::read_csv2(pad_invoer, locale = readr::locale(encoding = "UTF-8")) |>
+maak_basisbestand <- function(pad_invoer, jaar) {
+  locatie_kolom <- paste0("vestigingsnummer_gemeentenaam_per_1_januari_", jaar)
+
+  invoer <- readr::read_csv2(pad_invoer, locale = readr::locale(encoding = "UTF-8"))
+
+  if (!locatie_kolom %in% names(invoer)) {
+    cli::cli_abort(
+      "Kolom {.val {locatie_kolom}} niet gevonden in het invoerbestand. \\
+       Controleer of jaar ({jaar}) overeenkomt met de 1CHO-aanlevering."
+    )
+  }
+
+  invoer |>
     dplyr::mutate(
       verblijfsjaar_actuele_instelling = as.integer(
         verblijfsjaar_actuele_instelling
@@ -20,7 +34,7 @@ maak_basisbestand <- function(pad_invoer) {
       indicatie_eer_actueel_label = indicatie_eer_actueel,
       croho_onderdeel_actuele_opleiding_label = croho_onderdeel_actuele_opleiding,
       soort_diploma_instelling_label = soort_diploma_instelling,
-      locatie_label = vestigingsnummer_gemeentenaam_per_1_januari_2025
+      locatie_label = .data[[locatie_kolom]]
     )
 }
 

@@ -15,7 +15,8 @@ dir.create(paste0("Output/", jaar), recursive = TRUE, showWarnings = FALSE)
 
 cli::cli_alert_info("INSTROOM --- Data inlezen")
 Basisbestand1CHO <- maak_basisbestand(
-  "data/EV299XX24_DEMO_enriched_encrypted.csv"
+  "data/EV299XX24_DEMO_enriched_encrypted.csv",
+  jaar
 )
 
 
