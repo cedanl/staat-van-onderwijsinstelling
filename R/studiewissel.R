@@ -187,7 +187,7 @@ bereken_wissel_xjr <- function(
   opl_col <- paste0("opleidingscode_na_switch", suffix)
   vorm_col <- paste0("opleidingsvorm_na_switch", suffix)
   niveau_col <- paste0("opleidingsniveau_na_switch", suffix)
-  sector_col <- paste0("HBOsector_na_switch", suffix)
+  sector_col <- paste0("sector_na_switch", suffix)
 
   dubbel |>
     dplyr::arrange(persoonsgebonden_nummer, verblijfsjaar_actuele_instelling) |>

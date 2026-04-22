@@ -64,11 +64,11 @@ maak_input <- function(
     opleidingscode_na_switch1jr = factor(NA_character_),
     opleidingsvorm_na_switch1jr = factor(NA_character_),
     opleidingsniveau_na_switch1jr = factor(NA_character_),
-    HBOsector_na_switch1jr = factor(NA_character_),
+    sector_na_switch1jr = factor(NA_character_),
     opleidingscode_na_switch3jr = factor(NA_character_),
     opleidingsvorm_na_switch3jr = factor(NA_character_),
     opleidingsniveau_na_switch3jr = factor(NA_character_),
-    HBOsector_na_switch3jr = factor(NA_character_)
+    sector_na_switch3jr = factor(NA_character_)
   )
 
   list(
@@ -100,9 +100,16 @@ test_that("geeft één rij per student terug", {
 test_that("bevat de verwachte kerncolomnamen", {
   result <- roep_combineer(maak_input())
   verwachte_kolommen <- c(
-    "inschrijvingsjaar", "geslacht", "locatie", "opleidingscode",
-    "opleidingsvorm", "opleidingsniveau", "status",
-    "uitval", "studiewissel", "rendement"
+    "inschrijvingsjaar",
+    "geslacht",
+    "locatie",
+    "opleidingscode",
+    "opleidingsvorm",
+    "opleidingsniveau",
+    "status",
+    "uitval",
+    "studiewissel",
+    "rendement"
   )
   expect_true(all(verwachte_kolommen %in% names(result)))
 })
@@ -129,21 +136,21 @@ test_that("laat andere opleidingsvorm-waarden ongewijzigd", {
   expect_equal(as.character(result$opleidingsvorm), "voltijd")
 })
 
-## --- fct_recode: HBOsector ---
+## --- fct_recode: sector ---
 
 test_that("hernoemt 'gedrag en maatschappij' naar 'gedrag & maatschappij'", {
   result <- roep_combineer(maak_input(croho_label = "gedrag en maatschappij"))
-  expect_equal(as.character(result$HBOsector), "gedrag & maatschappij")
+  expect_equal(as.character(result$sector), "gedrag & maatschappij")
 })
 
 test_that("hernoemt 'taal en cultuur' naar 'taal & cultuur'", {
   result <- roep_combineer(maak_input(croho_label = "taal en cultuur"))
-  expect_equal(as.character(result$HBOsector), "taal & cultuur")
+  expect_equal(as.character(result$sector), "taal & cultuur")
 })
 
-test_that("laat andere HBOsector-waarden ongewijzigd", {
+test_that("laat andere sector-waarden ongewijzigd", {
   result <- roep_combineer(maak_input(croho_label = "techniek"))
-  expect_equal(as.character(result$HBOsector), "techniek")
+  expect_equal(as.character(result$sector), "techniek")
 })
 
 ## --- fct_recode: opleidingsniveau ---

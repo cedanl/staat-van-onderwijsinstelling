@@ -1,4 +1,9 @@
-maak_wissel_rijen <- function(pgn, verblijfsjaren, opleidingen, inschrijvingsjaren) {
+maak_wissel_rijen <- function(
+  pgn,
+  verblijfsjaren,
+  opleidingen,
+  inschrijvingsjaren
+) {
   tibble(
     persoonsgebonden_nummer = pgn,
     verblijfsjaar_actuele_instelling = as.integer(verblijfsjaren),
@@ -21,8 +26,10 @@ test_that("detecteert opleidingswissel correct bij 1jr", {
   zittend <- tibble(persoonsgebonden_nummer = c("A", "B"))
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -41,8 +48,10 @@ test_that("detecteert opleidingswissel correct bij 3jr", {
   zittend <- tibble(persoonsgebonden_nummer = c("A", "B"))
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 4), doeljaar = 4,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 4),
+    doeljaar = 4,
     label_gewisseld = "Gewisseld binnen 3 jaar",
     label_niet = "Niet gewisseld binnen 3 jaar",
     suffix = "3jr"
@@ -61,8 +70,10 @@ test_that("geeft lege tibble terug als niemand gewisseld is", {
   zittend <- tibble(persoonsgebonden_nummer = c("A", "B"))
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -81,8 +92,10 @@ test_that("negeert studenten die niet in zittend zitten", {
   zittend <- tibble(persoonsgebonden_nummer = "A")
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -94,13 +107,18 @@ test_that("negeert studenten die niet in zittend zitten", {
 
 test_that("geeft lege tibble als zittend leeg is", {
   basisbestand <- maak_wissel_rijen(
-    c("A", "A"), c(1, 2), c("opl1", "opl2"), c(2019, 2020)
+    c("A", "A"),
+    c(1, 2),
+    c("opl1", "opl2"),
+    c(2019, 2020)
   )
   zittend <- tibble(persoonsgebonden_nummer = character(0))
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -114,13 +132,18 @@ test_that("geeft lege tibble als zittend leeg is", {
 test_that("sluit studenten uit met verkeerd verschil in kalenderjaren", {
   ## Verschil is 2 jaar terwijl doeljaar - 1 = 1 verwacht
   basisbestand <- maak_wissel_rijen(
-    c("A", "A"), c(1, 2), c("opl1", "opl2"), c(2018, 2020)
+    c("A", "A"),
+    c(1, 2),
+    c("opl1", "opl2"),
+    c(2018, 2020)
   )
   zittend <- tibble(persoonsgebonden_nummer = "A")
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -133,13 +156,18 @@ test_that("sluit studenten uit met verkeerd verschil in kalenderjaren", {
 
 test_that("bevat de juiste switchkolommen in de output", {
   basisbestand <- maak_wissel_rijen(
-    c("A", "A"), c(1, 2), c("opl1", "opl2"), c(2019, 2020)
+    c("A", "A"),
+    c(1, 2),
+    c("opl1", "opl2"),
+    c(2019, 2020)
   )
   zittend <- tibble(persoonsgebonden_nummer = "A")
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -149,18 +177,23 @@ test_that("bevat de juiste switchkolommen in de output", {
   expect_true("opleidingscode_na_switch1jr" %in% names(result))
   expect_true("opleidingsvorm_na_switch1jr" %in% names(result))
   expect_true("opleidingsniveau_na_switch1jr" %in% names(result))
-  expect_true("HBOsector_na_switch1jr" %in% names(result))
+  expect_true("sector_na_switch1jr" %in% names(result))
 })
 
 test_that("vult opleidingscode_na_switch in bij wissel", {
   basisbestand <- maak_wissel_rijen(
-    c("A", "A"), c(1, 2), c("opl1", "opl2"), c(2019, 2020)
+    c("A", "A"),
+    c(1, 2),
+    c("opl1", "opl2"),
+    c(2019, 2020)
   )
   zittend <- tibble(persoonsgebonden_nummer = "A")
 
   result <- bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -173,13 +206,18 @@ test_that("vult opleidingscode_na_switch in bij wissel", {
 
 test_that("geeft fout bij meer dan 2 rijen per student", {
   basisbestand <- maak_wissel_rijen(
-    c("A", "A", "A"), c(1, 1, 2), c("opl1", "opl1", "opl2"), c(2019, 2019, 2020)
+    c("A", "A", "A"),
+    c(1, 1, 2),
+    c("opl1", "opl1", "opl2"),
+    c(2019, 2019, 2020)
   )
   zittend <- tibble(persoonsgebonden_nummer = "A")
 
   expect_error(bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"
@@ -189,13 +227,18 @@ test_that("geeft fout bij meer dan 2 rijen per student", {
 test_that("geeft fout bij ongelijk aantal verblijfsjaar 1 en 2 rijen", {
   ## Student A heeft twee rijen met verblijfsjaar 1 en geen met verblijfsjaar 2
   basisbestand <- maak_wissel_rijen(
-    c("A", "A"), c(1, 1), c("opl1", "opl2"), c(2019, 2019)
+    c("A", "A"),
+    c(1, 1),
+    c("opl1", "opl2"),
+    c(2019, 2019)
   )
   zittend <- tibble(persoonsgebonden_nummer = "A")
 
   expect_error(bereken_wissel_xjr(
-    basisbestand, zittend,
-    verblijfsjaren = c(1, 2), doeljaar = 2,
+    basisbestand,
+    zittend,
+    verblijfsjaren = c(1, 2),
+    doeljaar = 2,
     label_gewisseld = "Gewisseld binnen 1 jaar",
     label_niet = "Niet gewisseld binnen 1 jaar",
     suffix = "1jr"

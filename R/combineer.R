@@ -38,14 +38,14 @@ combineer_indicatoren <- function(
       opleidingsniveau = type_hoger_onderwijs_binnen_soort_hoger_onderwijs,
       int_student = indicatie_internationale_student_label,
       indicatie_EER = indicatie_eer_actueel_label,
-      HBOsector = croho_onderdeel_actuele_opleiding_label,
+      sector = croho_onderdeel_actuele_opleiding_label,
       leeftijd_bij_instroom = leeftijd_per_peildatum_1_oktober,
       postcode4_student_1okt = postcodecijfers_student_op_1_oktober,
       postcode4_vooropleiding_voorHO = postcodecijfers_van_de_hoogste_vooropl_voor_het_ho,
       status,
       soortdiploma = soort_diploma_instelling_label,
       rendement_3jr:rendement_8jr,
-      uitval_xjr:HBOsector_na_switch3jr
+      uitval_xjr:sector_na_switch3jr
     ) |>
 
     dplyr::mutate(
@@ -62,8 +62,8 @@ combineer_indicatoren <- function(
         opleidingsvorm,
         "duaal" = "coöp-student of duaal onderwijs (vanaf het studiejaar 1998-1999)"
       ),
-      HBOsector = forcats::fct_recode(
-        HBOsector,
+      sector = forcats::fct_recode(
+        sector,
         "gedrag & maatschappij" = "gedrag en maatschappij",
         "taal & cultuur" = "taal en cultuur"
       ),

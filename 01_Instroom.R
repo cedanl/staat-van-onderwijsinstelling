@@ -5,7 +5,7 @@
 library(staat1cho)
 
 jaar <- 2025
-soort_ho <- c("hoger beroepsonderwijs", "hbo")
+soort_ho <- c("wetenschappelijk onderwijs", "wo")
 
 
 ## Data inlezen
@@ -14,8 +14,7 @@ dir.create(paste0("Output/", jaar), recursive = TRUE, showWarnings = FALSE)
 
 cli::cli_alert_info("INSTROOM --- Data inlezen")
 Basisbestand1CHO <- maak_basisbestand(
-  "data/EV299XX24_DEMO_enriched_encrypted.csv",
-  jaar
+  "data/EV299XX24_DEMO_enriched_encrypted.csv"
 )
 
 
