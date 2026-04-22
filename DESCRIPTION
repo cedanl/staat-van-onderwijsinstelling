@@ -2,7 +2,7 @@ Package: staat1cho
 Title: Studie-indicatoren op basis van 1CHO-data
 Version: 0.1.0
 Authors@R: c(
-    person("Aslam", role = c("aut", "cre")),
+    person("Aslam", email = "aslam.tanjung@surf.nl", role = c("aut", "cre")),
     person("Veerle", "van Son", role = "aut"),
     person("Damiëtte", "Bakx-van den Brink", role = "aut")
   )
