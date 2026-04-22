@@ -2,8 +2,7 @@
 # Veerle van Son & Damiëtte Bakx-van den Brink
 # mei 2021
 
-library(tidyverse)
-source("R/instroom.R")
+library(staat1cho)
 
 jaar <- 2025
 soort_ho <- c("hoger beroepsonderwijs", "hbo")

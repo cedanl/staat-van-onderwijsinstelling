@@ -4,8 +4,7 @@
 
 ## TO DO: Bij de aanpassingen aan opleidingsniveau en rendement ook ad meenemen, want dat gebeurt nu in de vervolgscripts.
 
-library(tidyverse)
-source("R/combineer.R")
+library(staat1cho)
 
 jaar <- 2025
 

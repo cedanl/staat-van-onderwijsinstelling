@@ -1,0 +1,25 @@
+Package: staat1cho
+Title: Studie-indicatoren op basis van 1CHO-data
+Version: 0.1.0
+Authors@R: c(
+    person("Aslam", role = c("aut", "cre")),
+    person("Veerle", "van Son", role = "aut"),
+    person("Damiëtte", "Bakx-van den Brink", role = "aut")
+  )
+Description: Berekent instroom-, rendement-, uitval- en
+    studiewisselindicatoren vanuit de 1CHO-aanlevering van DUO.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: R (>= 4.1.0)
+Imports:
+    cli,
+    dplyr,
+    forcats,
+    readr,
+    rlang
+Suggests:
+    testthat (>= 3.0.0),
+    tibble
+Config/testthat/edition: 3
