@@ -643,11 +643,7 @@ server <- function(input, output, session) {
               buttonLabel = "Bladeren...",
               placeholder = "Geen bestand geselecteerd"
             ),
-            actionButton(
-              "btn_verwerk",
-              "Data verwerken",
-              class = "upload-verwerk-btn"
-            )
+            uiOutput("btn_verwerk_ui")
           )
         )
       )
@@ -922,6 +918,23 @@ server <- function(input, output, session) {
   toon_fout <- function(bericht) {
     showNotification(bericht, type = "error", duration = NULL)
   }
+
+  output$btn_verwerk_ui <- renderUI({
+    btn <- actionButton(
+      "btn_verwerk",
+      "Data verwerken",
+      class = "upload-verwerk-btn"
+    )
+    if (is.null(input$bestand_upload)) {
+      tagAppendAttributes(
+        btn,
+        disabled = "disabled",
+        style = "opacity: 0.5; cursor: not-allowed;"
+      )
+    } else {
+      btn
+    }
+  })
 
   observeEvent(input$btn_verwerk, {
     if (is.null(input$bestand_upload)) {
