@@ -21,3 +21,15 @@ dubbele persoonsgebonden nummers zijn.
 Filtert het basisbestand op het opgegeven soort hoger onderwijs,
 hoofdinschrijvingen en eerste verblijfsjaar.
 }
+\examples{
+basis <- tibble::tibble(
+  persoonsgebonden_nummer = c("S1", "S2", "S3"),
+  soort_hoger_onderwijs = c("hbo", "wo", "hbo"),
+  soort_inschrijving_actuele_instelling_label =
+    "hoofdinschrijving binnen het domein actuele instelling",
+  verblijfsjaar_actuele_instelling = 1L,
+  inschrijvingsjaar = 2020L,
+  soort_diploma_instelling_label = NA_character_
+)
+maak_instroom_cohort(basis, "hbo")
+}

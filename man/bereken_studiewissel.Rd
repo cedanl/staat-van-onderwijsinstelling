@@ -31,3 +31,34 @@ Bepaalt per student of zij binnen 1 of 3 jaar van opleiding zijn gewisseld.
 Studenten die al zijn uitgevallen of gediplomeerd in de meetperiode worden
 buiten beschouwing gelaten.
 }
+\examples{
+basis <- tibble::tibble(
+  persoonsgebonden_nummer = c("S1", "S1"),
+  verblijfsjaar_actuele_instelling = c(1L, 2L),
+  soort_inschrijving_actuele_instelling_label =
+    "hoofdinschrijving binnen het domein actuele instelling",
+  opleiding_actueel_equivalent = "34401",
+  inschrijvingsjaar = c(2020L, 2021L),
+  opleidingsvorm = "voltijd",
+  type_hoger_onderwijs_binnen_soort_hoger_onderwijs = "bachelor",
+  croho_onderdeel_actuele_opleiding = "techniek"
+)
+cohort <- tibble::tibble(
+  persoonsgebonden_nummer = "S1",
+  inschrijvingsjaar = 2020L,
+  eerstejaar_instelling = 2020L,
+  soort_diploma_instelling_label = NA_character_,
+  opleidingsvorm_label = "voltijd"
+)
+diploma <- tibble::tibble(
+  persoonsgebonden_nummer = character(0),
+  jaar_eerste_diploma = integer(0),
+  verblijfsjaar_eerste_diploma = integer(0),
+  diploma = character(0)
+)
+uitval <- tibble::tibble(
+  persoonsgebonden_nummer = "S1",
+  uitval_xjr = NA_real_
+)
+bereken_studiewissel(basis, cohort, diploma, uitval)
+}

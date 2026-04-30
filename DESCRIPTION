@@ -1,13 +1,15 @@
 Package: staat1cho
-Title: Studie-indicatoren op basis van 1CHO-data
+Title: Study Indicators Based on Dutch Higher Education Data (1CHO)
 Version: 0.1.0
 Authors@R: c(
     person("Aslam", "Tanjung", email = "aslam.tanjung@surf.nl", role = c("aut", "cre")),
     person("Veerle", "van Son", role = "aut"),
     person("Damiëtte", "Bakx-van den Brink", role = "aut")
   )
-Description: Berekent instroom-, rendement-, uitval- en
-    studiewisselindicatoren vanuit de 1CHO-aanlevering van DUO.
+Description: Calculates enrolment, graduation, dropout, and programme-switch
+    indicators from the Dutch higher education registration data (1CHO)
+    supplied by DUO. Includes an interactive Shiny dashboard for exploring
+    results.
 License: MIT + file LICENSE
 URL: https://github.com/cedanl/staat-van-onderwijsinstelling
 BugReports: https://github.com/cedanl/staat-van-onderwijsinstelling/issues
@@ -17,19 +19,22 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: R (>= 4.1.0)
 Imports:
-    bslib,
     cli,
-    DT,
     dplyr,
     forcats,
-    ggplot2,
-    plotly,
     readr,
     rlang,
-    scales,
-    shiny,
-    tidyr
+    shiny
 Suggests:
+    bslib,
+    DT,
+    ggplot2,
+    knitr,
+    plotly,
+    rmarkdown,
+    scales,
     testthat (>= 3.0.0),
-    tibble
+    tibble,
+    tidyr
+VignetteBuilder: knitr
 Config/testthat/edition: 3

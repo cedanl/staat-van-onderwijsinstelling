@@ -1,6 +1,7 @@
 ^data$
 ^Output$
 ^\.claude$
+^\.claudeignore$
 ^01_Instroom\.R$
 ^02_Rendement\.R$
 ^03_Uitval\.R$
@@ -8,3 +9,6 @@
 ^05_Combineer alle data\.R$
 ^README\.md$
 ^LICENSE\.md$
+^doc$
+^Meta$
+^CRAN-SUBMISSION$

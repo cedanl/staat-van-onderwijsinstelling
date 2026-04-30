@@ -10,6 +10,17 @@
 #'   `verblijfsjaar_eerste_diploma` en `diploma`. Gooit een fout bij
 #'   dubbele persoonsgebonden nummers.
 #'
+#' @examples
+#' basis <- tibble::tibble(
+#'   persoonsgebonden_nummer = c("S1", "S2"),
+#'   soort_diploma_instelling = c(
+#'     "Hoofd-bachelor-diploma binnen de actuele instelling",
+#'     NA_character_
+#'   ),
+#'   diplomajaar = c(2022L, NA_integer_),
+#'   verblijfsjaar_actuele_instelling = c(3L, 1L)
+#' )
+#' maak_diploma_behaald(basis)
 #' @export
 maak_diploma_behaald <- function(basisbestand) {
   diplomas <- c(
@@ -67,6 +78,18 @@ maak_diploma_behaald <- function(basisbestand) {
 #'   `verblijfsjaar_eerste_diploma`, `diploma`, `rendement_xjaar`,
 #'   en factorkolommen `rendement_3jr`, `rendement_5jr`, `rendement_8jr`
 #'
+#' @examples
+#' cohort <- tibble::tibble(
+#'   persoonsgebonden_nummer = c("S1", "S2"),
+#'   eerstejaar_instelling = 2020L
+#' )
+#' diploma <- tibble::tibble(
+#'   persoonsgebonden_nummer = "S1",
+#'   jaar_eerste_diploma = 2022L,
+#'   verblijfsjaar_eerste_diploma = 3L,
+#'   diploma = "Diploma behaald (excl. propedeuse)"
+#' )
+#' bereken_rendement(cohort, diploma)
 #' @export
 bereken_rendement <- function(cohorten_instroom, diploma_behaald) {
   cohorten_instroom |>

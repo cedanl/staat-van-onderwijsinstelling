@@ -5,6 +5,10 @@
 #' @return Een tibble met alle 1CHO-regels plus extra `_label`-kolommen die de
 #'   originele categorische waarden bewaren voor gebruik in rapportages
 #'
+#' @examples
+#' \dontrun{
+#'   basis <- maak_basisbestand("pad/naar/1cho_enriched.csv")
+#' }
 #' @export
 maak_basisbestand <- function(pad_invoer) {
   invoer <- readr::read_csv2(
@@ -48,6 +52,17 @@ maak_basisbestand <- function(pad_invoer) {
 #'   `eerstejaar_instelling` (= inschrijvingsjaar). Gooit een fout als er
 #'   dubbele persoonsgebonden nummers zijn.
 #'
+#' @examples
+#' basis <- tibble::tibble(
+#'   persoonsgebonden_nummer = c("S1", "S2", "S3"),
+#'   soort_hoger_onderwijs = c("hbo", "wo", "hbo"),
+#'   soort_inschrijving_actuele_instelling_label =
+#'     "hoofdinschrijving binnen het domein actuele instelling",
+#'   verblijfsjaar_actuele_instelling = 1L,
+#'   inschrijvingsjaar = 2020L,
+#'   soort_diploma_instelling_label = NA_character_
+#' )
+#' maak_instroom_cohort(basis, "hbo")
 #' @export
 maak_instroom_cohort <- function(basisbestand, soort_ho) {
   cohort <- basisbestand |>

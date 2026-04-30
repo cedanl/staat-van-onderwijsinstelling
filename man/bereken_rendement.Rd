@@ -21,3 +21,16 @@ en factorkolommen \code{rendement_3jr}, \code{rendement_5jr}, \code{rendement_8j
 Koppelt diplomagegevens aan het instroomcohort en berekent of een student
 binnen 3, 5 of 8 jaar een diploma heeft behaald.
 }
+\examples{
+cohort <- tibble::tibble(
+  persoonsgebonden_nummer = c("S1", "S2"),
+  eerstejaar_instelling = 2020L
+)
+diploma <- tibble::tibble(
+  persoonsgebonden_nummer = "S1",
+  jaar_eerste_diploma = 2022L,
+  verblijfsjaar_eerste_diploma = 3L,
+  diploma = "Diploma behaald (excl. propedeuse)"
+)
+bereken_rendement(cohort, diploma)
+}

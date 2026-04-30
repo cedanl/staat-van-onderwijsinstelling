@@ -16,6 +16,23 @@
 #'   t.o.v. instroomjaar), `uitval_1jr` en `uitval_3jr` (factoren).
 #'   Gooit een fout bij dubbele studenten of ontbrekende statussen.
 #'
+#' @examples
+#' basis <- tibble::tibble(
+#'   persoonsgebonden_nummer = c("S1", "S1", "S2"),
+#'   inschrijvingsjaar = c(2020L, 2021L, 2020L),
+#'   soort_inschrijving_actuele_instelling = "hoofdinschrijving"
+#' )
+#' diploma <- tibble::tibble(
+#'   persoonsgebonden_nummer = "S1",
+#'   jaar_eerste_diploma = 2022L,
+#'   verblijfsjaar_eerste_diploma = 3L,
+#'   diploma = "Diploma behaald (excl. propedeuse)"
+#' )
+#' cohort <- tibble::tibble(
+#'   persoonsgebonden_nummer = c("S1", "S2"),
+#'   eerstejaar_instelling = 2020L
+#' )
+#' bereken_uitval(basis, diploma, cohort, jaar = 2023L)
 #' @export
 bereken_uitval <- function(
   basisbestand,

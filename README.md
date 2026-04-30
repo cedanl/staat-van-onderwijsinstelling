@@ -1,23 +1,37 @@
-# Staat van de Onderwijsinstelling
+# staat1cho
 
-Scripts voor het berekenen van studie-indicatoren op basis van 1CHO-data. Oorspronkelijk ontwikkeld voor Avans Hogeschool door Veerle van Son en Damiëtte Bakx-van den Brink.
+R-package voor het berekenen van studie-indicatoren op basis van 1CHO-data. Oorspronkelijk ontwikkeld voor Avans Hogeschool door Veerle van Son en Damiëtte Bakx-van den Brink, doorontwikkeld door CEDA/Npuls.
 
-De scripts berekenen vier indicatoren per instroomcohort: instroom, rendement, uitval en studiewissel.
+Het package berekent vier indicatoren per instroomcohort: instroom, rendement, uitval en studiewissel. De resultaten zijn te bekijken via een interactief Shiny-dashboard of te exporteren als CSV.
 
-## Vereisten
+## Installeren
 
-- R met tidyverse
+```r
+# install.packages("pak")
+pak::pak("cedanl/staat-van-onderwijsinstelling")
+```
 
 ## Gebruik
 
-Stel bovenaan `01_Instroom.R` het jaartal en het type instelling in:
+### Dashboard
+
+Upload een 1CHO CSV-bestand en verken de indicatoren interactief:
 
 ```r
-jaar     = 2025
-soort_ho = c("hoger beroepsonderwijs", "hbo")  # gebruik c("wetenschappelijk onderwijs", "wo") voor WO
+library(staat1cho)
+start_dashboard()
 ```
 
-Draai de scripts daarna in volgorde:
+Het dashboard opent in je browser. Daar kun je:
+
+- Een 1CHO-bestand uploaden en verwerken
+- Filteren op jaar, locatie, sector, opleiding, opleidingsvorm en geslacht
+- Trends bekijken voor instroom, rendement, uitval en studiewissel
+- De verwerkte data downloaden als CSV
+
+### Losse scripts
+
+De scripts in de projectroot kunnen ook los worden gedraaid, zonder het package te installeren:
 
 ```
 01_Instroom.R
@@ -27,36 +41,58 @@ Draai de scripts daarna in volgorde:
 05_Combineer alle data.R
 ```
 
+Stel bovenaan `01_Instroom.R` het cohortjaar en het type instelling in:
+
+```r
+jaar     = 2025
+soort_ho = c("hoger beroepsonderwijs", "hbo")  # gebruik c("wetenschappelijk onderwijs", "wo") voor WO
+```
+
+Draai de scripts daarna in volgorde. De tussenbestanden worden opgeslagen in `Output/<jaar>/`.
+
 ## Invoerdata
 
-Script 01 leest een verrijkt 1CHO-bestand uit de `data/` map:
+Het package verwacht de **enriched** output van de [1cijferho tool](https://github.com/cedanl/1cijferho): het CSV-bestand met `_enriched` in de naam, waarbij codes al zijn omgezet naar leesbare labels (zoals "man"/"vrouw", "voltijd"/"deeltijd").
 
-```
-data/<bestandsnaam>.csv
-```
+Het bestand moet onder andere deze kolommen bevatten:
 
-Het invoerbestand moet de **enriched** output zijn van de [1cijferho tool](https://github.com/cedanl/1cijferho). Dat is het bestand met `_enriched` in de naam, waarbij codes al zijn omgezet naar leesbare labels (zoals "man"/"vrouw", "voltijd"/"deeltijd", "hoofdinschrijving...").
+- `persoonsgebonden_nummer`
+- `inschrijvingsjaar`
+- `verblijfsjaar_actuele_instelling`
+- `diplomajaar`
+- `soort_hoger_onderwijs`
+- `geslacht`, `opleidingsvorm`, `opleidingscode_naam_opleiding`
+- `vestigingsnummer_gemeentenaam_volgens_rio`
 
-Pas de bestandsnaam aan in `01_Instroom.R` als je een ander bestand gebruikt.
-
-De overige scripts lezen tussenbestanden uit de `Output/` map die door de vorige scripts zijn aangemaakt.
+Als een verplichte kolom ontbreekt, meldt het dashboard dit direct na het uploaden.
 
 ## Uitvoer
 
-Alle tussenbestanden en het eindresultaat worden opgeslagen in:
+Per student worden de volgende indicatoren berekend:
 
-```
-Output/<jaar>/
-```
-
-Het eindbestand `Indicatoren_1cHO_<jaar>.RDS` bevat per student onder andere: locatie, opleiding, opleidingsvorm, geslacht, leeftijd bij instroom, rendement (3-8 jaar), uitval en studiewissel.
-
-## Opzet
-
-| Script | Wat het doet |
+| Categorie | Indicatoren |
 |---|---|
-| 01_Instroom | Maakt cohortbestand aan (één regel per student, nieuwe instromers) |
-| 02_Rendement | Berekent diplomaresultaten per cohort |
-| 03_Uitval | Berekent uitval per jaar na instroom |
-| 04_Studiewissel | Berekent van opleiding gewisseld binnen 1 en 3 jaar |
-| 05_Combineer | Voegt alle indicatoren samen tot één analyseklaar bestand |
+| Studentkenmerken | instroomjaar, geslacht, locatie, sector, opleidingsvorm, leeftijd bij instroom |
+| Status | status na observatieperiode, soort diploma |
+| Rendement | diploma binnen 3, 5 en 8 jaar |
+| Uitval | uitval binnen 1 en 3 jaar |
+| Studiewissel | gewisseld binnen 1 en 3 jaar, opleiding/sector na wissel |
+
+## Functies
+
+| Functie | Wat het doet |
+|---|---|
+| `start_dashboard()` | Start het interactieve Shiny-dashboard |
+| `maak_basisbestand()` | Laadt en filtert het 1CHO-bestand |
+| `maak_instroom_cohort()` | Maakt cohortbestand aan (nieuwe instromers) |
+| `maak_diploma_behaald()` | Bepaalt diplomaresultaten per student |
+| `bereken_rendement()` | Rendement binnen 3, 5 en 8 jaar |
+| `bereken_uitval()` | Uitvalstatus binnen 1 en 3 jaar |
+| `bereken_studiewissel()` | Studiewissel binnen 1 en 3 jaar |
+| `combineer_indicatoren()` | Voegt alle indicatoren samen |
+
+## Vereisten
+
+- R >= 4.1.0
+- Tidyverse-packages (dplyr, ggplot2, readr, tidyr, forcats, scales)
+- Shiny-packages (shiny, bslib, DT, plotly)

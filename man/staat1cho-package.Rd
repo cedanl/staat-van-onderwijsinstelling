@@ -18,7 +18,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Aslam
+\strong{Maintainer}: Aslam Tanjung \email{aslam.tanjung@surf.nl}
 
 Authors:
 \itemize{

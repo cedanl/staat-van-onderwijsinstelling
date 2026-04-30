@@ -16,3 +16,8 @@ originele categorische waarden bewaren voor gebruik in rapportages
 \description{
 Lees het 1CHO-bestand in en voeg label-kolommen toe
 }
+\examples{
+\dontrun{
+  basis <- maak_basisbestand("pad/naar/1cho_enriched.csv")
+}
+}

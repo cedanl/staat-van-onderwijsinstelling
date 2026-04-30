@@ -1,4 +1,4 @@
-#' Combineer alle indicatoren tot één analysebestand
+#' Combineer alle indicatoren tot een analysebestand
 #'
 #' Voegt rendement-, uitval- en studiewisselindicatoren samen met het
 #' instroomcohort. Past kolomnamen en factorniveaus aan voor gebruik in
@@ -10,10 +10,62 @@
 #' @param studiewissel_indicatoren Tibble zoals gemaakt door
 #'   [bereken_studiewissel()]
 #'
-#' @return Een tibble met één rij per student en gecombineerde indicator-
+#' @return Een tibble met een rij per student en gecombineerde indicator-
 #'   kolommen, klaar voor rapportage. Bevat o.a. `status`, `rendement`,
 #'   `uitval`, `studiewissel` en alle onderliggende deelscores.
 #'
+#' @examples
+#' cohort <- tibble::tibble(
+#'   persoonsgebonden_nummer = "S1",
+#'   inschrijvingsjaar = 2020L,
+#'   eerstejaar_instelling = 2020L,
+#'   geslacht_label = "man",
+#'   locatie_label = "Breda",
+#'   opleiding_actueel_equivalent = "34401",
+#'   opleidingsvorm_label = "voltijd",
+#'   type_hoger_onderwijs_binnen_soort_hoger_onderwijs = "ba",
+#'   indicatie_internationale_student_label = "geen internationale student",
+#'   indicatie_eer_actueel_label = "geen EER-student",
+#'   croho_onderdeel_actuele_opleiding_label = "techniek",
+#'   leeftijd_per_peildatum_1_oktober = 19L,
+#'   postcodecijfers_student_op_1_oktober = "4818",
+#'   postcodecijfers_van_de_hoogste_vooropl_voor_het_ho = "4818",
+#'   soort_diploma_instelling_label = NA_character_
+#' )
+#' rendement <- tibble::tibble(
+#'   persoonsgebonden_nummer = "S1",
+#'   eerstejaar_instelling = 2020L,
+#'   jaar_eerste_diploma = NA_real_,
+#'   verblijfsjaar_eerste_diploma = NA_integer_,
+#'   diploma = NA_character_,
+#'   rendement_xjaar = factor(NA_character_),
+#'   rendement_3jr = factor("Geen diploma"),
+#'   rendement_5jr = factor("Geen diploma"),
+#'   rendement_8jr = factor("Geen diploma")
+#' )
+#' uitval <- tibble::tibble(
+#'   persoonsgebonden_nummer = "S1",
+#'   laatste_jaar_inschrijving = NA_real_,
+#'   diploma = NA_character_,
+#'   status = factor("Zittend"),
+#'   uitval_xjr = NA_real_,
+#'   uitval_1jr = factor("Na 1 jaar nog ingeschreven of diploma behaald"),
+#'   uitval_3jr = factor("Na 3 jaar nog ingeschreven of diploma behaald")
+#' )
+#' wissel <- tibble::tibble(
+#'   persoonsgebonden_nummer = "S1",
+#'   studiewissel_1jr = factor("Niet gewisseld binnen 1 jaar"),
+#'   studiewissel_3jr = factor("Niet gewisseld binnen 3 jaar"),
+#'   opleidingscode_na_switch1jr = factor(NA_character_),
+#'   opleidingsvorm_na_switch1jr = factor(NA_character_),
+#'   opleidingsniveau_na_switch1jr = factor(NA_character_),
+#'   sector_na_switch1jr = factor(NA_character_),
+#'   opleidingscode_na_switch3jr = factor(NA_character_),
+#'   opleidingsvorm_na_switch3jr = factor(NA_character_),
+#'   opleidingsniveau_na_switch3jr = factor(NA_character_),
+#'   sector_na_switch3jr = factor(NA_character_)
+#' )
+#' suppressWarnings(combineer_indicatoren(cohort, rendement, uitval, wissel))
 #' @export
 combineer_indicatoren <- function(
   cohorten_instroom,
@@ -60,7 +112,7 @@ combineer_indicatoren <- function(
     dplyr::mutate(
       opleidingsvorm = forcats::fct_recode(
         opleidingsvorm,
-        "duaal" = "coöp-student of duaal onderwijs (vanaf het studiejaar 1998-1999)"
+        "duaal" = "co\u00f6p-student of duaal onderwijs (vanaf het studiejaar 1998-1999)"
       ),
       sector = forcats::fct_recode(
         sector,

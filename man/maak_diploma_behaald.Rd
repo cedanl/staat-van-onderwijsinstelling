@@ -19,3 +19,15 @@ dubbele persoonsgebonden nummers.
 Filtert het basisbestand op diplomasoorten die gelden als afgeronde opleiding
 en behoudt per student alleen het eerste diploma op basis van diplomajaar.
 }
+\examples{
+basis <- tibble::tibble(
+  persoonsgebonden_nummer = c("S1", "S2"),
+  soort_diploma_instelling = c(
+    "Hoofd-bachelor-diploma binnen de actuele instelling",
+    NA_character_
+  ),
+  diplomajaar = c(2022L, NA_integer_),
+  verblijfsjaar_actuele_instelling = c(3L, 1L)
+)
+maak_diploma_behaald(basis)
+}
