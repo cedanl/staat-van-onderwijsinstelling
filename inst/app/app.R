@@ -478,12 +478,6 @@ npuls_css <- "
 .upload-verwerk-btn:hover {
   background-color: #2850C8 !important;
 }
-.upload-foutmelding {
-  color: #DD784B;
-  font-size: 0.82rem;
-  margin-top: 0.25rem;
-}
-
 /* Dashboard header */
 .dashboard-header {
   background-color: #F4D9DC;
@@ -649,7 +643,6 @@ server <- function(input, output, session) {
               buttonLabel = "Bladeren...",
               placeholder = "Geen bestand geselecteerd"
             ),
-            uiOutput("upload_fout"),
             actionButton(
               "btn_verwerk",
               "Data verwerken",
@@ -926,18 +919,13 @@ server <- function(input, output, session) {
 
   ## Verwerken ----
 
-  fout_bericht <- reactiveVal(NULL)
-
-  output$upload_fout <- renderUI({
-    req(!is.null(fout_bericht()))
-    tags$p(fout_bericht(), class = "upload-foutmelding")
-  })
+  toon_fout <- function(bericht) {
+    showNotification(bericht, type = "error", duration = NULL)
+  }
 
   observeEvent(input$btn_verwerk, {
-    fout_bericht(NULL)
-
     if (is.null(input$bestand_upload)) {
-      fout_bericht("Selecteer eerst een CSV-bestand.")
+      toon_fout("Selecteer eerst een CSV-bestand.")
       return()
     }
 
@@ -949,7 +937,7 @@ server <- function(input, output, session) {
 
     ontbrekend <- setdiff(VEREISTE_KOLOMMEN, kolomnamen)
     if (length(ontbrekend) > 0) {
-      fout_bericht(paste0(
+      toon_fout(paste0(
         "Ontbrekende kolom(men): ",
         paste(ontbrekend, collapse = ", ")
       ))
@@ -963,7 +951,6 @@ server <- function(input, output, session) {
           basisbestand <- maak_basisbestand(input$bestand_upload$datapath)
           jaar <- max(basisbestand$inschrijvingsjaar, na.rm = TRUE) + 1L
 
-          ## Gebruik alle soorten HO die in het bestand aanwezig zijn
           soort_ho <- unique(basisbestand$soort_hoger_onderwijs)
 
           setProgress(0.25, detail = "Instroomcohort aanmaken")
@@ -1004,7 +991,7 @@ server <- function(input, output, session) {
           fase("dashboard")
         },
         error = function(e) {
-          fout_bericht(conditionMessage(e))
+          toon_fout(conditionMessage(e))
         }
       )
     })
