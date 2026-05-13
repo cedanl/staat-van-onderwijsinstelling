@@ -1,14 +1,19 @@
 #' Lees het 1CHO-bestand in en voeg label-kolommen toe
 #'
+#' Leest een semicolongescheiden CSV-bestand (UTF-8) in en voegt
+#' extra `_label`-kolommen toe voor gebruik in rapportages. Het pakket
+#' bevat een klein synthetisch voorbeeldbestand zonder echte persoonsgegevens
+#' (`inst/extdata/voorbeeld_1cho.csv`).
+#'
 #' @param pad_invoer Pad naar het semicolongescheiden CSV-bestand (UTF-8)
 #'
 #' @return Een tibble met alle 1CHO-regels plus extra `_label`-kolommen die de
 #'   originele categorische waarden bewaren voor gebruik in rapportages
 #'
 #' @examples
-#' \dontrun{
-#'   basis <- maak_basisbestand("pad/naar/1cho_enriched.csv")
-#' }
+#' # voorbeeld_1cho.csv is a small synthetic dataset bundled with the package
+#' pad <- system.file("extdata/voorbeeld_1cho.csv", package = "staat1cho")
+#' basis <- suppressMessages(maak_basisbestand(pad))
 #' @export
 maak_basisbestand <- function(pad_invoer) {
   invoer <- readr::read_csv2(
@@ -47,10 +52,15 @@ maak_basisbestand <- function(pad_invoer) {
 #' @param basisbestand Tibble zoals gemaakt door [maak_basisbestand()]
 #' @param soort_ho Character vector met toegestane waarden van
 #'   `soort_hoger_onderwijs`, bijv. `c("hoger beroepsonderwijs", "hbo")`
+#' @param niveau Analyseniveau: `"student"` (standaard) of `"inschrijving"`.
+#'   Bij `"student"` is de sleutel `persoonsgebonden_nummer`; bij
+#'   `"inschrijving"` is de sleutel de combinatie
+#'   `persoonsgebonden_nummer` + `opleiding_actueel_equivalent`.
 #'
-#' @return Een tibble met één rij per student, aangevuld met kolom
-#'   `eerstejaar_instelling` (= inschrijvingsjaar). Gooit een fout als er
-#'   dubbele persoonsgebonden nummers zijn.
+#' @return Een tibble met een rij per student (bij `niveau = "student"`) of per
+#'   student-opleidingcombinatie (bij `niveau = "inschrijving"`), aangevuld met
+#'   kolom `eerstejaar_instelling` (= inschrijvingsjaar). Gooit een fout als er
+#'   dubbele sleutelcombinaties zijn.
 #'
 #' @examples
 #' basis <- tibble::tibble(
@@ -64,7 +74,7 @@ maak_basisbestand <- function(pad_invoer) {
 #' )
 #' maak_instroom_cohort(basis, "hbo")
 #' @export
-maak_instroom_cohort <- function(basisbestand, soort_ho) {
+maak_instroom_cohort <- function(basisbestand, soort_ho, niveau = "student") {
   cohort <- basisbestand |>
     dplyr::filter(soort_hoger_onderwijs %in% soort_ho) |>
     dplyr::filter(
@@ -74,9 +84,10 @@ maak_instroom_cohort <- function(basisbestand, soort_ho) {
     ) |>
     dplyr::mutate(eerstejaar_instelling = inschrijvingsjaar)
 
-  if (any(duplicated(cohort$persoonsgebonden_nummer))) {
+  sleutels <- niveau_sleutels(niveau)
+  if (anyDuplicated(cohort[sleutels]) > 0) {
     rlang::abort(
-      "Dubbele studentnummers in het instroomcohortbestand gevonden!"
+      "Dubbele sleutelcombinaties in het instroomcohortbestand gevonden!"
     )
   }
 

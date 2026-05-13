@@ -8,7 +8,7 @@ Authors@R: c(
   )
 Description: Calculates enrolment, graduation, dropout, and programme-switch
     indicators from the Dutch higher education registration data (1CHO)
-    supplied by DUO. Includes an interactive Shiny dashboard for exploring
+    supplied by DUO. Includes an interactive 'Shiny' dashboard for exploring
     results.
 License: MIT + file LICENSE
 URL: https://github.com/cedanl/staat-van-onderwijsinstelling

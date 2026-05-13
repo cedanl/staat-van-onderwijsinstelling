@@ -4,18 +4,24 @@
 \alias{maak_instroom_cohort}
 \title{Maak een eerstejaarscohort per instelling}
 \usage{
-maak_instroom_cohort(basisbestand, soort_ho)
+maak_instroom_cohort(basisbestand, soort_ho, niveau = "student")
 }
 \arguments{
 \item{basisbestand}{Tibble zoals gemaakt door \code{\link[=maak_basisbestand]{maak_basisbestand()}}}
 
 \item{soort_ho}{Character vector met toegestane waarden van
 \code{soort_hoger_onderwijs}, bijv. \code{c("hoger beroepsonderwijs", "hbo")}}
+
+\item{niveau}{Analyseniveau: \code{"student"} (standaard) of \code{"inschrijving"}.
+Bij \code{"student"} is de sleutel \code{persoonsgebonden_nummer}; bij
+\code{"inschrijving"} is de sleutel de combinatie
+\code{persoonsgebonden_nummer} + \code{opleiding_actueel_equivalent}.}
 }
 \value{
-Een tibble met één rij per student, aangevuld met kolom
-\code{eerstejaar_instelling} (= inschrijvingsjaar). Gooit een fout als er
-dubbele persoonsgebonden nummers zijn.
+Een tibble met een rij per student (bij \code{niveau = "student"}) of per
+student-opleidingcombinatie (bij \code{niveau = "inschrijving"}), aangevuld met
+kolom \code{eerstejaar_instelling} (= inschrijvingsjaar). Gooit een fout als er
+dubbele sleutelcombinaties zijn.
 }
 \description{
 Filtert het basisbestand op het opgegeven soort hoger onderwijs,

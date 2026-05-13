@@ -3,8 +3,9 @@
 #' Opent de interactieve Shiny app waarmee je een 1CHO CSV-bestand kunt
 #' uploaden en studie-indicatoren kunt verkennen.
 #'
+#' @return No return value, called for side effects.
 #' @examples
-#' \dontrun{
+#' if (interactive()) {
 #'   start_dashboard()
 #' }
 #' @export

@@ -6,12 +6,15 @@
 \usage{
 start_dashboard()
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Opent de interactieve Shiny app waarmee je een 1CHO CSV-bestand kunt
 uploaden en studie-indicatoren kunt verkennen.
 }
 \examples{
-\dontrun{
+if (interactive()) {
   start_dashboard()
 }
 }

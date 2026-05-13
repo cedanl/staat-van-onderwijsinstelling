@@ -1,18 +1,26 @@
+utils::globalVariables("uitval_3jr")
+
 #' Combineer alle indicatoren tot een analysebestand
 #'
-#' Voegt rendement-, uitval- en studiewisselindicatoren samen met het
-#' instroomcohort. Past kolomnamen en factorniveaus aan voor gebruik in
+#' Voegt rendement-, uitval- en (optioneel) studiewisselindicatoren samen met
+#' het instroomcohort. Past kolomnamen en factorniveaus aan voor gebruik in
 #' rapportages.
 #'
 #' @param cohorten_instroom Tibble zoals gemaakt door [maak_instroom_cohort()]
 #' @param rendement_indicatoren Tibble zoals gemaakt door [bereken_rendement()]
 #' @param uitval_indicatoren Tibble zoals gemaakt door [bereken_uitval()]
 #' @param studiewissel_indicatoren Tibble zoals gemaakt door
-#'   [bereken_studiewissel()]
+#'   [bereken_studiewissel()], of `NULL`. Studiewissel is een
+#'   studentniveau-concept en alleen van toepassing bij
+#'   `niveau = "student"`. Geef `NULL` door bij inschrijvingsniveau.
+#' @param niveau Analyseniveau: `"student"` (standaard) of `"inschrijving"`.
+#'   Moet overeenkomen met het niveau waarop de andere invoertibbles zijn
+#'   aangemaakt.
 #'
-#' @return Een tibble met een rij per student en gecombineerde indicator-
-#'   kolommen, klaar voor rapportage. Bevat o.a. `status`, `rendement`,
-#'   `uitval`, `studiewissel` en alle onderliggende deelscores.
+#' @return Een tibble met gecombineerde indicatorkolommen, klaar voor
+#'   rapportage. Bevat o.a. `status`, `rendement`, `uitval` en alle
+#'   onderliggende deelscores. Bij `niveau = "student"` zijn ook
+#'   studiewisselkolommen aanwezig als `studiewissel_indicatoren` is meegegeven.
 #'
 #' @examples
 #' cohort <- tibble::tibble(
@@ -71,16 +79,24 @@ combineer_indicatoren <- function(
   cohorten_instroom,
   rendement_indicatoren,
   uitval_indicatoren,
-  studiewissel_indicatoren
+  studiewissel_indicatoren = NULL,
+  niveau = "student"
 ) {
-  cohorten_instroom |>
-    dplyr::left_join(rendement_indicatoren, by = "persoonsgebonden_nummer") |>
-    dplyr::left_join(uitval_indicatoren, by = "persoonsgebonden_nummer") |>
-    dplyr::left_join(
+  sleutels <- niveau_sleutels(niveau)
+
+  result <- cohorten_instroom |>
+    dplyr::left_join(rendement_indicatoren, by = sleutels) |>
+    dplyr::left_join(uitval_indicatoren, by = sleutels)
+
+  if (!is.null(studiewissel_indicatoren)) {
+    result <- dplyr::left_join(
+      result,
       studiewissel_indicatoren,
       by = "persoonsgebonden_nummer"
-    ) |>
+    )
+  }
 
+  result <- result |>
     dplyr::select(
       inschrijvingsjaar,
       geslacht = geslacht_label,
@@ -97,7 +113,19 @@ combineer_indicatoren <- function(
       status,
       soortdiploma = soort_diploma_instelling_label,
       rendement_3jr:rendement_8jr,
-      uitval_xjr:sector_na_switch3jr
+      uitval_xjr:uitval_3jr,
+      dplyr::any_of(c(
+        "studiewissel_1jr",
+        "studiewissel_3jr",
+        "opleidingscode_na_switch1jr",
+        "opleidingsvorm_na_switch1jr",
+        "opleidingsniveau_na_switch1jr",
+        "sector_na_switch1jr",
+        "opleidingscode_na_switch3jr",
+        "opleidingsvorm_na_switch3jr",
+        "opleidingsniveau_na_switch3jr",
+        "sector_na_switch3jr"
+      ))
     ) |>
 
     dplyr::mutate(
@@ -150,13 +178,6 @@ combineer_indicatoren <- function(
         uitval_xjr > 3 ~ "Uitgevallen na 3 jaar",
         TRUE ~ "Niet uitgevallen"
       ),
-      studiewissel = dplyr::case_when(
-        studiewissel_1jr ==
-          "Gewisseld binnen 1 jaar" ~ "Gewisseld binnen 1 jaar",
-        studiewissel_3jr ==
-          "Gewisseld binnen 3 jaar" ~ "Gewisseld in het 2e of 3e jaar",
-        TRUE ~ "Niet gewisseld"
-      ),
       rendement = dplyr::case_when(
         rendement_5jr == "Diploma binnen 5 jaar" ~ "Diploma binnen 5 jaar",
         rendement_8jr == "Diploma binnen 8 jaar" ~ "Diploma binnen 5-8 jaar",
@@ -165,4 +186,19 @@ combineer_indicatoren <- function(
         rendement_8jr == "Onbekend (diplomajaar voor instroomjaar)" ~ "Onbekend"
       )
     )
+
+  if (!is.null(studiewissel_indicatoren)) {
+    result <- result |>
+      dplyr::mutate(
+        studiewissel = dplyr::case_when(
+          studiewissel_1jr ==
+            "Gewisseld binnen 1 jaar" ~ "Gewisseld binnen 1 jaar",
+          studiewissel_3jr ==
+            "Gewisseld binnen 3 jaar" ~ "Gewisseld in het 2e of 3e jaar",
+          TRUE ~ "Niet gewisseld"
+        )
+      )
+  }
+
+  result
 }
