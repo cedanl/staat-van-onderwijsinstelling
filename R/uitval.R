@@ -1,20 +1,23 @@
 #' Bereken uitvalindicatoren per cohort
 #'
-#' Bepaalt voor elke student in het instroomcohort of zij zijn uitgevallen,
-#' zittend of gediplomeerd. Uitval wordt gemarkeerd als een student niet meer
-#' ingeschreven staat en geen diploma heeft.
+#' Bepaalt voor elke student (of inschrijving) in het instroomcohort of zij zijn
+#' uitgevallen, zittend of gediplomeerd. Uitval wordt gemarkeerd als een student
+#' niet meer ingeschreven staat en geen diploma heeft.
 #'
 #' @param basisbestand Tibble zoals gemaakt door [maak_basisbestand()]
 #' @param diploma_behaald Tibble zoals gemaakt door [maak_diploma_behaald()]
 #' @param cohorten_instroom Tibble zoals gemaakt door [maak_instroom_cohort()]
 #' @param jaar Integer, peiljaar van de analyse (bijv. `2025`). Studenten die
 #'   in `jaar - 1` nog ingeschreven staan, gelden als zittend.
+#' @param niveau Analyseniveau: `"student"` (standaard) of `"inschrijving"`.
+#'   Moet overeenkomen met het niveau waarop de andere invoertibbles zijn
+#'   aangemaakt.
 #'
-#' @return Een tibble met kolommen `persoonsgebonden_nummer`,
-#'   `laatste_jaar_inschrijving`, `diploma`, `status` (factor:
-#'   Diploma behaald / Zittend / Uitgevallen), `uitval_xjr` (jaar van uitval
-#'   t.o.v. instroomjaar), `uitval_1jr` en `uitval_3jr` (factoren).
-#'   Gooit een fout bij dubbele studenten of ontbrekende statussen.
+#' @return Een tibble met de sleutelkolom(men), `laatste_jaar_inschrijving`,
+#'   `diploma`, `status` (factor: Diploma behaald / Zittend / Uitgevallen),
+#'   `uitval_xjr` (jaar van uitval t.o.v. instroomjaar), `uitval_1jr` en
+#'   `uitval_3jr` (factoren). Gooit een fout bij dubbele sleutelcombinaties of
+#'   ontbrekende statussen.
 #'
 #' @examples
 #' basis <- tibble::tibble(
@@ -38,17 +41,20 @@ bereken_uitval <- function(
   basisbestand,
   diploma_behaald,
   cohorten_instroom,
-  jaar
+  jaar,
+  niveau = "student"
 ) {
-  ## Bepaal het laatste inschrijvingsjaar per student
+  sleutels <- niveau_sleutels(niveau)
+
+  ## Bepaal het laatste inschrijvingsjaar per sleutelcombinatie
   uitstroom <- basisbestand |>
-    dplyr::group_by(persoonsgebonden_nummer) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(sleutels))) |>
     dplyr::arrange(
       dplyr::desc(inschrijvingsjaar),
       soort_inschrijving_actuele_instelling,
       .by_group = TRUE
     ) |>
-    dplyr::distinct(persoonsgebonden_nummer, .keep_all = TRUE) |>
+    dplyr::distinct(dplyr::across(dplyr::all_of(sleutels)), .keep_all = TRUE) |>
     dplyr::ungroup() |>
     dplyr::mutate(
       ## jaar - 1 is het meest recente studiejaar in de data; studenten die
@@ -60,21 +66,21 @@ bereken_uitval <- function(
       )
     ) |>
     dplyr::select(
-      persoonsgebonden_nummer,
+      dplyr::all_of(sleutels),
       inschrijvingsjaar,
       laatste_jaar_inschrijving
     )
 
-  if (any(duplicated(uitstroom$persoonsgebonden_nummer))) {
-    rlang::abort("Dubbele studentnummers in het uitvalbestand gevonden!")
+  if (anyDuplicated(uitstroom[sleutels]) > 0) {
+    rlang::abort("Dubbele sleutelcombinaties in het uitvalbestand gevonden!")
   }
 
   uitval <- uitstroom |>
-    dplyr::left_join(diploma_behaald, by = "persoonsgebonden_nummer") |>
+    dplyr::left_join(diploma_behaald, by = sleutels) |>
     dplyr::left_join(
       cohorten_instroom |>
-        dplyr::select(persoonsgebonden_nummer, eerstejaar_instelling),
-      by = "persoonsgebonden_nummer"
+        dplyr::select(dplyr::all_of(sleutels), eerstejaar_instelling),
+      by = sleutels
     ) |>
     dplyr::mutate(
       status = factor(dplyr::case_when(
@@ -97,7 +103,7 @@ bereken_uitval <- function(
       ))
     ) |>
     dplyr::select(
-      persoonsgebonden_nummer,
+      dplyr::all_of(sleutels),
       laatste_jaar_inschrijving,
       diploma,
       status,

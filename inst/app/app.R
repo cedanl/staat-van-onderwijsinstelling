@@ -311,7 +311,11 @@ trend_lijn <- function(
     thema()
 }
 
-instroom_trend <- function(data, titel = "Instroom per cohortjaar") {
+instroom_trend <- function(
+  data,
+  titel = "Instroom per cohortjaar",
+  y_label = "Studenten"
+) {
   if (nrow(data) == 0) {
     return(leeg_plot())
   }
@@ -324,7 +328,7 @@ instroom_trend <- function(data, titel = "Instroom per cohortjaar") {
     geom_line(data = lijn_data, color = NPULS_BLAUW, linewidth = 1.3) +
     geom_point(color = NPULS_BLAUW, size = 3) +
     scale_x_continuous(breaks = scales::pretty_breaks(n = 7)) +
-    labs(x = "Instroomjaar", y = "Studenten", title = titel) +
+    labs(x = "Instroomjaar", y = y_label, title = titel) +
     thema()
 }
 
@@ -607,6 +611,7 @@ ui <- page_fluid(
 server <- function(input, output, session) {
   fase <- reactiveVal("upload")
   df_data <- reactiveVal(NULL)
+  analyse_niveau <- reactiveVal("student")
 
   ## Scherm switch ----
 
@@ -643,6 +648,16 @@ server <- function(input, output, session) {
               buttonLabel = "Bladeren...",
               placeholder = "Geen bestand geselecteerd"
             ),
+            radioButtons(
+              "analyse_niveau",
+              "Analyseniveau",
+              choices = c(
+                "Studentniveau" = "student",
+                "Inschrijvingsniveau" = "inschrijving"
+              ),
+              selected = "student",
+              inline = TRUE
+            ),
             uiOutput("btn_verwerk_ui")
           )
         )
@@ -664,6 +679,10 @@ server <- function(input, output, session) {
             class = "dashboard-brand",
             "Staat van Onderwijsinstelling",
             tags$span("Onderwijs bewegen.", class = "npuls-payoff")
+          ),
+          tags$span(
+            if (analyse_niveau() == "inschrijving") "Inschrijvingsniveau" else "Studentniveau",
+            style = "margin-left:1rem;background:#D6E2FD;color:#3D68EC;font-size:0.7rem;font-weight:600;padding:0.2rem 0.65rem;border-radius:999px;text-transform:uppercase;letter-spacing:0.06em;"
           ),
           tags$div(
             style = "margin-left:auto;",
@@ -866,34 +885,38 @@ server <- function(input, output, session) {
               )
             ),
 
-            ## Studiewissel ----
-            nav_panel(
-              "Studiewissel",
-              layout_columns(
-                col_widths = c(6, 6),
-                uiOutput("kpi_wissel1"),
-                uiOutput("kpi_wissel3")
-              ),
-              card(
-                card_header("Studiewissel per cohortjaar"),
-                plotlyOutput("plot_wissel_trend", height = "420px")
-              ),
-              layout_columns(
-                col_widths = c(4, 4, 4),
-                card(
-                  card_header("Studiewissel samengevat"),
-                  plotlyOutput("plot_wissel_samen", height = "260px")
+            ## Studiewissel (alleen bij studentniveau) ----
+            if (analyse_niveau() == "student") {
+              nav_panel(
+                "Studiewissel",
+                layout_columns(
+                  col_widths = c(6, 6),
+                  uiOutput("kpi_wissel1"),
+                  uiOutput("kpi_wissel3")
                 ),
                 card(
-                  card_header("Sector na wissel (1 jaar)"),
-                  plotlyOutput("plot_wissel_sector1", height = "260px")
+                  card_header("Studiewissel per cohortjaar"),
+                  plotlyOutput("plot_wissel_trend", height = "420px")
                 ),
-                card(
-                  card_header("Sector na wissel (3 jaar)"),
-                  plotlyOutput("plot_wissel_sector3", height = "260px")
+                layout_columns(
+                  col_widths = c(4, 4, 4),
+                  card(
+                    card_header("Studiewissel samengevat"),
+                    plotlyOutput("plot_wissel_samen", height = "260px")
+                  ),
+                  card(
+                    card_header("Sector na wissel (1 jaar)"),
+                    plotlyOutput("plot_wissel_sector1", height = "260px")
+                  ),
+                  card(
+                    card_header("Sector na wissel (3 jaar)"),
+                    plotlyOutput("plot_wissel_sector3", height = "260px")
+                  )
                 )
               )
-            ),
+            } else {
+              NULL
+            },
 
             ## Data ----
             nav_panel(
@@ -967,28 +990,46 @@ server <- function(input, output, session) {
 
           soort_ho <- unique(basisbestand$soort_hoger_onderwijs)
 
+          niv <- input$analyse_niveau
+          analyse_niveau(niv)
+
           setProgress(0.25, detail = "Instroomcohort aanmaken")
-          cohorten <- maak_instroom_cohort(basisbestand, soort_ho)
+          cohorten <- maak_instroom_cohort(basisbestand, soort_ho, niveau = niv)
 
           setProgress(0.40, detail = "Diploma bepalen")
-          diploma <- maak_diploma_behaald(basisbestand)
+          diploma <- maak_diploma_behaald(basisbestand, niveau = niv)
 
           setProgress(0.55, detail = "Rendement berekenen")
-          rendement <- bereken_rendement(cohorten, diploma)
+          rendement <- bereken_rendement(cohorten, diploma, niveau = niv)
 
           setProgress(0.70, detail = "Uitval berekenen")
-          uitval <- bereken_uitval(basisbestand, diploma, cohorten, jaar)
-
-          setProgress(0.85, detail = "Studiewissel berekenen")
-          wissel <- bereken_studiewissel(
+          uitval <- bereken_uitval(
             basisbestand,
-            cohorten,
             diploma,
-            uitval
+            cohorten,
+            jaar,
+            niveau = niv
           )
 
+          wissel <- NULL
+          if (niv == "student") {
+            setProgress(0.85, detail = "Studiewissel berekenen")
+            wissel <- bereken_studiewissel(
+              basisbestand,
+              cohorten,
+              diploma,
+              uitval
+            )
+          }
+
           setProgress(0.95, detail = "Combineren")
-          result <- combineer_indicatoren(cohorten, rendement, uitval, wissel)
+          result <- combineer_indicatoren(
+            cohorten,
+            rendement,
+            uitval,
+            wissel,
+            niveau = niv
+          )
 
           naam_tabel <- dplyr::distinct(
             basisbestand,
@@ -1052,17 +1093,28 @@ server <- function(input, output, session) {
   ## Sidebar teller ----
 
   output$n_label <- renderUI({
-    tags$p(tags$strong(n_label(nrow(df()))), " studenten", class = "n-students")
+    eenheid <- if (analyse_niveau() == "inschrijving") {
+      "inschrijvingen"
+    } else {
+      "studenten"
+    }
+    tags$p(
+      tags$strong(n_label(nrow(df()))),
+      paste0(" ", eenheid),
+      class = "n-students"
+    )
   })
 
   ## KPI's overzicht ----
 
-  output$kpi_n <- renderUI(vb(
-    "Studenten",
-    n_label(nrow(df())),
-    bg = NPULS_BLAUW,
-    fg = NPULS_GEEL
-  ))
+  output$kpi_n <- renderUI({
+    label <- if (analyse_niveau() == "inschrijving") {
+      "Inschrijvingen"
+    } else {
+      "Studenten"
+    }
+    vb(label, n_label(nrow(df())), bg = NPULS_BLAUW, fg = NPULS_GEEL)
+  })
   output$kpi_diploma <- renderUI(vb(
     "Diploma behaald",
     pct_label(df(), \(d) d$status == "Diploma behaald"),
@@ -1075,12 +1127,18 @@ server <- function(input, output, session) {
     bg = NPULS_ORANJE,
     fg = NPULS_ZWART
   ))
-  output$kpi_wissel_ov <- renderUI(vb(
-    "Gewisseld binnen 1 jaar",
-    pct_label(df(), \(d) d$studiewissel_1jr == "Gewisseld binnen 1 jaar"),
-    bg = NPULS_GEEL,
-    fg = NPULS_ZWART
-  ))
+  output$kpi_wissel_ov <- renderUI({
+    if (analyse_niveau() == "inschrijving") {
+      vb("Gewisseld binnen 1 jaar", "—", bg = NPULS_GEEL, fg = NPULS_ZWART)
+    } else {
+      vb(
+        "Gewisseld binnen 1 jaar",
+        pct_label(df(), \(d) d$studiewissel_1jr == "Gewisseld binnen 1 jaar"),
+        bg = NPULS_GEEL,
+        fg = NPULS_ZWART
+      )
+    }
+  })
 
   ## KPI's rendement ----
 
@@ -1145,7 +1203,13 @@ server <- function(input, output, session) {
   output$plot_ov_geslacht <- renderPlotly(ggplotly(pct_bar(df(), geslacht)))
   output$plot_ov_vorm <- renderPlotly(ggplotly(pct_bar(df(), opleidingsvorm)))
   output$plot_overzicht_instroom <- renderPlotly(
-    ggplotly(instroom_trend(df()), tooltip = c("x", "y")) |>
+    ggplotly(
+      instroom_trend(
+        df(),
+        y_label = if (analyse_niveau() == "inschrijving") "Inschrijvingen" else "Studenten"
+      ),
+      tooltip = c("x", "y")
+    ) |>
       layout(
         legend = list(
           x = 0.01,
@@ -1163,7 +1227,13 @@ server <- function(input, output, session) {
   ## Plots instroom ----
 
   output$plot_instroom_trend <- renderPlotly(
-    ggplotly(instroom_trend(df()), tooltip = c("x", "y")) |>
+    ggplotly(
+      instroom_trend(
+        df(),
+        y_label = if (analyse_niveau() == "inschrijving") "Inschrijvingen" else "Studenten"
+      ),
+      tooltip = c("x", "y")
+    ) |>
       layout(
         legend = list(
           x = 0.01,

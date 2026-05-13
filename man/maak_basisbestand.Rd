@@ -14,10 +14,13 @@ Een tibble met alle 1CHO-regels plus extra \verb{_label}-kolommen die de
 originele categorische waarden bewaren voor gebruik in rapportages
 }
 \description{
-Lees het 1CHO-bestand in en voeg label-kolommen toe
+Leest een semicolongescheiden CSV-bestand (UTF-8) in en voegt
+extra \verb{_label}-kolommen toe voor gebruik in rapportages. Het pakket
+bevat een klein synthetisch voorbeeldbestand zonder echte persoonsgegevens
+(\code{inst/extdata/voorbeeld_1cho.csv}).
 }
 \examples{
-\dontrun{
-  basis <- maak_basisbestand("pad/naar/1cho_enriched.csv")
-}
+# voorbeeld_1cho.csv is a small synthetic dataset bundled with the package
+pad <- system.file("extdata/voorbeeld_1cho.csv", package = "staat1cho")
+basis <- suppressMessages(maak_basisbestand(pad))
 }

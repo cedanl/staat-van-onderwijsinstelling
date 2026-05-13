@@ -18,3 +18,5 @@ Output/
 
 # Omgeving
 .env
+/doc/
+/Meta/

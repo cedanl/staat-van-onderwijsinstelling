@@ -4,7 +4,13 @@
 \alias{bereken_uitval}
 \title{Bereken uitvalindicatoren per cohort}
 \usage{
-bereken_uitval(basisbestand, diploma_behaald, cohorten_instroom, jaar)
+bereken_uitval(
+  basisbestand,
+  diploma_behaald,
+  cohorten_instroom,
+  jaar,
+  niveau = "student"
+)
 }
 \arguments{
 \item{basisbestand}{Tibble zoals gemaakt door \code{\link[=maak_basisbestand]{maak_basisbestand()}}}
@@ -15,18 +21,22 @@ bereken_uitval(basisbestand, diploma_behaald, cohorten_instroom, jaar)
 
 \item{jaar}{Integer, peiljaar van de analyse (bijv. \code{2025}). Studenten die
 in \code{jaar - 1} nog ingeschreven staan, gelden als zittend.}
+
+\item{niveau}{Analyseniveau: \code{"student"} (standaard) of \code{"inschrijving"}.
+Moet overeenkomen met het niveau waarop de andere invoertibbles zijn
+aangemaakt.}
 }
 \value{
-Een tibble met kolommen \code{persoonsgebonden_nummer},
-\code{laatste_jaar_inschrijving}, \code{diploma}, \code{status} (factor:
-Diploma behaald / Zittend / Uitgevallen), \code{uitval_xjr} (jaar van uitval
-t.o.v. instroomjaar), \code{uitval_1jr} en \code{uitval_3jr} (factoren).
-Gooit een fout bij dubbele studenten of ontbrekende statussen.
+Een tibble met de sleutelkolom(men), \code{laatste_jaar_inschrijving},
+\code{diploma}, \code{status} (factor: Diploma behaald / Zittend / Uitgevallen),
+\code{uitval_xjr} (jaar van uitval t.o.v. instroomjaar), \code{uitval_1jr} en
+\code{uitval_3jr} (factoren). Gooit een fout bij dubbele sleutelcombinaties of
+ontbrekende statussen.
 }
 \description{
-Bepaalt voor elke student in het instroomcohort of zij zijn uitgevallen,
-zittend of gediplomeerd. Uitval wordt gemarkeerd als een student niet meer
-ingeschreven staat en geen diploma heeft.
+Bepaalt voor elke student (of inschrijving) in het instroomcohort of zij zijn
+uitgevallen, zittend of gediplomeerd. Uitval wordt gemarkeerd als een student
+niet meer ingeschreven staat en geen diploma heeft.
 }
 \examples{
 basis <- tibble::tibble(
