@@ -6,6 +6,14 @@ Het package berekent vier indicatoren per instroomcohort: instroom, rendement, u
 
 ## Installeren
 
+Installeer de stabiele versie van CRAN:
+
+```r
+install.packages("staat1cho")
+```
+
+Of installeer de ontwikkelversie direct van GitHub:
+
 ```r
 # install.packages("pak")
 pak::pak("cedanl/staat-van-onderwijsinstelling")
