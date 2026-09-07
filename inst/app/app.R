@@ -649,6 +649,7 @@ server <- function(input, output, session) {
   fase <- reactiveVal("upload")
   df_data <- reactiveVal(NULL)
   analyse_niveau <- reactiveVal("student")
+  heeft_vakhawv <- reactiveVal(FALSE)
 
   ## Scherm switch ----
 
@@ -694,6 +695,21 @@ server <- function(input, output, session) {
               ),
               selected = "student",
               inline = TRUE
+            ),
+            tags$hr(style = "border-color:#D6E2FD;margin:0.75rem 0;"),
+            tags$p(
+              "Optionele bestanden",
+              style = paste0(
+                "font-size:0.72rem;font-weight:600;text-transform:uppercase;",
+                "letter-spacing:0.08em;color:#6B7280;margin-bottom:0.5rem;"
+              )
+            ),
+            fileInput(
+              "vakhawv_upload",
+              "VAKHAVW-bestand (vakcijfers vooropleiding)",
+              accept = ".csv",
+              buttonLabel = "Bladeren...",
+              placeholder = "Optioneel"
             ),
             uiOutput("btn_verwerk_ui")
           )
@@ -980,6 +996,36 @@ server <- function(input, output, session) {
               NULL
             },
 
+            ## Vooropleiding (alleen als VAKHAVW geladen) ----
+            if (heeft_vakhawv()) {
+              nav_panel(
+                "Vooropleiding",
+                layout_columns(
+                  col_widths = c(4, 4, 4),
+                  uiOutput("kpi_gem_eindcijfer"),
+                  uiOutput("kpi_gem_wiskunde"),
+                  uiOutput("kpi_pct_wiskunde")
+                ),
+                card(
+                  card_header("Verdeling gemiddeld eindcijfer"),
+                  plotlyOutput("plot_eindcijfer_hist", height = "300px")
+                ),
+                layout_columns(
+                  col_widths = c(6, 6),
+                  card(
+                    card_header("Gemiddeld eindcijfer per sector"),
+                    plotlyOutput("plot_eindcijfer_sector", height = "280px")
+                  ),
+                  card(
+                    card_header("Gemiddeld eindcijfer per rendement"),
+                    plotlyOutput("plot_eindcijfer_rendement", height = "280px")
+                  )
+                )
+              )
+            } else {
+              NULL
+            },
+
             ## Data ----
             nav_panel(
               "Data",
@@ -1104,6 +1150,26 @@ server <- function(input, output, session) {
             by = c("opleidingscode" = "opleidingscode")
           )
 
+          ## VAKHAVW (optioneel) ----
+          heeft_vakhawv(FALSE)
+          if (!is.null(input$vakhawv_upload)) {
+            setProgress(0.97, detail = "VAKHAVW koppelen")
+            tryCatch(
+              {
+                vakhawv <- lees_vakhawv(input$vakhawv_upload$datapath)
+                result <- verrijk_met_vakhawv(result, vakhawv)
+                heeft_vakhawv(TRUE)
+              },
+              error = function(e) {
+                showNotification(
+                  paste("VAKHAVW overgeslagen:", conditionMessage(e)),
+                  type = "warning",
+                  duration = 10
+                )
+              }
+            )
+          }
+
           df_data(result)
           fase("dashboard")
         },
@@ -1119,6 +1185,7 @@ server <- function(input, output, session) {
   observeEvent(input$btn_opnieuw, {
     df_data(NULL)
     fase("upload")
+    heeft_vakhawv(FALSE)
   })
 
   ## Gefilterde data ----
@@ -1416,6 +1483,117 @@ server <- function(input, output, session) {
     df(),
     sector_na_switch3jr
   )))
+
+  ## Vooropleiding tab (VAKHAVW) ----
+
+  output$kpi_gem_eindcijfer <- renderUI({
+    d <- df()
+    gem <- round(mean(d$vakhawv_gemiddeld_eindcijfer, na.rm = TRUE), 1)
+    vb(
+      "Gem. eindcijfer vooropleiding",
+      if (is.nan(gem)) "—" else as.character(gem),
+      bg = NPULS_BLAUW,
+      fg = NPULS_GEEL
+    )
+  })
+
+  output$kpi_gem_wiskunde <- renderUI({
+    d <- df()
+    gem <- round(mean(d$vakhawv_wiskundecijfer, na.rm = TRUE), 1)
+    vb(
+      "Gem. wiskundecijfer",
+      if (is.nan(gem)) "—" else as.character(gem),
+      bg = NPULS_ORANJE,
+      fg = NPULS_ZWART
+    )
+  })
+
+  output$kpi_pct_wiskunde <- renderUI({
+    d <- df()
+    pct <- round(mean(!is.na(d$vakhawv_wiskundecijfer), na.rm = TRUE) * 100)
+    vb(
+      "% met wiskunde",
+      if (is.nan(pct)) "—" else paste0(pct, "%"),
+      bg = NPULS_GROEN,
+      fg = NPULS_ZWART
+    )
+  })
+
+  output$plot_eindcijfer_hist <- renderPlotly({
+    d <- df()
+    cijfers <- d$vakhawv_gemiddeld_eindcijfer
+    cijfers <- cijfers[!is.na(cijfers)]
+    if (length(cijfers) == 0) {
+      return(ggplotly(leeg_plot()))
+    }
+    p <- ggplot(data.frame(cijfer = cijfers), aes(x = cijfer)) +
+      geom_histogram(
+        fill = NPULS_BLAUW,
+        alpha = 0.85,
+        binwidth = 0.5,
+        boundary = 0
+      ) +
+      scale_x_continuous(breaks = seq(4, 10, 1), limits = c(4, 10)) +
+      labs(x = "Gemiddeld eindcijfer", y = "Studenten") +
+      thema()
+    ggplotly(p) |> layout(showlegend = FALSE)
+  })
+
+  output$plot_eindcijfer_sector <- renderPlotly({
+    d <- df() |>
+      dplyr::filter(!is.na(sector), !is.na(vakhawv_gemiddeld_eindcijfer))
+    if (nrow(d) == 0) {
+      return(ggplotly(leeg_plot()))
+    }
+    agg <- d |>
+      dplyr::group_by(sector = as.character(sector)) |>
+      dplyr::summarise(
+        gem = mean(vakhawv_gemiddeld_eindcijfer, na.rm = TRUE),
+        .groups = "drop"
+      )
+    kleuren <- kleur_voor(agg$sector)
+    p <- ggplot(agg, aes(x = fct_reorder(sector, gem), y = gem, fill = sector)) +
+      geom_col(show.legend = FALSE) +
+      geom_text(
+        aes(label = round(gem, 1)),
+        hjust = -0.15,
+        size = 3.3
+      ) +
+      scale_y_continuous(limits = c(0, 10)) +
+      scale_fill_manual(values = kleuren, breaks = names(kleuren)) +
+      coord_flip() +
+      labs(x = NULL, y = "Gem. eindcijfer") +
+      thema()
+    ggplotly(p) |> layout(showlegend = FALSE)
+  })
+
+  output$plot_eindcijfer_rendement <- renderPlotly({
+    d <- df() |>
+      dplyr::filter(!is.na(rendement), !is.na(vakhawv_gemiddeld_eindcijfer))
+    if (nrow(d) == 0) {
+      return(ggplotly(leeg_plot()))
+    }
+    agg <- d |>
+      dplyr::group_by(rendement) |>
+      dplyr::summarise(
+        gem = mean(vakhawv_gemiddeld_eindcijfer, na.rm = TRUE),
+        .groups = "drop"
+      )
+    kleuren <- kleur_voor(agg$rendement)
+    p <- ggplot(agg, aes(x = fct_reorder(rendement, gem), y = gem, fill = rendement)) +
+      geom_col(show.legend = FALSE) +
+      geom_text(
+        aes(label = round(gem, 1)),
+        hjust = -0.15,
+        size = 3.3
+      ) +
+      scale_y_continuous(limits = c(0, 10)) +
+      scale_fill_manual(values = kleuren, breaks = names(kleuren)) +
+      coord_flip() +
+      labs(x = NULL, y = "Gem. eindcijfer") +
+      thema()
+    ggplotly(p) |> layout(showlegend = FALSE)
+  })
 
   ## Data tab ----
 
