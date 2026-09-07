@@ -58,7 +58,23 @@ DEFINITIES <- list(
     studiewissel_3jr =
       "Percentage studenten dat uiterlijk in jaar 4 naar een andere
       opleiding is overgestapt, gemeten bij verblijfsjaar 4 ten opzichte
-      van verblijfsjaar 1."
+      van verblijfsjaar 1.",
+
+    ## VAKHAVW (identiek op beide niveaus: beschrijft de student)
+    vakhawv_gemiddeld_eindcijfer =
+      "Gemiddeld eindcijfer van de vooropleiding (schaal 1-10), afkomstig
+      uit het VAKHAVW-bestand. Gebaseerd op het hoogste gemiddelde eindcijfer
+      van de cijferlijst. Alleen beschikbaar als een VAKHAVW-bestand is
+      geupload.",
+
+    vakhawv_wiskundecijfer =
+      "Gemiddeld centraal examencijfer voor wiskunde (schaal 1-10), afkomstig
+      uit het VAKHAVW-bestand. NA als de student geen wiskunde had op de
+      eindlijst.",
+
+    vakhawv_aantal_vakken =
+      "Aantal unieke vakken op de eindlijst van de vooropleiding, afkomstig
+      uit het VAKHAVW-bestand."
   ),
 
   inschrijving = list(
@@ -103,6 +119,28 @@ DEFINITIES <- list(
 
     ## Studiewissel is niet beschikbaar op inschrijvingsniveau
     studiewissel_1jr = NULL,
-    studiewissel_3jr = NULL
+    studiewissel_3jr = NULL,
+
+    ## VAKHAVW (identiek op beide niveaus: beschrijft de student, niet de inschrijving)
+    vakhawv_gemiddeld_eindcijfer =
+      "Gemiddeld eindcijfer van de vooropleiding (schaal 1-10), afkomstig uit
+      het VAKHAVW-bestand. Gebaseerd op het hoogste gemiddelde eindcijfer van
+      de cijferlijst als een student meerdere jaren in de data staat.
+      Alleen beschikbaar als een VAKHAVW-bestand is geupload.",
+
+    vakhawv_wiskundecijfer =
+      "Gemiddeld centraal examencijfer voor wiskunde (schaal 1-10), afkomstig
+      uit het VAKHAVW-bestand. Berekend over alle wiskundevarianten (wis, wis A,
+      wis B, wis D). NA als de student geen wiskunde had op de eindlijst.",
+
+    vakhawv_aantal_vakken =
+      "Aantal unieke vakken op de eindlijst van de vooropleiding, afkomstig
+      uit het VAKHAVW-bestand."
   )
 )
+
+## Hulpfunctie om VAKHAVW-definities op te halen
+## (identiek voor student en inschrijving, dus apart gedocumenteerd)
+vakhawv_definitie <- function(naam) {
+  DEFINITIES[["student"]][[naam]]
+}

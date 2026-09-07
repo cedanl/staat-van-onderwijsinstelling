@@ -116,7 +116,8 @@ DICT <- data.frame(
     rep("Status", 2),
     rep("Rendement", 4),
     rep("Uitval", 4),
-    rep("Studiewissel", 11)
+    rep("Studiewissel", 11),
+    rep("Vooropleiding (VAKHAVW)", 3)
   ),
   Kolom = c(
     "inschrijvingsjaar",
@@ -151,7 +152,10 @@ DICT <- data.frame(
     "opleidingsvorm_na_switch3jr",
     "opleidingsniveau_na_switch3jr",
     "sector_na_switch3jr",
-    "studiewissel"
+    "studiewissel",
+    "vakhawv_gemiddeld_eindcijfer",
+    "vakhawv_wiskundecijfer",
+    "vakhawv_aantal_vakken"
   ),
   Omschrijving = c(
     "Jaar van eerste inschrijving (cohortjaar)",
@@ -186,7 +190,10 @@ DICT <- data.frame(
     "Opleidingsvorm na wissel (3 jaar)",
     "Opleidingsniveau na wissel (3 jaar)",
     "Sector na wissel (3 jaar)",
-    "Samengevatte studiewisseluitkomst"
+    "Samengevatte studiewisseluitkomst",
+    "Gemiddeld eindcijfer vooropleiding (uit VAKHAVW, schaal 1-10)",
+    "Gemiddeld centraal examencijfer wiskunde (uit VAKHAVW, schaal 1-10)",
+    "Aantal unieke vakken op de eindlijst (uit VAKHAVW)"
   ),
   stringsAsFactors = FALSE
 )
@@ -1612,9 +1619,10 @@ server <- function(input, output, session) {
             "Status",
             "Rendement",
             "Uitval",
-            "Studiewissel"
+            "Studiewissel",
+            "Vooropleiding (VAKHAVW)"
           ),
-          c("#CCEEE6", "#D6E2FD", "#FFE4D8", "#FFE4D8", "#FCF5D4")
+          c("#CCEEE6", "#D6E2FD", "#FFE4D8", "#FFE4D8", "#FCF5D4", "#FFF3CD")
         ),
         fontWeight = "600"
       )
