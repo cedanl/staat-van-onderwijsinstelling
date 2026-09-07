@@ -5,15 +5,20 @@
 \alias{DEFINITIES}
 \title{Beschrijvingen van de studie-indicatoren}
 \format{
-Een named list met één tekst per indicator
+Een nested named list met sub-lijsten \code{student} en \code{inschrijving}
 }
 \usage{
 DEFINITIES
 }
 \description{
-Korte definities van alle indicatoren die het package berekent. Afgeleid
-uit de berekeningslogica in \code{\link[=maak_instroom_cohort]{maak_instroom_cohort()}}, \code{\link[=bereken_rendement]{bereken_rendement()}},
-\code{\link[=bereken_uitval]{bereken_uitval()}} en \code{\link[=bereken_studiewissel]{bereken_studiewissel()}}. Bedoeld voor gebruik als
-tooltip-tekst in dashboards.
+Korte definities van alle indicatoren die het package berekent, uitgesplitst
+naar analyseniveau. Afgeleid uit de berekeningslogica in
+\code{\link[=maak_instroom_cohort]{maak_instroom_cohort()}}, \code{\link[=bereken_rendement]{bereken_rendement()}}, \code{\link[=bereken_uitval]{bereken_uitval()}} en
+\code{\link[=bereken_studiewissel]{bereken_studiewissel()}}. Bedoeld voor gebruik als tooltip-tekst in
+dashboards.
+}
+\details{
+Gebruik \code{DEFINITIES[["student"]]$instroom} of
+\code{DEFINITIES[["inschrijving"]]$instroom} om de juiste definitie op te halen.
 }
 \keyword{datasets}

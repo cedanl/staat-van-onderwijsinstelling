@@ -1180,7 +1180,7 @@ server <- function(input, output, session) {
       n_label(nrow(df())),
       bg = NPULS_BLAUW,
       fg = NPULS_GEEL,
-      definitie = DEFINITIES$instroom
+      definitie = DEFINITIES[[analyse_niveau()]]$instroom
     )
   })
   output$kpi_diploma <- renderUI(vb(
@@ -1188,14 +1188,14 @@ server <- function(input, output, session) {
     pct_label(df(), \(d) d$status == "Diploma behaald"),
     bg = NPULS_GROEN,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$status
+    definitie = DEFINITIES[[analyse_niveau()]]$status
   ))
   output$kpi_uitval_ov <- renderUI(vb(
     "Uitgevallen",
     pct_label(df(), \(d) d$status == "Uitgevallen"),
     bg = NPULS_ORANJE,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$status
+    definitie = DEFINITIES[[analyse_niveau()]]$status
   ))
   output$kpi_wissel_ov <- renderUI({
     if (analyse_niveau() == "inschrijving") {
@@ -1204,7 +1204,7 @@ server <- function(input, output, session) {
         "—",
         bg = NPULS_GEEL,
         fg = NPULS_ZWART,
-        definitie = DEFINITIES$studiewissel_1jr
+        definitie = DEFINITIES[[analyse_niveau()]]$studiewissel_1jr
       )
     } else {
       vb(
@@ -1212,7 +1212,7 @@ server <- function(input, output, session) {
         pct_label(df(), \(d) d$studiewissel_1jr == "Gewisseld binnen 1 jaar"),
         bg = NPULS_GEEL,
         fg = NPULS_ZWART,
-        definitie = DEFINITIES$studiewissel_1jr
+        definitie = DEFINITIES[[analyse_niveau()]]$studiewissel_1jr
       )
     }
   })
@@ -1224,21 +1224,21 @@ server <- function(input, output, session) {
     pct_label(df(), \(d) d$rendement_3jr == "Diploma binnen 3 jaar"),
     bg = NPULS_ORANJE,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$rendement_3jr
+    definitie = DEFINITIES[[analyse_niveau()]]$rendement_3jr
   ))
   output$kpi_rend5 <- renderUI(vb(
     "Diploma binnen 5 jaar",
     pct_label(df(), \(d) d$rendement_5jr == "Diploma binnen 5 jaar"),
     bg = NPULS_BLAUW,
     fg = NPULS_GEEL,
-    definitie = DEFINITIES$rendement_5jr
+    definitie = DEFINITIES[[analyse_niveau()]]$rendement_5jr
   ))
   output$kpi_rend8 <- renderUI(vb(
     "Diploma binnen 8 jaar",
     pct_label(df(), \(d) d$rendement_8jr == "Diploma binnen 8 jaar"),
     bg = NPULS_GROEN,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$rendement_8jr
+    definitie = DEFINITIES[[analyse_niveau()]]$rendement_8jr
   ))
 
   ## KPI's uitval ----
@@ -1248,21 +1248,21 @@ server <- function(input, output, session) {
     pct_label(df(), \(d) d$status == "Uitgevallen"),
     bg = NPULS_ORANJE,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$status
+    definitie = DEFINITIES[[analyse_niveau()]]$status
   ))
   output$kpi_uitval1 <- renderUI(vb(
     "Uitval binnen 1 jaar",
     pct_label(df(), \(d) d$uitval_1jr == "Uitgevallen binnen 1 jaar"),
     bg = NPULS_ORANJE,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$uitval_1jr
+    definitie = DEFINITIES[[analyse_niveau()]]$uitval_1jr
   ))
   output$kpi_uitval3 <- renderUI(vb(
     "Uitval binnen 3 jaar",
     pct_label(df(), \(d) d$uitval_3jr == "Uitgevallen binnen 3 jaar"),
     bg = NPULS_BLAUW,
     fg = NPULS_GEEL,
-    definitie = DEFINITIES$uitval_3jr
+    definitie = DEFINITIES[[analyse_niveau()]]$uitval_3jr
   ))
 
   ## KPI's studiewissel ----
@@ -1272,14 +1272,14 @@ server <- function(input, output, session) {
     pct_label(df(), \(d) d$studiewissel_1jr == "Gewisseld binnen 1 jaar"),
     bg = NPULS_GEEL,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$studiewissel_1jr
+    definitie = DEFINITIES[[analyse_niveau()]]$studiewissel_1jr
   ))
   output$kpi_wissel3 <- renderUI(vb(
     "Gewisseld binnen 3 jaar",
     pct_label(df(), \(d) d$studiewissel_3jr == "Gewisseld binnen 3 jaar"),
     bg = NPULS_GROEN,
     fg = NPULS_ZWART,
-    definitie = DEFINITIES$studiewissel_3jr
+    definitie = DEFINITIES[[analyse_niveau()]]$studiewissel_3jr
   ))
 
   ## Plots overzicht ----
