@@ -1,6 +1,8 @@
 # Data en output
 Output/
 *.csv
+# Voorbeeldbestanden in inst/extdata zijn synthetisch en horen wel in git
+!inst/extdata/*.csv
 *.xlsx
 *.xls
 *.rds
