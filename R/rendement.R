@@ -115,27 +115,32 @@ bereken_rendement <- function(
       diploma
     ) |>
     dplyr::mutate(
-      ## verblijfsjaar_eerste_diploma geeft het academisch jaar-nummer (1, 2, 3…)
-      ## waarop het diploma is behaald. Gebruik dit in plaats van een
-      ## kalenderjaar-verschil, dat 1 te hoog uitkomt als het diploma in het
-      ## tweede helft van een academisch jaar valt (bv. februari 2023 is
-      ## studiejaar 3 maar diplomajaar - instroomjaar + 1 = 4).
-      rendement_xjaar = verblijfsjaar_eerste_diploma,
+      ## diplomajaar gebruikt dezelfde conventie als inschrijvingsjaar (startjaar
+      ## van het academisch jaar), dus het verschil is het aantal academische
+      ## jaren dat is verstreken. +1 omdat jaar 1 = 0 verschil zou geven.
+      rendement_xjaar = jaar_eerste_diploma - eerstejaar_instelling + 1,
 
       rendement_3jr = dplyr::case_when(
-        is.na(verblijfsjaar_eerste_diploma) ~ "Geen diploma",
+        is.na(jaar_eerste_diploma) ~ "Geen diploma",
+        ## diplomajaar voor instroomjaar kan voorkomen door data-inconsistentie
+        jaar_eerste_diploma <
+          eerstejaar_instelling ~ "Onbekend (diplomajaar voor instroomjaar)",
         rendement_xjaar <= 3 ~ "Diploma binnen 3 jaar",
         rendement_xjaar > 3 ~ "Diploma na 3 jaar"
       ),
 
       rendement_5jr = dplyr::case_when(
-        is.na(verblijfsjaar_eerste_diploma) ~ "Geen diploma",
+        is.na(jaar_eerste_diploma) ~ "Geen diploma",
+        jaar_eerste_diploma <
+          eerstejaar_instelling ~ "Onbekend (diplomajaar voor instroomjaar)",
         rendement_xjaar <= 5 ~ "Diploma binnen 5 jaar",
         rendement_xjaar > 5 ~ "Diploma na 5 jaar"
       ),
 
       rendement_8jr = dplyr::case_when(
-        is.na(verblijfsjaar_eerste_diploma) ~ "Geen diploma",
+        is.na(jaar_eerste_diploma) ~ "Geen diploma",
+        jaar_eerste_diploma <
+          eerstejaar_instelling ~ "Onbekend (diplomajaar voor instroomjaar)",
         rendement_xjaar <= 8 ~ "Diploma binnen 8 jaar",
         rendement_xjaar > 8 ~ "Diploma na 8 jaar"
       )

@@ -5,7 +5,7 @@ test_that("filtert op soort_ho", {
     persoonsgebonden_nummer = c("A", "B", "C"),
     soort_hoger_onderwijs = c("hbo", "wo", "hbo"),
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
-    verblijfsjaar_actuele_instelling = 1L,
+    verblijfsjaar_actuele_opleiding_instelling = 1L,
     inschrijvingsjaar = 2020
   )
 
@@ -19,7 +19,7 @@ test_that("accepteert meerdere soort_ho-waarden", {
     persoonsgebonden_nummer = c("A", "B", "C"),
     soort_hoger_onderwijs = c("hoger beroepsonderwijs", "hbo", "wo"),
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
-    verblijfsjaar_actuele_instelling = 1L,
+    verblijfsjaar_actuele_opleiding_instelling = 1L,
     inschrijvingsjaar = 2020
   )
 
@@ -36,14 +36,14 @@ test_that("behoudt alleen verblijfsjaar 1", {
     persoonsgebonden_nummer = c("A", "A", "A"),
     soort_hoger_onderwijs = "hbo",
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
-    verblijfsjaar_actuele_instelling = c(1L, 2L, 3L),
+    verblijfsjaar_actuele_opleiding_instelling = c(1L, 2L, 3L),
     inschrijvingsjaar = c(2020, 2021, 2022)
   )
 
   result <- maak_instroom_cohort(basisbestand, "hbo")
 
   expect_equal(nrow(result), 1)
-  expect_equal(result$verblijfsjaar_actuele_instelling, 1L)
+  expect_equal(result$verblijfsjaar_actuele_opleiding_instelling, 1L)
 })
 
 test_that("filtert niet-hoofdinschrijvingen eruit", {
@@ -55,7 +55,7 @@ test_that("filtert niet-hoofdinschrijvingen eruit", {
       "neveninschrijving binnen het domein actuele instelling",
       "neveninschrijving binnen het domein hoger onderwijs"
     ),
-    verblijfsjaar_actuele_instelling = 1L,
+    verblijfsjaar_actuele_opleiding_instelling = 1L,
     inschrijvingsjaar = 2020
   )
 
@@ -70,7 +70,7 @@ test_that("zet eerstejaar_instelling gelijk aan inschrijvingsjaar", {
     persoonsgebonden_nummer = "A",
     soort_hoger_onderwijs = "hbo",
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
-    verblijfsjaar_actuele_instelling = 1L,
+    verblijfsjaar_actuele_opleiding_instelling = 1L,
     inschrijvingsjaar = 2021
   )
 
@@ -84,7 +84,7 @@ test_that("geeft fout bij dubbele persoonsgebonden_nummers", {
     persoonsgebonden_nummer = c("A", "A"),
     soort_hoger_onderwijs = "hbo",
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
-    verblijfsjaar_actuele_instelling = 1L,
+    verblijfsjaar_actuele_opleiding_instelling = 1L,
     inschrijvingsjaar = 2020
   )
 
@@ -96,7 +96,7 @@ test_that("geeft lege tibble terug bij geen matches", {
     persoonsgebonden_nummer = "A",
     soort_hoger_onderwijs = "wo",
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
-    verblijfsjaar_actuele_instelling = 1L,
+    verblijfsjaar_actuele_opleiding_instelling = 1L,
     inschrijvingsjaar = 2020
   )
 
@@ -110,7 +110,7 @@ test_that("behoudt alle originele kolommen in de output", {
     persoonsgebonden_nummer = "A",
     soort_hoger_onderwijs = "hbo",
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
-    verblijfsjaar_actuele_instelling = 1L,
+    verblijfsjaar_actuele_opleiding_instelling = 1L,
     inschrijvingsjaar = 2020,
     extra_kolom = "x"
   )
@@ -132,7 +132,7 @@ test_that("past tegelijk alle drie filters toe", {
       HOOFD_INSCHRIJVING,
       "neveninschrijving"
     ),
-    verblijfsjaar_actuele_instelling = c(1L, 1L, 2L, 1L),
+    verblijfsjaar_actuele_opleiding_instelling = c(1L, 1L, 2L, 1L),
     inschrijvingsjaar = c(2020, 2020, 2019, 2020)
   )
 

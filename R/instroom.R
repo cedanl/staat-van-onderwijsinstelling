@@ -68,7 +68,7 @@ maak_basisbestand <- function(pad_invoer) {
 #'   soort_hoger_onderwijs = c("hbo", "wo", "hbo"),
 #'   soort_inschrijving_actuele_instelling_label =
 #'     "hoofdinschrijving binnen het domein actuele instelling",
-#'   verblijfsjaar_actuele_instelling = 1L,
+#'   verblijfsjaar_actuele_opleiding_instelling = 1L,
 #'   inschrijvingsjaar = 2020L,
 #'   soort_diploma_instelling_label = NA_character_
 #' )
@@ -80,7 +80,10 @@ maak_instroom_cohort <- function(basisbestand, soort_ho, niveau = "student") {
     dplyr::filter(
       soort_inschrijving_actuele_instelling_label ==
         "hoofdinschrijving binnen het domein actuele instelling",
-      verblijfsjaar_actuele_instelling == 1
+      ## verblijfsjaar_actuele_opleiding_instelling == 1 pakt zowel nieuwe
+      ## studenten als wisselaars die bij dezelfde instelling van opleiding
+      ## wisselen; zij starten een nieuw cohort bij hun nieuwe opleiding.
+      verblijfsjaar_actuele_opleiding_instelling == 1
     ) |>
     dplyr::mutate(eerstejaar_instelling = inschrijvingsjaar)
 
