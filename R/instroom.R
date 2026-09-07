@@ -32,6 +32,9 @@ maak_basisbestand <- function(pad_invoer) {
       verblijfsjaar_actuele_instelling = as.integer(
         verblijfsjaar_actuele_instelling
       ),
+      verblijfsjaar_actuele_opleiding_instelling = as.integer(
+        verblijfsjaar_actuele_opleiding_instelling
+      ),
       diplomajaar = suppressWarnings(as.integer(diplomajaar)),
       soort_inschrijving_actuele_instelling_label = soort_inschrijving_actuele_instelling,
       geslacht_label = geslacht,

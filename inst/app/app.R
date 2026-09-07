@@ -197,6 +197,7 @@ VEREISTE_KOLOMMEN <- c(
   "persoonsgebonden_nummer",
   "inschrijvingsjaar",
   "verblijfsjaar_actuele_instelling",
+  "verblijfsjaar_actuele_opleiding_instelling",
   "diplomajaar",
   "soort_hoger_onderwijs",
   "soort_inschrijving_actuele_instelling",
@@ -701,6 +702,27 @@ server <- function(input, output, session) {
     } else {
       req(df_data())
       d <- df_data()
+
+      if (nrow(d) == 0 || !"inschrijvingsjaar" %in% names(d)) {
+        return(tags$div(
+          class = "upload-achtergrond",
+          tags$div(
+            style = "text-align:center;color:#374151;",
+            tags$h4("Geen data gevonden na verwerking."),
+            tags$p(
+              "Het cohort is leeg. Controleer of het bestand de juiste",
+              "kolommen bevat en of het soort hoger onderwijs klopt."
+            ),
+            actionButton(
+              "btn_opnieuw",
+              "Nieuw bestand laden",
+              class = "btn btn-sm",
+              style = "background:#3D68EC;color:#F4D74B;border:none;font-weight:600;"
+            )
+          )
+        ))
+      }
+
       jaren_d <- sort(unique(d$inschrijvingsjaar))
       locaties_d <- sort(unique(as.character(d$locatie)))
       sectoren_d <- sort(na.omit(unique(as.character(d$sector))))
