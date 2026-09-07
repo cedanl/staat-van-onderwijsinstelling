@@ -53,9 +53,12 @@ maak_basisbestand <- function(pad_invoer) {
 #' @param soort_ho Character vector met toegestane waarden van
 #'   `soort_hoger_onderwijs`, bijv. `c("hoger beroepsonderwijs", "hbo")`
 #' @param niveau Analyseniveau: `"student"` (standaard) of `"inschrijving"`.
-#'   Bij `"student"` is de sleutel `persoonsgebonden_nummer`; bij
-#'   `"inschrijving"` is de sleutel de combinatie
-#'   `persoonsgebonden_nummer` + `opleiding_actueel_equivalent`.
+#'   Bij `"student"` is de sleutel `persoonsgebonden_nummer` en wordt gefilterd
+#'   op het eerste jaar aan de instelling (`verblijfsjaar_actuele_instelling`).
+#'   Bij `"inschrijving"` is de sleutel `persoonsgebonden_nummer` +
+#'   `opleiding_actueel_equivalent` en wordt gefilterd op het eerste jaar in de
+#'   specifieke opleiding (`verblijfsjaar_actuele_opleiding_instelling`), zodat
+#'   wisselaars als eerstejaars in hun nieuwe opleiding worden meegenomen.
 #'
 #' @return Een tibble met een rij per student (bij `niveau = "student"`) of per
 #'   student-opleidingcombinatie (bij `niveau = "inschrijving"`), aangevuld met
@@ -68,6 +71,7 @@ maak_basisbestand <- function(pad_invoer) {
 #'   soort_hoger_onderwijs = c("hbo", "wo", "hbo"),
 #'   soort_inschrijving_actuele_instelling_label =
 #'     "hoofdinschrijving binnen het domein actuele instelling",
+#'   verblijfsjaar_actuele_instelling = 1L,
 #'   verblijfsjaar_actuele_opleiding_instelling = 1L,
 #'   inschrijvingsjaar = 2020L,
 #'   soort_diploma_instelling_label = NA_character_
@@ -75,15 +79,22 @@ maak_basisbestand <- function(pad_invoer) {
 #' maak_instroom_cohort(basis, "hbo")
 #' @export
 maak_instroom_cohort <- function(basisbestand, soort_ho, niveau = "student") {
+  ## Bij studentniveau telt het eerste jaar aan de instelling (ongeacht
+  ## opleiding). Bij inschrijvingsniveau telt het eerste jaar in de specifieke
+  ## opleiding, waardoor wisselaars als eerstejaars in hun nieuwe opleiding
+  ## worden meegenomen.
+  verblijfsjaar_col <- if (niveau == "inschrijving") {
+    "verblijfsjaar_actuele_opleiding_instelling"
+  } else {
+    "verblijfsjaar_actuele_instelling"
+  }
+
   cohort <- basisbestand |>
     dplyr::filter(soort_hoger_onderwijs %in% soort_ho) |>
     dplyr::filter(
       soort_inschrijving_actuele_instelling_label ==
         "hoofdinschrijving binnen het domein actuele instelling",
-      ## verblijfsjaar_actuele_opleiding_instelling == 1 pakt zowel nieuwe
-      ## studenten als wisselaars die bij dezelfde instelling van opleiding
-      ## wisselen; zij starten een nieuw cohort bij hun nieuwe opleiding.
-      verblijfsjaar_actuele_opleiding_instelling == 1
+      .data[[verblijfsjaar_col]] == 1
     ) |>
     dplyr::mutate(eerstejaar_instelling = inschrijvingsjaar)
 
