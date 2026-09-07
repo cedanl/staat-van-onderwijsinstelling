@@ -125,8 +125,8 @@ test_that("berekent rendement_xjaar correct", {
 
   result <- bereken_rendement(cohorten_instroom, diploma_behaald)
 
-  ## 2022 - 2019 + 1 = 4
-  expect_equal(as.numeric(as.character(result$rendement_xjaar)), 4)
+  ## rendement_xjaar = verblijfsjaar_eerste_diploma = 3
+  expect_equal(as.numeric(as.character(result$rendement_xjaar)), 3)
 })
 
 test_that("categoriseert rendement_3jr correct inclusief grenswaarden", {
@@ -247,22 +247,26 @@ test_that("geeft factorkolommen terug voor alle rendement-indicatoren", {
   expect_true(is.factor(result$rendement_8jr))
 })
 
-test_that("markeert als 'Onbekend' als diplomajaar voor instroomjaar ligt", {
+test_that("gebruikt verblijfsjaar_eerste_diploma als rendement_xjaar", {
+  ## Diploma in kalenderjaar 2023 valt in studiejaar 3 (feb = tweede helft
+  ## academisch jaar 2022-23). Een kalenderjaarverschil zou 4 geven; wij
+  ## verwachten 3 omdat we verblijfsjaar_eerste_diploma gebruiken.
   cohorten_instroom <- tibble(
     persoonsgebonden_nummer = "A",
     eerstejaar_instelling = 2020
   )
   diploma_behaald <- tibble(
     persoonsgebonden_nummer = "A",
-    jaar_eerste_diploma = 2018,
-    verblijfsjaar_eerste_diploma = 1L,
+    jaar_eerste_diploma = 2023,
+    verblijfsjaar_eerste_diploma = 3L,
     diploma = "Diploma behaald (excl. propedeuse)"
   )
 
   result <- bereken_rendement(cohorten_instroom, diploma_behaald)
 
-  expect_true(grepl(
-    "Onbekend",
-    as.character(result$rendement_3jr)
-  ))
+  expect_equal(as.numeric(as.character(result$rendement_xjaar)), 3)
+  expect_equal(
+    as.character(result$rendement_3jr),
+    "Diploma binnen 3 jaar"
+  )
 })
