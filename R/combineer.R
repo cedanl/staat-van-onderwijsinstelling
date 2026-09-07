@@ -96,6 +96,7 @@ combineer_indicatoren <- function(
 
   result <- result |>
     dplyr::select(
+      persoonsgebonden_nummer,
       inschrijvingsjaar,
       geslacht = geslacht_label,
       locatie = locatie_label,
