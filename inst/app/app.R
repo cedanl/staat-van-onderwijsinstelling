@@ -434,14 +434,17 @@ wissel_trend <- function(data, titel = "Studiewissel per cohortjaar") {
   trend_lijn(agg, "pct", "termijn", KLEUREN_WISSEL, titel)
 }
 
-## Info-icon met tooltip naast een label
+## Vraag-badge met tooltip naast een label
 def_icon <- function(definitie) {
   tooltip(
     span(
-      icon("circle-info"),
+      "?",
       style = paste0(
-        "font-size:0.7em;margin-left:0.35em;cursor:help;",
-        "opacity:0.7;vertical-align:middle;"
+        "display:inline-flex;align-items:center;justify-content:center;",
+        "width:1.1em;height:1.1em;margin-left:0.4em;",
+        "background:rgba(255,255,255,0.35);border:1.5px solid rgba(255,255,255,0.7);",
+        "border-radius:50%;font-size:0.72em;font-weight:700;",
+        "cursor:help;vertical-align:middle;line-height:1;"
       )
     ),
     definitie,
