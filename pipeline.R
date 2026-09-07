@@ -66,4 +66,24 @@ Data_1cHO_indicatoren <- combineer_indicatoren(
   Studiewissel_indicatoren
 )
 
+
+## VAKHAVW (optioneel) ----
+## Stel het pad in naar het VAKHAVW-bestand. Laat leeg ("") om deze stap over te slaan.
+
+vakhawv_pad <- ""
+
+if (nchar(vakhawv_pad) > 0 && file.exists(vakhawv_pad)) {
+  cli::cli_alert_info("VAKHAVW --- Vakcijfers inlezen")
+  Vakhawv <- lees_vakhawv(vakhawv_pad)
+
+  cli::cli_alert_info("VAKHAVW --- Koppelen aan indicatorenbestand via persoonsgebonden_nummer")
+  Data_1cHO_indicatoren <- verrijk_met_vakhawv(Data_1cHO_indicatoren, Vakhawv)
+
+  saveRDS(Vakhawv, paste0("Output/", jaar, "/Vakhawv_", jaar, ".RDS"))
+  cli::cli_alert_success("VAKHAVW --- Klaar")
+} else {
+  cli::cli_alert_info("VAKHAVW --- Overgeslagen (geen pad ingesteld)")
+}
+
+
 saveRDS(Data_1cHO_indicatoren, paste0("Output/", jaar, "/Indicatoren_1cHO_", jaar, ".RDS"))
