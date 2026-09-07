@@ -673,7 +673,7 @@ server <- function(input, output, session) {
                   "Staat van Onderwijsinstelling",
                   style = "font-size:1.1rem;font-weight:600;color:#F4D74B;"
                 ),
-                tags$span("Onderwijs bewegen.", class = "npuls-payoff")
+                tags$span("Onderwijs in beweging.", class = "npuls-payoff")
               )
             )
           ),
@@ -736,7 +736,7 @@ server <- function(input, output, session) {
           tags$div(
             class = "dashboard-brand",
             "Staat van Onderwijsinstelling",
-            tags$span("Onderwijs bewegen.", class = "npuls-payoff")
+            tags$span("Onderwijs in beweging.", class = "npuls-payoff")
           ),
           tags$span(
             if (analyse_niveau() == "inschrijving") {
