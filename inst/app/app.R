@@ -215,6 +215,19 @@ VEREISTE_KOLOMMEN <- c(
   "vestigingsnummer_gemeentenaam_volgens_rio"
 )
 
+## Constanten ----
+
+LEGEND_LAYOUT <- list(
+  x = 0.01,
+  y = 0.99,
+  xanchor = "left",
+  yanchor = "top",
+  bgcolor = "rgba(255,255,255,0.85)",
+  bordercolor = "#D6E2FD",
+  borderwidth = 1,
+  font = list(size = 11)
+)
+
 ## Hulpfuncties ----
 
 kleur_voor <- function(waarden) {
@@ -681,7 +694,11 @@ server <- function(input, output, session) {
             tags$span("Onderwijs bewegen.", class = "npuls-payoff")
           ),
           tags$span(
-            if (analyse_niveau() == "inschrijving") "Inschrijvingsniveau" else "Studentniveau",
+            if (analyse_niveau() == "inschrijving") {
+              "Inschrijvingsniveau"
+            } else {
+              "Studentniveau"
+            },
             style = "margin-left:1rem;background:#D6E2FD;color:#3D68EC;font-size:0.7rem;font-weight:600;padding:0.2rem 0.65rem;border-radius:999px;text-transform:uppercase;letter-spacing:0.06em;"
           ),
           tags$div(
@@ -1202,51 +1219,22 @@ server <- function(input, output, session) {
   output$plot_status <- renderPlotly(ggplotly(pct_bar(df(), status)))
   output$plot_ov_geslacht <- renderPlotly(ggplotly(pct_bar(df(), geslacht)))
   output$plot_ov_vorm <- renderPlotly(ggplotly(pct_bar(df(), opleidingsvorm)))
-  output$plot_overzicht_instroom <- renderPlotly(
-    ggplotly(
-      instroom_trend(
-        df(),
-        y_label = if (analyse_niveau() == "inschrijving") "Inschrijvingen" else "Studenten"
-      ),
-      tooltip = c("x", "y")
-    ) |>
-      layout(
-        legend = list(
-          x = 0.01,
-          y = 0.99,
-          xanchor = "left",
-          yanchor = "top",
-          bgcolor = "rgba(255,255,255,0.85)",
-          bordercolor = "#D6E2FD",
-          borderwidth = 1,
-          font = list(size = 11)
-        )
-      )
-  )
+
+  instroom_plotly <- reactive({
+    y_label <- if (analyse_niveau() == "inschrijving") {
+      "Inschrijvingen"
+    } else {
+      "Studenten"
+    }
+    ggplotly(instroom_trend(df(), y_label = y_label), tooltip = c("x", "y")) |>
+      layout(legend = LEGEND_LAYOUT)
+  })
+
+  output$plot_overzicht_instroom <- renderPlotly(instroom_plotly())
 
   ## Plots instroom ----
 
-  output$plot_instroom_trend <- renderPlotly(
-    ggplotly(
-      instroom_trend(
-        df(),
-        y_label = if (analyse_niveau() == "inschrijving") "Inschrijvingen" else "Studenten"
-      ),
-      tooltip = c("x", "y")
-    ) |>
-      layout(
-        legend = list(
-          x = 0.01,
-          y = 0.99,
-          xanchor = "left",
-          yanchor = "top",
-          bgcolor = "rgba(255,255,255,0.85)",
-          bordercolor = "#D6E2FD",
-          borderwidth = 1,
-          font = list(size = 11)
-        )
-      )
-  )
+  output$plot_instroom_trend <- renderPlotly(instroom_plotly())
   output$plot_instroom_sector <- renderPlotly(ggplotly(pct_bar(
     df(),
     sector
@@ -1287,18 +1275,7 @@ server <- function(input, output, session) {
 
   output$plot_rendement_trend <- renderPlotly(
     ggplotly(rendement_trend(df()), tooltip = c("x", "y", "colour")) |>
-      layout(
-        legend = list(
-          x = 0.01,
-          y = 0.99,
-          xanchor = "left",
-          yanchor = "top",
-          bgcolor = "rgba(255,255,255,0.85)",
-          bordercolor = "#D6E2FD",
-          borderwidth = 1,
-          font = list(size = 11)
-        )
-      )
+      layout(legend = LEGEND_LAYOUT)
   )
   output$plot_rend3 <- renderPlotly(ggplotly(pct_bar(
     df(),
@@ -1320,18 +1297,7 @@ server <- function(input, output, session) {
 
   output$plot_uitval_trend <- renderPlotly(
     ggplotly(uitval_trend(df()), tooltip = c("x", "y", "colour")) |>
-      layout(
-        legend = list(
-          x = 0.01,
-          y = 0.99,
-          xanchor = "left",
-          yanchor = "top",
-          bgcolor = "rgba(255,255,255,0.85)",
-          bordercolor = "#D6E2FD",
-          borderwidth = 1,
-          font = list(size = 11)
-        )
-      )
+      layout(legend = LEGEND_LAYOUT)
   )
   output$plot_uitval_detail <- renderPlotly(ggplotly(pct_bar(df(), uitval)))
   output$plot_uitval_sector <- renderPlotly({
@@ -1368,18 +1334,7 @@ server <- function(input, output, session) {
 
   output$plot_wissel_trend <- renderPlotly(
     ggplotly(wissel_trend(df()), tooltip = c("x", "y", "colour")) |>
-      layout(
-        legend = list(
-          x = 0.01,
-          y = 0.99,
-          xanchor = "left",
-          yanchor = "top",
-          bgcolor = "rgba(255,255,255,0.85)",
-          bordercolor = "#D6E2FD",
-          borderwidth = 1,
-          font = list(size = 11)
-        )
-      )
+      layout(legend = LEGEND_LAYOUT)
   )
   output$plot_wissel_samen <- renderPlotly(ggplotly(pct_bar(
     df(),

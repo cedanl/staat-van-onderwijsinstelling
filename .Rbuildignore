@@ -2,11 +2,7 @@
 ^Output$
 ^\.claude$
 ^\.claudeignore$
-^01_Instroom\.R$
-^02_Rendement\.R$
-^03_Uitval\.R$
-^04_Studiewissel\.R$
-^05_Combineer alle data\.R$
+^pipeline\.R$
 ^README\.md$
 ^LICENSE\.md$
 ^doc$

@@ -1,5 +1,3 @@
-utils::globalVariables("uitval_3jr")
-
 #' Combineer alle indicatoren tot een analysebestand
 #'
 #' Voegt rendement-, uitval- en (optioneel) studiewisselindicatoren samen met
