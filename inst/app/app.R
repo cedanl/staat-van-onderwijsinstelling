@@ -1971,7 +1971,70 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       rapport <- maak_benchmarkrapport(df_data())
-      writexl::write_xlsx(rapport, file)
+
+      toelichting <- tibble::tibble(
+        Kolom = c(
+          "sector", "opleidingsvorm", "opleidingsniveau", "inschrijvingsjaar",
+          "onderdrukt", "n",
+          "pct_uitval_1jr", "pct_uitval_3jr",
+          "pct_rendement_3jr", "pct_rendement_5jr", "pct_rendement_8jr",
+          "pct_studiewissel_1jr", "pct_studiewissel_3jr",
+          "pct_int_student", "gem_leeftijd_instroom",
+          "gem_eindcijfer", "pct_bekostigd", "pct_hoofdinschrijving"
+        ),
+        Omschrijving = c(
+          "Onderwijs-CROHO-sector (bijv. gezondheidszorg, techniek)",
+          "Voltijd, deeltijd of duaal",
+          "Bachelor of master",
+          "Jaar van eerste inschrijving aan de instelling",
+          "TRUE = rij is onderdrukt wegens te kleine groep (n < 30); alle uitkomsten zijn leeg",
+          "Aantal studenten in de groep; leeg bij onderdrukking",
+          "% studenten uitgevallen binnen 1 jaar na instroom",
+          "% studenten uitgevallen binnen 3 jaar na instroom",
+          "% studenten met diploma binnen 3 jaar",
+          "% studenten met diploma binnen 5 jaar",
+          "% studenten met diploma binnen 8 jaar",
+          "% studenten gewisseld van opleiding binnen 1 jaar (alleen aanwezig als studiewisselbestand is geladen)",
+          "% studenten gewisseld van opleiding binnen 3 jaar (alleen aanwezig als studiewisselbestand is geladen)",
+          "% internationale studenten in de groep",
+          "Gemiddelde leeftijd bij instroom",
+          "Gemiddeld eindcijfer vooropleiding (alleen aanwezig als VAKHAVW-bestand is geladen)",
+          "% studenten met bekostigingsstatus 'bekostigd' (alleen aanwezig als VLPBEK-bestand is geladen)",
+          "% studenten met hoofdinschrijving (alleen aanwezig als VLPBEK-bestand is geladen)"
+        ),
+        Opmerking = c(
+          "Rij met sector = 'totaal' is de optelling over alle groepen voor dat instroomjaar",
+          "", "", "", "", "",
+          "Percentages zijn berekend over studenten met een definitieve uitkomst voor dit cohort",
+          "Percentages zijn berekend over studenten met een definitieve uitkomst voor dit cohort",
+          "", "", "", "", "", "", "",
+          "Gemiddelde over de hoogste eindcijfers per student",
+          "", ""
+        )
+      )
+
+      validatie <- tibble::tibble(
+        Controlepunt = c(
+          "Totaal n per instroomjaar",
+          "Uitvalpercentages",
+          "Rendementpercentages",
+          "Optionele kolommen",
+          "Reproduceerbaarheid"
+        ),
+        Toelichting = c(
+          "De rij met sector = 'totaal' geeft het totaal aantal studenten per instroomjaar. Vergelijk dit met de DUO-open-data voor dezelfde instelling en hetzelfde jaar. Een afwijking van meer dan 1% wijst op een verwerkingsfout.",
+          "Uitval binnen 1 jaar ligt voor de meeste hbo-instellingen tussen 5% en 30%. Waarden buiten dit bereik rechtvaardigen een controle van de uitvalstap in de pipeline.",
+          "Rendement binnen 5 jaar ligt doorgaans tussen 40% en 80% voor bachelor. Waarden van 0% of 100% zijn verdacht.",
+          "Als VLPBEK of VAKHAVW is geladen, moeten pct_bekostigd resp. gem_eindcijfer aanwezig en voor de meeste rijen gevuld zijn. Kolommen die volledig leeg zijn duiden op een koppelfout (bijv. verkeerd instroomjaar of onjuiste opleidingscode).",
+          paste0("Gegenereerd op: ", format(attr(rapport, "gegenereerd_op"), "%Y-%m-%d %H:%M:%S"),
+                 ". Hetzelfde invoerbestand moet altijd dezelfde uitkomsten geven.")
+        )
+      )
+
+      writexl::write_xlsx(
+        list(Rapport = rapport, Toelichting = toelichting, Validatie = validatie),
+        file
+      )
     }
   )
 }

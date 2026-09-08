@@ -12,23 +12,54 @@ eventueel aangevuld via \code{\link[=verrijk_met_vakhawv]{verrijk_met_vakhawv()}
 \code{\link[=verrijk_met_bekostiging]{verrijk_met_bekostiging()}}.}
 
 \item{drempel}{Minimale groepsgrootte. Groepen kleiner dan deze waarde
-krijgen NA voor alle uitkomstkolommen. Standaard 30.}
+krijgen NA voor alle kolommen inclusief \code{n}. Standaard 30.}
 }
 \value{
-Een tibble in lang CSV-vriendelijk formaat met kolommen:
-\code{sector}, \code{opleidingsvorm}, \code{opleidingsniveau}, \code{inschrijvingsjaar},
-\code{n}, \code{pct_uitval_1jr}, \code{pct_uitval_3jr}, \code{pct_rendement_3jr},
+Een tibble met kolommen \code{sector}, \code{opleidingsvorm},
+\code{opleidingsniveau}, \code{inschrijvingsjaar}, \code{onderdrukt}, \code{n},
+\code{pct_uitval_1jr}, \code{pct_uitval_3jr}, \code{pct_rendement_3jr},
 \code{pct_rendement_5jr}, \code{pct_rendement_8jr}, \code{pct_studiewissel_1jr},
 \code{pct_studiewissel_3jr}, \code{pct_int_student}, \code{gem_leeftijd_instroom},
 plus optioneel \code{gem_eindcijfer}, \code{pct_bekostigd} en
-\code{pct_hoofdinschrijving} als de bijbehorende kolommen aanwezig zijn.
-Het attribuut \code{gegenereerd_op} (POSIXct) registreert het tijdstip.
+\code{pct_hoofdinschrijving}. Het attribuut \code{gegenereerd_op} (POSIXct)
+registreert het tijdstip.
 }
 \description{
 Aggregeert het indicatorenbestand per sector, opleidingsvorm,
 opleidingsniveau en instroomjaar. Berekent percentages voor de
-kernuitkomsten en voegt een totaalrij per jaar toe. Groepen met minder
-dan 30 studenten krijgen NA voor alle uitkomstkolommen om privacyredenen.
+kernuitkomsten en voegt een totaalrij per jaar toe.
+}
+\details{
+\subsection{Privacyonderdrukking}{
+
+Groepen met minder dan \code{drempel} studenten (standaard 30) krijgen NA voor
+alle uitkomsten, inclusief \code{n}. Dit volgt de DUO-richtlijn dat ook de
+groepsgrootte zelf herleidbaar is en dus niet getoond mag worden. De kolom
+\code{onderdrukt} (TRUE/FALSE) maakt zichtbaar welke rijen zijn onderdrukt
+zonder iets te onthullen over de werkelijke omvang.
+
+Totaalrijen per instroomjaar vallen doorgaans buiten de drempel en worden
+niet onderdrukt; ze zijn bedoeld als validatiereferentie (zie hieronder).
+}
+
+\subsection{Gebruik als validatiemiddel}{
+
+CEDA kan met dit rapport controleren of de tool correct werkt:
+\itemize{
+\item \strong{Totalen vs. DUO-publicaties}: \code{n} in de totaalrij per instroomjaar
+moet overeenkomen met het aantal studenten dat DUO voor die instelling
+en dat jaar publiceert. Een grote afwijking wijst op een verwerkingsfout.
+\item \strong{Plausibele marges}: uitvalpercentages buiten circa 5-40 \% of
+rendement van 0 \% zijn een signaal om de pipelinestap te controleren.
+\item \strong{Reproduceerbaarheid}: hetzelfde invoerbestand moet op elk moment
+identieke cijfers opleveren. Het attribuut \code{gegenereerd_op} registreert
+het tijdstip zodat runs vergeleken kunnen worden.
+\item \strong{Optionele bestanden}: als VLPBEK of VAKHAVW is geladen, moeten de
+bijbehorende kolommen (\code{pct_bekostigd}, \code{gem_eindcijfer}) voor de meeste
+rijen gevuld zijn. Kolommen die volledig leeg zijn duiden op een
+koppelfout.
+}
+}
 }
 \examples{
 df <- tibble::tibble(

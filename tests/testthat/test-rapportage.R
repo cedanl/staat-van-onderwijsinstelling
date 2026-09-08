@@ -27,7 +27,7 @@ test_that("maak_benchmarkrapport bevat de vereiste kolommen", {
   result <- maak_benchmarkrapport(basis_df(), drempel = 1L)
   verwacht <- c(
     "sector", "opleidingsvorm", "opleidingsniveau", "inschrijvingsjaar",
-    "n", "pct_uitval_1jr", "pct_uitval_3jr",
+    "onderdrukt", "n", "pct_uitval_1jr", "pct_uitval_3jr",
     "pct_rendement_3jr", "pct_rendement_5jr", "pct_rendement_8jr",
     "pct_int_student", "gem_leeftijd_instroom"
   )
@@ -91,14 +91,16 @@ test_that("gem_leeftijd_instroom is het gemiddelde van de groep", {
 
 ## Privacyonderdrukking ----
 
-test_that("groepen met n < drempel krijgen NA voor uitkomsten", {
+test_that("groepen met n < drempel krijgen NA voor uitkomsten en voor n", {
   df <- basis_df(10L)
   result <- maak_benchmarkrapport(df, drempel = 30L)
 
   rij <- result[result$sector == "gezondheidszorg" & !is.na(result$sector), ]
   expect_true(is.na(rij$pct_uitval_1jr[1]))
   expect_true(is.na(rij$pct_rendement_5jr[1]))
-  expect_equal(rij$n[1], 10L)
+  ## n wordt ook onderdrukt; alleen onderdrukt=TRUE is zichtbaar
+  expect_true(is.na(rij$n[1]))
+  expect_true(rij$onderdrukt[1])
 })
 
 test_that("groepen met n >= drempel krijgen geen NA door onderdrukking", {
@@ -107,13 +109,19 @@ test_that("groepen met n >= drempel krijgen geen NA door onderdrukking", {
 
   rij <- result[result$sector == "gezondheidszorg" & !is.na(result$sector), ]
   expect_false(is.na(rij$pct_uitval_1jr[1]))
+  expect_false(is.na(rij$n[1]))
+  expect_false(rij$onderdrukt[1])
 })
 
-test_that("n is altijd zichtbaar, ook bij onderdrukking", {
-  df <- basis_df(5L)
+test_that("onderdrukt is TRUE voor kleine groepen en FALSE voor grote", {
+  df <- dplyr::bind_rows(
+    dplyr::mutate(basis_df(5L),  sector = "klein"),
+    dplyr::mutate(basis_df(50L), sector = "groot")
+  )
   result <- maak_benchmarkrapport(df, drempel = 30L)
 
-  expect_true(all(!is.na(result$n)))
+  expect_true(result$onderdrukt[result$sector == "klein"])
+  expect_false(result$onderdrukt[result$sector == "groot"])
 })
 
 test_that("totaalrij wordt ook onderdrukt als n < drempel", {
@@ -122,6 +130,8 @@ test_that("totaalrij wordt ook onderdrukt als n < drempel", {
 
   totaal <- result[result$sector == "totaal", ]
   expect_true(is.na(totaal$pct_uitval_1jr[1]))
+  expect_true(is.na(totaal$n[1]))
+  expect_true(totaal$onderdrukt[1])
 })
 
 ## Optionele kolommen ----
