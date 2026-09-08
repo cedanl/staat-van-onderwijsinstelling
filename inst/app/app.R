@@ -863,6 +863,11 @@ server <- function(input, output, session) {
               "download_csv",
               "Download als CSV",
               style = "width:100%;margin-top:0.5rem;background:#3D68EC;color:#F4D74B;border:none;font-size:0.78rem;font-weight:600;"
+            ),
+            downloadButton(
+              "download_benchmark",
+              "Download benchmarkrapport",
+              style = "width:100%;margin-top:0.4rem;background:#FFFFFF;color:#3D68EC;border:1.5px solid #3D68EC;font-size:0.78rem;font-weight:600;"
             )
           ),
           navset_card_tab(
@@ -1108,19 +1113,6 @@ server <- function(input, output, session) {
                 card_header("Voorbeeld dataset (eerste 20 rijen)"),
                 DTOutput("tabel_voorbeeld")
               ),
-              card(
-                card_header("Benchmarkrapport"),
-                p(
-                  "Geaggregeerde uitkomsten per sector, opleidingsvorm, ",
-                  "opleidingsniveau en instroomjaar. Groepen met minder dan ",
-                  "30 studenten zijn onderdrukt."
-                ),
-                downloadButton(
-                  "download_benchmark",
-                  "Download benchmarkrapport (CSV)",
-                  style = "background:#3D68EC;color:#F4D74B;border:none;font-size:0.78rem;font-weight:600;"
-                )
-              )
             )
           )
         )
