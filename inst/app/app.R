@@ -1967,11 +1967,11 @@ server <- function(input, output, session) {
 
   output$download_benchmark <- downloadHandler(
     filename = function() {
-      paste0("Benchmarkrapport_", Sys.Date(), ".csv")
+      paste0("Benchmarkrapport_", Sys.Date(), ".xlsx")
     },
     content = function(file) {
       rapport <- maak_benchmarkrapport(df_data())
-      write_csv(rapport, file)
+      writexl::write_xlsx(rapport, file)
     }
   )
 }
