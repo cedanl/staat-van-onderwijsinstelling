@@ -657,6 +657,10 @@ server <- function(input, output, session) {
   df_data <- reactiveVal(NULL)
   analyse_niveau <- reactiveVal("student")
   heeft_vakhawv <- reactiveVal(FALSE)
+  vakhawv_raw <- reactiveVal(NULL)
+  heeft_bekostiging <- reactiveVal(FALSE)
+  bek_peiljaar     <- reactiveVal(NULL)
+  bek_jaren        <- reactiveVal(NULL)
 
   ## Scherm switch ----
 
@@ -714,6 +718,13 @@ server <- function(input, output, session) {
             fileInput(
               "vakhawv_upload",
               "VAKHAVW-bestand (vakcijfers vooropleiding)",
+              accept = ".csv",
+              buttonLabel = "Bladeren...",
+              placeholder = "Optioneel"
+            ),
+            fileInput(
+              "bekostiging_upload",
+              "VLPBEK-bestand (bekostigingsindicatie)",
               accept = ".csv",
               buttonLabel = "Bladeren...",
               placeholder = "Optioneel"
@@ -1003,6 +1014,45 @@ server <- function(input, output, session) {
               NULL
             },
 
+            ## Bekostiging (alleen als VLPBEK geladen) ----
+            if (heeft_bekostiging()) {
+              nav_panel(
+                "Bekostiging",
+                uiOutput("bek_peiljaar_badge"),
+                layout_columns(
+                  col_widths = c(3, 3, 3, 3),
+                  uiOutput("kpi_pct_bekostigd"),
+                  uiOutput("kpi_n_bekostigd"),
+                  uiOutput("kpi_n_niet_bekostigd"),
+                  uiOutput("kpi_pct_hoofdinschrijving")
+                ),
+                layout_columns(
+                  col_widths = c(6, 6),
+                  card(
+                    card_header("Bekostigingsstatus"),
+                    plotlyOutput("plot_bek_status", height = "280px")
+                  ),
+                  card(
+                    card_header("% bekostigd per sector"),
+                    plotlyOutput("plot_bek_sector", height = "280px")
+                  )
+                ),
+                layout_columns(
+                  col_widths = c(6, 6),
+                  card(
+                    card_header("% bekostigd per opleidingsvorm"),
+                    plotlyOutput("plot_bek_vorm", height = "240px")
+                  ),
+                  card(
+                    card_header("% bekostigd per opleidingsniveau"),
+                    plotlyOutput("plot_bek_niveau", height = "240px")
+                  )
+                )
+              )
+            } else {
+              NULL
+            },
+
             ## Vooropleiding (alleen als VAKHAVW geladen) ----
             if (heeft_vakhawv()) {
               nav_panel(
@@ -1010,8 +1060,8 @@ server <- function(input, output, session) {
                 layout_columns(
                   col_widths = c(4, 4, 4),
                   uiOutput("kpi_gem_eindcijfer"),
-                  uiOutput("kpi_gem_wiskunde"),
-                  uiOutput("kpi_pct_wiskunde")
+                  uiOutput("kpi_aantal_vakken"),
+                  uiOutput("kpi_pct_met_vakhawv")
                 ),
                 card(
                   card_header("Verdeling gemiddeld eindcijfer"),
@@ -1020,12 +1070,26 @@ server <- function(input, output, session) {
                 layout_columns(
                   col_widths = c(6, 6),
                   card(
-                    card_header("Gemiddeld eindcijfer per sector"),
+                    card_header("Gemiddeld eindcijfer per sector (alleen sectoren met VAKHAVW-data)"),
                     plotlyOutput("plot_eindcijfer_sector", height = "280px")
                   ),
                   card(
                     card_header("Gemiddeld eindcijfer per rendement"),
                     plotlyOutput("plot_eindcijfer_rendement", height = "280px")
+                  )
+                ),
+                card(
+                  card_header("Vakcijfer per vak"),
+                  layout_columns(
+                    col_widths = c(4, 4, 4),
+                    uiOutput("vak_keuze_ui"),
+                    uiOutput("kpi_vak_cijfer"),
+                    uiOutput("kpi_pct_vak")
+                  ),
+                  layout_columns(
+                    col_widths = c(6, 6),
+                    plotlyOutput("plot_vak_sector", height = "260px"),
+                    plotlyOutput("plot_vak_rendement", height = "260px")
                   )
                 )
               )
@@ -1043,6 +1107,19 @@ server <- function(input, output, session) {
               card(
                 card_header("Voorbeeld dataset (eerste 20 rijen)"),
                 DTOutput("tabel_voorbeeld")
+              ),
+              card(
+                card_header("Benchmarkrapport"),
+                p(
+                  "Geaggregeerde uitkomsten per sector, opleidingsvorm, ",
+                  "opleidingsniveau en instroomjaar. Groepen met minder dan ",
+                  "30 studenten zijn onderdrukt."
+                ),
+                downloadButton(
+                  "download_benchmark",
+                  "Download benchmarkrapport (CSV)",
+                  style = "background:#3D68EC;color:#F4D74B;border:none;font-size:0.78rem;font-weight:600;"
+                )
               )
             )
           )
@@ -1160,16 +1237,39 @@ server <- function(input, output, session) {
           ## VAKHAVW (optioneel) ----
           heeft_vakhawv(FALSE)
           if (!is.null(input$vakhawv_upload)) {
-            setProgress(0.97, detail = "VAKHAVW koppelen")
+            setProgress(0.95, detail = "VAKHAVW koppelen")
             tryCatch(
               {
                 vakhawv <- lees_vakhawv(input$vakhawv_upload$datapath)
+                vakhawv_raw(vakhawv)
                 result <- verrijk_met_vakhawv(result, vakhawv)
                 heeft_vakhawv(TRUE)
               },
               error = function(e) {
                 showNotification(
                   paste("VAKHAVW overgeslagen:", conditionMessage(e)),
+                  type = "warning",
+                  duration = 10
+                )
+              }
+            )
+          }
+
+          ## VLPBEK (optioneel) ----
+          heeft_bekostiging(FALSE)
+          if (!is.null(input$bekostiging_upload)) {
+            setProgress(0.98, detail = "Bekostiging koppelen")
+            tryCatch(
+              {
+                bekostiging <- lees_bekostiging(input$bekostiging_upload$datapath)
+                bek_peiljaar(attr(bekostiging, "peiljaar"))
+                bek_jaren(sort(unique(bekostiging$inschrijvingsjaar)))
+                result <- verrijk_met_bekostiging(result, bekostiging)
+                heeft_bekostiging(TRUE)
+              },
+              error = function(e) {
+                showNotification(
+                  paste("VLPBEK overgeslagen:", conditionMessage(e)),
                   type = "warning",
                   duration = 10
                 )
@@ -1191,8 +1291,12 @@ server <- function(input, output, session) {
 
   observeEvent(input$btn_opnieuw, {
     df_data(NULL)
+    vakhawv_raw(NULL)
     fase("upload")
     heeft_vakhawv(FALSE)
+    heeft_bekostiging(FALSE)
+    bek_peiljaar(NULL)
+    bek_jaren(NULL)
   })
 
   ## Gefilterde data ----
@@ -1504,26 +1608,134 @@ server <- function(input, output, session) {
     )
   })
 
-  output$kpi_gem_wiskunde <- renderUI({
+  output$kpi_aantal_vakken <- renderUI({
     d <- df()
-    gem <- round(mean(d$vakhawv_wiskundecijfer, na.rm = TRUE), 1)
+    gem <- round(mean(d$vakhawv_aantal_vakken, na.rm = TRUE), 1)
     vb(
-      "Gem. wiskundecijfer",
+      "Gem. aantal vakken",
       if (is.nan(gem)) "—" else as.character(gem),
       bg = NPULS_ORANJE,
       fg = NPULS_ZWART
     )
   })
 
-  output$kpi_pct_wiskunde <- renderUI({
+  output$kpi_pct_met_vakhawv <- renderUI({
     d <- df()
-    pct <- round(mean(!is.na(d$vakhawv_wiskundecijfer), na.rm = TRUE) * 100)
+    pct <- round(mean(!is.na(d$vakhawv_gemiddeld_eindcijfer)) * 100)
     vb(
-      "% met wiskunde",
+      "% met VAKHAVW-data",
       if (is.nan(pct)) "—" else paste0(pct, "%"),
       bg = NPULS_GROEN,
       fg = NPULS_ZWART
     )
+  })
+
+  ## Vak selector en dynamische vakcijfer ----
+
+  output$vak_keuze_ui <- renderUI({
+    req(vakhawv_raw())
+    vakken <- sort(unique(vakhawv_raw()$afkorting_vak))
+    selectInput(
+      "vak_keuze",
+      "Vak",
+      choices = vakken,
+      selected = if ("wis" %in% vakken) "wis" else vakken[1]
+    )
+  })
+
+  vak_per_student <- reactive({
+    req(vakhawv_raw(), input$vak_keuze)
+    vakhawv_raw() |>
+      dplyr::filter(afkorting_vak == input$vak_keuze) |>
+      dplyr::group_by(persoonsgebonden_nummer) |>
+      dplyr::summarise(
+        .vak_cijfer = mean(cijfer_eerste_centraal_examen, na.rm = TRUE),
+        .groups = "drop"
+      ) |>
+      dplyr::mutate(
+        .vak_cijfer = dplyr::if_else(is.nan(.vak_cijfer), NA_real_, .vak_cijfer)
+      )
+  })
+
+  df_met_vak <- reactive({
+    req(vak_per_student())
+    dplyr::left_join(
+      dplyr::mutate(df(), persoonsgebonden_nummer = as.character(persoonsgebonden_nummer)),
+      vak_per_student(),
+      by = "persoonsgebonden_nummer"
+    )
+  })
+
+  output$kpi_vak_cijfer <- renderUI({
+    d <- df_met_vak()
+    gem <- round(mean(d$.vak_cijfer, na.rm = TRUE), 1)
+    vb(
+      paste0("Gem. CE-cijfer ", toupper(input$vak_keuze)),
+      if (is.nan(gem)) "—" else as.character(gem),
+      bg = NPULS_BLAUW,
+      fg = NPULS_GEEL
+    )
+  })
+
+  output$kpi_pct_vak <- renderUI({
+    d <- df_met_vak()
+    pct <- round(mean(!is.na(d$.vak_cijfer)) * 100)
+    vb(
+      paste0("% met ", toupper(input$vak_keuze)),
+      if (is.nan(pct)) "—" else paste0(pct, "%"),
+      bg = NPULS_GROEN,
+      fg = NPULS_ZWART
+    )
+  })
+
+  output$plot_vak_sector <- renderPlotly({
+    d <- df_met_vak() |>
+      dplyr::filter(!is.na(sector), !is.na(.vak_cijfer))
+    if (nrow(d) == 0) {
+      return(ggplotly(leeg_plot()))
+    }
+    agg <- d |>
+      dplyr::group_by(sector = as.character(sector)) |>
+      dplyr::summarise(gem = mean(.vak_cijfer, na.rm = TRUE), .groups = "drop")
+    kleuren <- kleur_voor(agg$sector)
+    p <- ggplot(agg, aes(x = fct_reorder(sector, gem), y = gem, fill = sector)) +
+      geom_col(show.legend = FALSE) +
+      geom_text(aes(label = round(gem, 1)), hjust = -0.15, size = 3.3) +
+      scale_y_continuous(limits = c(0, 10)) +
+      scale_fill_manual(values = kleuren, breaks = names(kleuren)) +
+      coord_flip() +
+      labs(
+        x = NULL,
+        y = "Gem. CE-cijfer",
+        title = paste0(toupper(input$vak_keuze), " per sector")
+      ) +
+      thema()
+    ggplotly(p) |> layout(showlegend = FALSE)
+  })
+
+  output$plot_vak_rendement <- renderPlotly({
+    d <- df_met_vak() |>
+      dplyr::filter(!is.na(rendement), !is.na(.vak_cijfer))
+    if (nrow(d) == 0) {
+      return(ggplotly(leeg_plot()))
+    }
+    agg <- d |>
+      dplyr::group_by(rendement) |>
+      dplyr::summarise(gem = mean(.vak_cijfer, na.rm = TRUE), .groups = "drop")
+    kleuren <- kleur_voor(agg$rendement)
+    p <- ggplot(agg, aes(x = fct_reorder(rendement, gem), y = gem, fill = rendement)) +
+      geom_col(show.legend = FALSE) +
+      geom_text(aes(label = round(gem, 1)), hjust = -0.15, size = 3.3) +
+      scale_y_continuous(limits = c(0, 10)) +
+      scale_fill_manual(values = kleuren, breaks = names(kleuren)) +
+      coord_flip() +
+      labs(
+        x = NULL,
+        y = "Gem. CE-cijfer",
+        title = paste0(toupper(input$vak_keuze), " per rendement")
+      ) +
+      thema()
+    ggplotly(p) |> layout(showlegend = FALSE)
   })
 
   output$plot_eindcijfer_hist <- renderPlotly({
@@ -1602,6 +1814,120 @@ server <- function(input, output, session) {
     ggplotly(p) |> layout(showlegend = FALSE)
   })
 
+  ## Bekostiging tab ----
+
+  output$bek_peiljaar_badge <- renderUI({
+    jaar  <- bek_peiljaar()
+    jaren <- bek_jaren()
+    if (is.null(jaar) || is.na(jaar)) return(NULL)
+    jaren_tekst <- if (!is.null(jaren) && length(jaren) > 0) {
+      paste0(
+        " — bekostigde studenten met instroomjaar ",
+        paste(jaren, collapse = " en ")
+      )
+    } else {
+      ""
+    }
+    tags$p(
+      paste0("Bekostigingsjaar ", jaar, jaren_tekst),
+      style = paste0(
+        "font-size:0.78rem;font-weight:600;color:#374151;",
+        "background:#F3F4F6;border-radius:4px;padding:0.35rem 0.75rem;",
+        "display:inline-block;margin-bottom:0.75rem;"
+      )
+    )
+  })
+
+  output$kpi_pct_bekostigd <- renderUI({
+    d <- df() |> dplyr::filter(!is.na(indicatie_bekostigd))
+    pct <- round(mean(d$indicatie_bekostigd, na.rm = TRUE) * 100)
+    vb(
+      "% bekostigd",
+      if (length(pct) == 0 || is.nan(pct)) "—" else paste0(pct, "%"),
+      bg = NPULS_GROEN,
+      fg = NPULS_ZWART
+    )
+  })
+
+  output$kpi_n_bekostigd <- renderUI({
+    d <- df()
+    n <- sum(d$indicatie_bekostigd == TRUE, na.rm = TRUE)
+    eenheid <- if (analyse_niveau() == "inschrijving") "inschrijvingen" else "studenten"
+    vb(paste0("Bekostigd (", eenheid, ")"), n_label(n), bg = NPULS_BLAUW, fg = NPULS_GEEL)
+  })
+
+  output$kpi_n_niet_bekostigd <- renderUI({
+    d <- df()
+    n <- sum(d$indicatie_bekostigd == FALSE, na.rm = TRUE)
+    eenheid <- if (analyse_niveau() == "inschrijving") "inschrijvingen" else "studenten"
+    vb(paste0("Niet bekostigd (", eenheid, ")"), n_label(n), bg = NPULS_ORANJE, fg = NPULS_ZWART)
+  })
+
+  output$kpi_pct_hoofdinschrijving <- renderUI({
+    d <- df() |> dplyr::filter(!is.na(indicatie_hoofdinschrijving))
+    pct <- round(mean(d$indicatie_hoofdinschrijving, na.rm = TRUE) * 100)
+    vb(
+      "% hoofdinschrijving",
+      if (length(pct) == 0 || is.nan(pct)) "—" else paste0(pct, "%"),
+      bg = NPULS_GEEL,
+      fg = NPULS_ZWART
+    )
+  })
+
+  bek_pct_bar <- function(d, groep_col, titel) {
+    d <- d |> dplyr::filter(!is.na(indicatie_bekostigd), !is.na(.data[[groep_col]]))
+    if (nrow(d) == 0) return(ggplotly(leeg_plot()))
+    agg <- d |>
+      dplyr::group_by(groep = as.character(.data[[groep_col]])) |>
+      dplyr::summarise(
+        pct = mean(indicatie_bekostigd == TRUE, na.rm = TRUE),
+        n   = dplyr::n(),
+        .groups = "drop"
+      )
+    kleuren <- kleur_voor(agg$groep)
+    p <- ggplot(agg, aes(x = fct_reorder(groep, pct), y = pct, fill = groep)) +
+      geom_col(show.legend = FALSE) +
+      geom_text(
+        aes(label = paste0(round(pct * 100), "% (n=", n, ")")),
+        hjust = -0.05, size = 3.3
+      ) +
+      scale_y_continuous(labels = scales::percent, limits = c(0, 1.2)) +
+      scale_fill_manual(values = kleuren, breaks = names(kleuren)) +
+      coord_flip() +
+      labs(x = NULL, y = "% bekostigd", title = titel) +
+      thema() +
+      theme(legend.position = "none")
+    ggplotly(p) |> layout(showlegend = FALSE)
+  }
+
+  output$plot_bek_status <- renderPlotly({
+    d <- df() |> dplyr::filter(!is.na(indicatie_bekostigd))
+    if (nrow(d) == 0) return(ggplotly(leeg_plot()))
+    tel <- d |>
+      dplyr::count(
+        status = dplyr::if_else(indicatie_bekostigd, "Bekostigd", "Niet bekostigd")
+      ) |>
+      dplyr::mutate(pct = n / sum(n))
+    kleuren <- c("Bekostigd" = NPULS_GROEN, "Niet bekostigd" = NPULS_ORANJE)
+    p <- ggplot(tel, aes(x = fct_reorder(status, pct), y = pct, fill = status)) +
+      geom_col(show.legend = FALSE) +
+      geom_text(
+        aes(label = paste0(round(pct * 100), "% (n=", n, ")")),
+        hjust = -0.05, size = 3.3
+      ) +
+      scale_y_continuous(labels = scales::percent, limits = c(0, 1.2)) +
+      scale_fill_manual(values = kleuren) +
+      coord_flip() +
+      labs(x = NULL, y = NULL) +
+      thema() +
+      theme(legend.position = "none")
+    ggplotly(p) |> layout(showlegend = FALSE)
+  })
+
+  output$plot_bek_sector    <- renderPlotly(bek_pct_bar(df(), "sector", NULL))
+  output$plot_bek_vorm      <- renderPlotly(bek_pct_bar(df(), "opleidingsvorm", NULL))
+  output$plot_bek_niveau    <- renderPlotly(bek_pct_bar(df(), "opleidingsniveau", NULL))
+
   ## Data tab ----
 
   output$tabel_dict <- renderDT({
@@ -1644,6 +1970,16 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       write_csv(df_data(), file)
+    }
+  )
+
+  output$download_benchmark <- downloadHandler(
+    filename = function() {
+      paste0("Benchmarkrapport_", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      rapport <- maak_benchmarkrapport(df_data())
+      write_csv(rapport, file)
     }
   )
 }
