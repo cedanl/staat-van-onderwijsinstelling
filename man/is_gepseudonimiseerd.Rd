@@ -13,9 +13,10 @@ is_gepseudonimiseerd(x)
 \code{TRUE} als alle niet-lege waarden pseudoniemen zijn, anders \code{FALSE}
 }
 \description{
-Herkent de HMAC-SHA256-pseudoniemen die 1cijferho maakt: 64 hexadecimale
-tekens. Handig om te bepalen of een VLPBEK-bestand met
-\code{pseudonimiseer = TRUE} moet worden ingelezen (zie \code{\link[=lees_bekostiging]{lees_bekostiging()}}).
+Herkent de pseudoniemen die 1cijferho kan maken: 64 hexadecimale tekens.
+Een gepseudonimiseerd 1CHO-bestand kan niet gekoppeld worden aan een
+VLPBEK-bestand, dat altijd echte BSN's bevat. Gebruik daarvoor de
+1cijferho-uitvoer waarin het BSN behouden is.
 }
 \examples{
 is_gepseudonimiseerd(c("123456789", "987654321"))

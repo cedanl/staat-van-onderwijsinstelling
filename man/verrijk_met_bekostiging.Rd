@@ -36,7 +36,9 @@ inschrijvingsjaar de status betrekking heeft.
 
 De functie meldt hoeveel rijen gekoppeld zijn en waarschuwt als dat minder
 dan de helft is: dan gebruiken de bestanden waarschijnlijk verschillende
-ID's (bijv. gepseudonimiseerd tegenover BSN). Het attribuut \code{koppeling}
+ID's. Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het
+BSN behouden is (niet gepseudonimiseerd en niet omgezet naar
+studentnummer). Het attribuut \code{koppeling}
 bevat de aantallen.
 
 Studenten zonder overeenkomst in het VLPBEK-bestand krijgen \code{NA} voor

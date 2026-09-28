@@ -65,14 +65,21 @@ vlpbek_pad  <- ""
 
 Het peiljaar en het soort hoger onderwijs worden uit de data afgeleid.
 
-### Gepseudonimiseerde bestanden
+De pipeline slaat de tussenbestanden en het benchmarkrapport op in `Output/<jaar>/`.
 
-Heeft 1cijferho de persoonsnummers in het EV- en VAKHAVW-bestand gepseudonimiseerd, dan bevat het VLPBEK-bestand van DUO nog echte BSN's en koppelt het niet vanzelf. staat1cho herkent dit en past dezelfde pseudonimisering toe op VLPBEK, met dezelfde sleutel als 1cijferho:
+### Welke 1cijferho-uitvoer gebruik je?
 
-- **Dashboard:** vul de sleutel in bij *Pseudonimiseringssleutel*, of zet de omgevingsvariabele `EENCIJFERHO_ENCRYPT_KEY` voordat je `start_dashboard()` aanroept.
-- **Pipeline/functies:** `lees_bekostiging(pad, pseudonimiseer = TRUE, sleutelbestand = "...")` of via dezelfde omgevingsvariabele.
+1cijferho kan de persoonsnummers uitleveren met het **BSN behouden**, **omgezet naar studentnummer** of **gepseudonimiseerd**. Wat je kiest bepaalt wat je kunt koppelen:
 
-De sleutel wordt nergens opgeslagen of gelogd, en het echte BSN komt niet in de uitvoer. De pipeline slaat de tussenbestanden en het benchmarkrapport op in `Output/<jaar>/`.
+| 1cijferho-uitvoer | Indicatoren | VAKHAVW | VLPBEK (bekostiging) |
+|---|---|---|---|
+| BSN behouden | ja | ja | **ja** |
+| Studentnummer | ja | ja, als EV en VAKHAVW dezelfde uitvoer zijn | nee |
+| Gepseudonimiseerd | ja | ja, als EV en VAKHAVW dezelfde uitvoer zijn | nee |
+
+Het VLPBEK-bestand komt rechtstreeks van DUO en bevat altijd het echte BSN of onderwijsnummer. **Wil je bekostiging koppelen, gebruik dan de uitvoer met het BSN behouden.** staat1cho pseudonimiseert of vertaalt zelf geen nummers. Koppel je toch een gepseudonimiseerd bestand, dan stopt staat1cho met een foutmelding; bij studentnummers volgt een waarschuwing over het lage koppelpercentage.
+
+Het benchmarkrapport bevat nooit persoonsnummers en is geschikt om te delen. De volledige CSV-download uit het dashboard bevat ze wel: die blijft binnen de instelling.
 
 ### Losse functies
 
@@ -154,7 +161,7 @@ Op **studentniveau** telt elke student één keer, bij de opleiding waarin die i
 | `bereken_studiewissel()` | Studiewissel binnen 1 en 3 jaar |
 | `combineer_indicatoren()` | Voegt alle indicatoren samen tot analysebestand |
 | `lees_vakhawv()` / `verrijk_met_vakhawv()` | Leest VAKHAVW-vakcijfers en koppelt ze per student |
-| `lees_bekostiging()` / `verrijk_met_bekostiging()` | Leest een VLPBEK-bestand (optioneel gepseudonimiseerd zoals 1cijferho) en koppelt de bekostigingsstatus |
+| `lees_bekostiging()` / `verrijk_met_bekostiging()` | Leest een VLPBEK-bestand en koppelt de bekostigingsstatus (vereist 1cijferho-uitvoer met BSN) |
 | `is_gepseudonimiseerd()` | Herkent door 1cijferho gepseudonimiseerde persoonsnummers |
 | `maak_benchmarkrapport()` | Geaggregeerd rapport met privacyonderdrukking |
 | `schrijf_benchmarkrapport()` | Slaat het benchmarkrapport op als Excel met toelichting en metadata |

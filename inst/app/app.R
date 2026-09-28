@@ -561,6 +561,12 @@ npuls_css <- "
   margin: 0.25rem 0 0.5rem 0;
 }
 
+/* Uitleg onder de uploadvelden */
+.upload-hint {
+  font-size: 0.75rem; line-height: 1.4; color: #4B5563;
+  margin: -0.25rem 0 0.75rem 0;
+}
+
 /* Upload scherm */
 .upload-achtergrond {
   min-height: 100vh;
@@ -742,8 +748,7 @@ server <- function(input, output, session) {
     list(
       bestand     = paste0("bestand_upload_", gen),
       vakhawv     = paste0("vakhawv_upload_", gen),
-      bekostiging = paste0("bekostiging_upload_", gen),
-      sleutel     = paste0("sleutel_", gen)
+      bekostiging = paste0("bekostiging_upload_", gen)
     )
   }
 
@@ -815,16 +820,14 @@ server <- function(input, output, session) {
               buttonLabel = "Bladeren...",
               placeholder = "Optioneel"
             ),
-            ## Alleen nodig als het 1CHO-bestand door 1cijferho is
-            ## gepseudonimiseerd: VLPBEK bevat dan nog echte BSN's.
-            passwordInput(
-              ids$sleutel,
-              "Pseudonimiseringssleutel 1cijferho (alleen bij VLPBEK)",
-              placeholder = if (nzchar(Sys.getenv("EENCIJFERHO_ENCRYPT_KEY"))) {
-                "Ingesteld via EENCIJFERHO_ENCRYPT_KEY"
-              } else {
-                "Optioneel"
-              }
+            ## VLPBEK bevat echte BSN's; koppelen kan alleen als het
+            ## 1CHO-bestand die ook heeft.
+            tags$p(
+              class = "upload-hint",
+              tags$strong("Bekostiging koppelen? "),
+              "Gebruik dan de 1cijferho-uitvoer waarin het BSN behouden is,",
+              "niet gepseudonimiseerd en niet omgezet naar studentnummer.",
+              "Het VLPBEK-bestand bevat altijd het echte BSN."
             ),
             uiOutput("btn_verwerk_ui")
           )
@@ -961,6 +964,12 @@ server <- function(input, output, session) {
               "download_csv",
               "Download als CSV",
               style = "width:100%;margin-top:0.5rem;background:#3D68EC;color:#F4D74B;border:none;font-size:0.78rem;font-weight:600;"
+            ),
+            tags$p(
+              class = "upload-hint",
+              style = "margin-top:0.3rem;",
+              "Bevat persoonsnummers: alleen binnen de instelling gebruiken.",
+              "Het benchmarkrapport bevat geen persoonsnummers."
             ),
             downloadButton(
               "download_benchmark",
@@ -1233,7 +1242,7 @@ server <- function(input, output, session) {
   }
 
   ## Koppelpercentage van VAKHAVW/VLPBEK tonen. Een lage koppeling wijst meestal
-  ## op verschillende persoonsnummers (bijv. gepseudonimiseerd vs. BSN) en is
+  ## op verschillende persoonsnummers (bijv. studentnummer vs. BSN) en is
   ## anders niet te onderscheiden van "niemand bekostigd".
   toon_koppeling <- function(resultaat) {
     k <- attr(resultaat, "koppeling")
@@ -1245,7 +1254,14 @@ server <- function(input, output, session) {
       paste0(
         k$bron, ": ", k$gekoppeld, " van ", k$n, " ", k$eenheid,
         " teruggevonden in het 1CHO-bestand (", k$pct, "%).",
-        if (laag) " Controleer of beide bestanden dezelfde persoonsnummers gebruiken." else ""
+        if (laag) {
+          paste(
+            " Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het BSN",
+            "behouden is (niet gepseudonimiseerd en niet omgezet naar studentnummer)."
+          )
+        } else {
+          ""
+        }
       ),
       type = if (laag) "warning" else "message",
       duration = if (laag) NULL else 8
@@ -1275,7 +1291,6 @@ server <- function(input, output, session) {
     bestand_upload     <- input[[ids$bestand]]
     vakhawv_upload     <- input[[ids$vakhawv]]
     bekostiging_upload <- input[[ids$bekostiging]]
-    sleutel_invoer     <- input[[ids$sleutel]]
 
     if (is.null(bestand_upload)) {
       toon_fout("Selecteer eerst een CSV-bestand.")
@@ -1388,13 +1403,7 @@ server <- function(input, output, session) {
             setProgress(0.98, detail = "Bekostiging koppelen")
             tryCatch(
               {
-                ## Is het 1CHO-bestand gepseudonimiseerd, dan VLPBEK met
-                ## dezelfde sleutel pseudonimiseren (veld of omgevingsvariabele)
-                bekostiging <- lees_bekostiging(
-                  bekostiging_upload$datapath,
-                  pseudonimiseer = is_gepseudonimiseerd(basisbestand$persoonsgebonden_nummer),
-                  sleutel = if (isTRUE(nzchar(sleutel_invoer))) sleutel_invoer
-                )
+                bekostiging <- lees_bekostiging(bekostiging_upload$datapath)
                 bek_peiljaar(attr(bekostiging, "peiljaar"))
                 bek_jaren(sort(unique(bekostiging$inschrijvingsjaar)))
                 result <- suppressWarnings(verrijk_met_bekostiging(result, bekostiging))

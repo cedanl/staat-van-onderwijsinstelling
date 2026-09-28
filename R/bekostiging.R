@@ -98,23 +98,16 @@ bevat_code <- function(codes, zoek) {
 #' worden verwerkt; de koptekstregel (VLP), totaalregel (BLB) en sluitregel
 #' (SLR) worden genegeerd. Het peiljaar wordt uit de VLP-koptekstregel gelezen.
 #'
-#' ## Gepseudonimiseerde 1CHO-bestanden
+#' ## Welke 1cijferho-uitvoer?
 #'
-#' 1cijferho kan BSN en persoonsgebonden nummer in de EV- en VAKHAVW-bestanden
-#' vervangen door een HMAC-SHA256-pseudoniem. VLPBEK-bestanden gaan niet door
-#' die stap en bevatten het echte BSN of onderwijsnummer. Met
-#' `pseudonimiseer = TRUE` past deze functie dezelfde pseudonimisering toe
-#' (zelfde sleutel, zelfde algoritme), zodat de koppeling weer werkt. Het echte
-#' nummer komt niet in de uitvoer terecht. Gebruik [is_gepseudonimiseerd()] op
-#' het basisbestand om te bepalen of dit nodig is.
+#' Het VLPBEK-bestand bevat het echte BSN of onderwijsnummer. Koppelen aan het
+#' 1CHO-bestand kan daarom alleen als de 1cijferho-uitvoer het BSN behoudt:
+#' niet gepseudonimiseerd en niet omgezet naar studentnummer. Bij een
+#' gepseudonimiseerd 1CHO-bestand geeft [verrijk_met_bekostiging()] een fout;
+#' bij studentnummers blijft het koppelpercentage vrijwel 0 en volgt een
+#' waarschuwing.
 #'
 #' @param pad Pad naar het VLPBEK-bestand (latin-1 gecodeerd, pipegescheiden)
-#' @param pseudonimiseer `TRUE` om persoonsnummers te pseudonimiseren zoals
-#'   1cijferho dat doet. Standaard `FALSE`.
-#' @param sleutel,sleutelbestand De pseudonimiseringssleutel van 1cijferho
-#'   (minimaal 64 bytes), of het pad naar een bestand met de sleutel. Zonder
-#'   beide wordt de omgevingsvariabele `EENCIJFERHO_ENCRYPT_KEY` gebruikt,
-#'   net als in 1cijferho.
 #'
 #' @return Een tibble met de kolommen `persoonsgebonden_nummer`,
 #'   `opleidingscode`, `inschrijvingsjaar`, `indicatie_hoofdinschrijving`,
@@ -132,16 +125,7 @@ bevat_code <- function(codes, zoek) {
 #' pad <- system.file("extdata/voorbeeld_vlpbek.csv", package = "staat1cho")
 #' lees_bekostiging(pad)
 #' @export
-lees_bekostiging <- function(
-  pad,
-  pseudonimiseer = FALSE,
-  sleutel = NULL,
-  sleutelbestand = NULL
-) {
-  ## Sleutel eerst ophalen: een ontbrekende sleutel moet falen voordat er
-  ## iets wordt ingelezen.
-  sleutel_raw <- if (pseudonimiseer) laad_sleutel(sleutel, sleutelbestand)
-
+lees_bekostiging <- function(pad) {
   regels <- readLines(pad, encoding = "latin1", warn = FALSE)
 
   ## Peiljaar uit de VLP-koptekstregel (veld 3)
@@ -249,12 +233,7 @@ lees_bekostiging <- function(
       indicatie_herstelbaar
     )
 
-  if (pseudonimiseer) {
-    result$persoonsgebonden_nummer <- pseudonimiseer_ids(result$persoonsgebonden_nummer, sleutel_raw)
-  }
-
   attr(result, "peiljaar") <- peiljaar
-  attr(result, "gepseudonimiseerd") <- pseudonimiseer
   result
 }
 
@@ -281,7 +260,9 @@ samenvoegen_redenen <- function(redenen) {
 #'
 #' De functie meldt hoeveel rijen gekoppeld zijn en waarschuwt als dat minder
 #' dan de helft is: dan gebruiken de bestanden waarschijnlijk verschillende
-#' ID's (bijv. gepseudonimiseerd tegenover BSN). Het attribuut `koppeling`
+#' ID's. Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het
+#' BSN behouden is (niet gepseudonimiseerd en niet omgezet naar
+#' studentnummer). Het attribuut `koppeling`
 #' bevat de aantallen.
 #'
 #' Studenten zonder overeenkomst in het VLPBEK-bestand krijgen `NA` voor
@@ -330,7 +311,7 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
     indicatoren$persoonsgebonden_nummer,
     bekostiging$persoonsgebonden_nummer,
     "VLPBEK",
-    "Lees het VLPBEK-bestand in met {.code lees_bekostiging(pad, pseudonimiseer = TRUE)} en dezelfde sleutel als in 1cijferho."
+    INSTRUCTIE_BSN
   )
 
   per_inschrijving <- bekostiging |>
@@ -393,7 +374,8 @@ meld_koppeling <- function(resultaat, bron_gevonden, n_verrijkt, bron, eenheid) 
   if (n > 0 && gevonden / n < 0.5) {
     cli::cli_warn(c(
       tekst,
-      "i" = "Controleer of beide bestanden dezelfde persoonsnummers gebruiken (bijv. gepseudonimiseerd tegenover BSN) en dezelfde opleidingscodes."
+      "i" = "Controleer of beide bestanden dezelfde persoonsnummers en opleidingscodes gebruiken.",
+      "i" = if (bron == "VLPBEK") INSTRUCTIE_BSN else "Gebruik voor het 1CHO- en VAKHAVW-bestand dezelfde 1cijferho-uitvoer."
     ))
   } else {
     cli::cli_inform(tekst)

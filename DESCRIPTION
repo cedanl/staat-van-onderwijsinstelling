@@ -22,7 +22,6 @@ Imports:
     cli,
     dplyr,
     forcats,
-    openssl,
     readr,
     rlang,
     shiny

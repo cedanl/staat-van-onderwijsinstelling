@@ -13,11 +13,9 @@ niveau <- "student"
 vakhawv_pad <- ""
 vlpbek_pad <- ""
 
-## Is het 1CHO-bestand door 1cijferho gepseudonimiseerd, dan moet VLPBEK met
-## dezelfde sleutel worden gepseudonimiseerd om te kunnen koppelen. Geef het
-## pad naar het sleutelbestand, of laat leeg om de omgevingsvariabele
-## EENCIJFERHO_ENCRYPT_KEY te gebruiken (zoals 1cijferho zelf).
-sleutelbestand <- ""
+## LET OP bij VLPBEK: het VLPBEK-bestand bevat het echte BSN. Koppelen kan
+## alleen als pad_1cho (en vakhawv_pad) de 1cijferho-uitvoer is waarin het
+## BSN behouden is: niet gepseudonimiseerd en niet omgezet naar studentnummer.
 
 
 ## Invoer ----
@@ -124,15 +122,7 @@ if (nzchar(vakhawv_pad) && file.exists(vakhawv_pad)) {
 
 if (nzchar(vlpbek_pad) && file.exists(vlpbek_pad)) {
   cli::cli_alert_info("VLPBEK --- Bekostiging inlezen en koppelen")
-  gepseudonimiseerd <- is_gepseudonimiseerd(Basisbestand1CHO$persoonsgebonden_nummer)
-  if (gepseudonimiseerd) {
-    cli::cli_alert_info("VLPBEK --- 1CHO is gepseudonimiseerd: VLPBEK krijgt dezelfde pseudonimisering")
-  }
-  Bekostiging <- lees_bekostiging(
-    vlpbek_pad,
-    pseudonimiseer = gepseudonimiseerd,
-    sleutelbestand = if (nzchar(sleutelbestand)) sleutelbestand
-  )
+  Bekostiging <- lees_bekostiging(vlpbek_pad)
   Data_1cHO_indicatoren <- verrijk_met_bekostiging(Data_1cHO_indicatoren, Bekostiging)
   bewaar(Bekostiging, "Bekostiging")
 } else {

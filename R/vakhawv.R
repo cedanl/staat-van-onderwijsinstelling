@@ -111,7 +111,7 @@ verrijk_met_vakhawv <- function(indicatoren, vakhawv) {
     indicatoren$persoonsgebonden_nummer,
     vakhawv$persoonsgebonden_nummer,
     "VAKHAVW",
-    "Laat 1cijferho het VAKHAVW-bestand pseudonimiseren met dezelfde sleutel als het EV-bestand."
+    "Gebruik voor het 1CHO- en VAKHAVW-bestand dezelfde 1cijferho-uitvoer."
   )
 
   per_student <- vakhawv |>
