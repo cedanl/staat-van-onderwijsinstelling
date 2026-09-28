@@ -1,5 +1,6 @@
 ^data$
 ^Output$
+^\.github$
 ^\.claude$
 ^\.claudeignore$
 ^pipeline\.R$

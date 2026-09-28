@@ -117,7 +117,8 @@ DICT <- data.frame(
     rep("Rendement", 4),
     rep("Uitval", 4),
     rep("Studiewissel", 11),
-    rep("Vooropleiding (VAKHAVW)", 3)
+    rep("Vooropleiding (VAKHAVW)", 3),
+    rep("Bekostiging (VLPBEK)", 4)
   ),
   Kolom = c(
     "inschrijvingsjaar",
@@ -155,7 +156,11 @@ DICT <- data.frame(
     "studiewissel",
     "vakhawv_gemiddeld_eindcijfer",
     "vakhawv_wiskundecijfer",
-    "vakhawv_aantal_vakken"
+    "vakhawv_aantal_vakken",
+    "indicatie_bekostigd",
+    "indicatie_hoofdinschrijving",
+    "reden_niet_bekostigd",
+    "indicatie_herstelbaar"
   ),
   Omschrijving = c(
     "Jaar van eerste inschrijving (cohortjaar)",
@@ -193,7 +198,11 @@ DICT <- data.frame(
     "Samengevatte studiewisseluitkomst",
     "Gemiddeld eindcijfer vooropleiding (uit VAKHAVW, schaal 1-10)",
     "Gemiddeld centraal examencijfer wiskunde (uit VAKHAVW, schaal 1-10)",
-    "Aantal unieke vakken op de eindlijst (uit VAKHAVW)"
+    "Aantal unieke vakken op de eindlijst (uit VAKHAVW)",
+    "Of DUO de inschrijving bekostigt (uit VLPBEK)",
+    "DUO-Bekostigingsindicatie: of de inschrijving is aangeleverd als in aanmerking komend voor bekostiging (uit VLPBEK)",
+    "Toelichting als niet bekostigd, gedecodeerd uit de DUO-redencode (uit VLPBEK)",
+    "Of de reden voor niet-bekostiging hersteld kan worden door tijdig opnieuw aan te leveren (uit VLPBEK)"
   ),
   stringsAsFactors = FALSE
 )
@@ -319,17 +328,24 @@ trend_lijn <- function(
     group_by(.data[[kleur_col]]) |>
     filter(n() >= 2) |>
     ungroup()
-  ggplot(
+  ## Een geom_line() met een lege data-frame (elke groep heeft maar 1 punt,
+  ## bijv. een enkel instroomjaar) laat ggplotly() crashen ("Error in order:
+  ## argument 1 is not a vector"). Voeg de lijnlaag daarom alleen toe als er
+  ## daadwerkelijk lijndata is.
+  p <- ggplot(
     data,
     aes(x = inschrijvingsjaar, y = .data[[y_col]], color = .data[[kleur_col]])
   ) +
-    geom_line(data = lijn_data, linewidth = 1.3) +
     geom_point(size = 3) +
     scale_y_continuous(labels = y_label) +
     scale_x_continuous(breaks = scales::pretty_breaks(n = 7)) +
     scale_color_manual(values = kleuren_schaal) +
     labs(x = "Instroomjaar", y = NULL, title = titel) +
     thema()
+  if (nrow(lijn_data) > 0) {
+    p <- p + geom_line(data = lijn_data, linewidth = 1.3)
+  }
+  p
 }
 
 instroom_trend <- function(
@@ -344,13 +360,18 @@ instroom_trend <- function(
   if (nrow(agg) == 0) {
     return(leeg_plot())
   }
-  lijn_data <- if (nrow(agg) >= 2) agg else agg[0, ]
-  ggplot(agg, aes(x = inschrijvingsjaar, y = n)) +
-    geom_line(data = lijn_data, color = NPULS_BLAUW, linewidth = 1.3) +
+  ## Een geom_line() met een lege data-frame (maar 1 instroomjaar in de
+  ## data) laat ggplotly() crashen ("Error in order: argument 1 is not a
+  ## vector"). Voeg de lijnlaag daarom alleen toe als er >= 2 punten zijn.
+  p <- ggplot(agg, aes(x = inschrijvingsjaar, y = n)) +
     geom_point(color = NPULS_BLAUW, size = 3) +
     scale_x_continuous(breaks = scales::pretty_breaks(n = 7)) +
     labs(x = "Instroomjaar", y = y_label, title = titel) +
     thema()
+  if (nrow(agg) >= 2) {
+    p <- p + geom_line(data = agg, color = NPULS_BLAUW, linewidth = 1.3)
+  }
+  p
 }
 
 rendement_trend <- function(data, titel = "Rendement per cohortjaar") {
@@ -661,11 +682,26 @@ server <- function(input, output, session) {
   heeft_bekostiging <- reactiveVal(FALSE)
   bek_peiljaar     <- reactiveVal(NULL)
   bek_jaren        <- reactiveVal(NULL)
+  ## Shiny wist input$xxx_upload niet vanzelf als de fileInput opnieuw wordt
+  ## getekend (bijv. na "Nieuw bestand"); de oude serverwaarde blijft anders
+  ## hangen en wordt stilzwijgend hergebruikt. Door de input-ID's te laten
+  ## meelopen met deze teller krijgt elke upload-poging gegarandeerd verse,
+  ## nog nooit geziene input-ID's zonder oude waarde.
+  upload_generation <- reactiveVal(0L)
+  upload_ids <- function() {
+    gen <- upload_generation()
+    list(
+      bestand     = paste0("bestand_upload_", gen),
+      vakhawv     = paste0("vakhawv_upload_", gen),
+      bekostiging = paste0("bekostiging_upload_", gen)
+    )
+  }
 
   ## Scherm switch ----
 
   output$scherm <- renderUI({
     if (fase() == "upload") {
+      ids <- upload_ids()
       tags$div(
         class = "upload-achtergrond",
         card(
@@ -691,7 +727,7 @@ server <- function(input, output, session) {
           ),
           card_body(
             fileInput(
-              "bestand_upload",
+              ids$bestand,
               "1CHO CSV-bestand",
               accept = ".csv",
               buttonLabel = "Bladeren...",
@@ -716,14 +752,14 @@ server <- function(input, output, session) {
               )
             ),
             fileInput(
-              "vakhawv_upload",
+              ids$vakhawv,
               "VAKHAVW-bestand (vakcijfers vooropleiding)",
               accept = ".csv",
               buttonLabel = "Bladeren...",
               placeholder = "Optioneel"
             ),
             fileInput(
-              "bekostiging_upload",
+              ids$bekostiging,
               "VLPBEK-bestand (bekostigingsindicatie)",
               accept = ".csv",
               buttonLabel = "Bladeren...",
@@ -1052,6 +1088,14 @@ server <- function(input, output, session) {
                     card_header("% bekostigd per opleidingsniveau"),
                     plotlyOutput("plot_bek_niveau", height = "240px")
                   )
+                ),
+                layout_columns(
+                  col_widths = c(3, 9),
+                  uiOutput("kpi_pct_herstelbaar"),
+                  card(
+                    card_header("Redenen niet bekostigd (groen = herstelbaar door tijdig opnieuw aan te leveren)"),
+                    plotlyOutput("plot_bek_redenen", height = "320px")
+                  )
                 )
               )
             } else {
@@ -1132,7 +1176,7 @@ server <- function(input, output, session) {
       "Data verwerken",
       class = "upload-verwerk-btn"
     )
-    if (is.null(input$bestand_upload)) {
+    if (is.null(input[[upload_ids()$bestand]])) {
       tagAppendAttributes(
         btn,
         disabled = "disabled",
@@ -1145,13 +1189,18 @@ server <- function(input, output, session) {
   outputOptions(output, "btn_verwerk_ui", suspendWhenHidden = FALSE)
 
   observeEvent(input$btn_verwerk, {
-    if (is.null(input$bestand_upload)) {
+    ids <- upload_ids()
+    bestand_upload     <- input[[ids$bestand]]
+    vakhawv_upload     <- input[[ids$vakhawv]]
+    bekostiging_upload <- input[[ids$bekostiging]]
+
+    if (is.null(bestand_upload)) {
       toon_fout("Selecteer eerst een CSV-bestand.")
       return()
     }
 
     kolomnamen <- names(readr::read_csv2(
-      input$bestand_upload$datapath,
+      bestand_upload$datapath,
       n_max = 0,
       show_col_types = FALSE
     ))
@@ -1169,7 +1218,7 @@ server <- function(input, output, session) {
       tryCatch(
         {
           setProgress(0.10, detail = "Basisbestand inlezen")
-          basisbestand <- maak_basisbestand(input$bestand_upload$datapath)
+          basisbestand <- maak_basisbestand(bestand_upload$datapath)
           jaar <- max(basisbestand$inschrijvingsjaar, na.rm = TRUE) + 1L
 
           soort_ho <- unique(basisbestand$soort_hoger_onderwijs)
@@ -1228,11 +1277,11 @@ server <- function(input, output, session) {
 
           ## VAKHAVW (optioneel) ----
           heeft_vakhawv(FALSE)
-          if (!is.null(input$vakhawv_upload)) {
+          if (!is.null(vakhawv_upload)) {
             setProgress(0.95, detail = "VAKHAVW koppelen")
             tryCatch(
               {
-                vakhawv <- lees_vakhawv(input$vakhawv_upload$datapath)
+                vakhawv <- lees_vakhawv(vakhawv_upload$datapath)
                 vakhawv_raw(vakhawv)
                 result <- verrijk_met_vakhawv(result, vakhawv)
                 heeft_vakhawv(TRUE)
@@ -1249,11 +1298,11 @@ server <- function(input, output, session) {
 
           ## VLPBEK (optioneel) ----
           heeft_bekostiging(FALSE)
-          if (!is.null(input$bekostiging_upload)) {
+          if (!is.null(bekostiging_upload)) {
             setProgress(0.98, detail = "Bekostiging koppelen")
             tryCatch(
               {
-                bekostiging <- lees_bekostiging(input$bekostiging_upload$datapath)
+                bekostiging <- lees_bekostiging(bekostiging_upload$datapath)
                 bek_peiljaar(attr(bekostiging, "peiljaar"))
                 bek_jaren(sort(unique(bekostiging$inschrijvingsjaar)))
                 result <- verrijk_met_bekostiging(result, bekostiging)
@@ -1289,6 +1338,9 @@ server <- function(input, output, session) {
     heeft_bekostiging(FALSE)
     bek_peiljaar(NULL)
     bek_jaren(NULL)
+    ## Nieuwe generatie -> fileInput()s krijgen verse ID's, zodat oude
+    ## input$..._upload-waarden niet stilzwijgend worden hergebruikt.
+    upload_generation(upload_generation() + 1L)
   })
 
   ## Gefilterde data ----
@@ -1596,7 +1648,8 @@ server <- function(input, output, session) {
       "Gem. eindcijfer vooropleiding",
       if (is.nan(gem)) "—" else as.character(gem),
       bg = NPULS_BLAUW,
-      fg = NPULS_GEEL
+      fg = NPULS_GEEL,
+      definitie = DEFINITIES[[analyse_niveau()]]$vakhawv_gemiddeld_eindcijfer
     )
   })
 
@@ -1607,7 +1660,8 @@ server <- function(input, output, session) {
       "Gem. aantal vakken",
       if (is.nan(gem)) "—" else as.character(gem),
       bg = NPULS_ORANJE,
-      fg = NPULS_ZWART
+      fg = NPULS_ZWART,
+      definitie = DEFINITIES[[analyse_niveau()]]$vakhawv_aantal_vakken
     )
   })
 
@@ -1618,7 +1672,8 @@ server <- function(input, output, session) {
       "% met VAKHAVW-data",
       if (is.nan(pct)) "—" else paste0(pct, "%"),
       bg = NPULS_GROEN,
-      fg = NPULS_ZWART
+      fg = NPULS_ZWART,
+      definitie = "Percentage studenten waarvoor vooropleidingsgegevens uit het geuploade VAKHAVW-bestand gekoppeld konden worden (op persoonsgebonden_nummer)."
     )
   })
 
@@ -1665,7 +1720,11 @@ server <- function(input, output, session) {
       paste0("Gem. CE-cijfer ", toupper(input$vak_keuze)),
       if (is.nan(gem)) "—" else as.character(gem),
       bg = NPULS_BLAUW,
-      fg = NPULS_GEEL
+      fg = NPULS_GEEL,
+      definitie = paste0(
+        "Gemiddeld centraal examencijfer (schaal 1-10) voor het vak '",
+        input$vak_keuze, "', afkomstig uit het VAKHAVW-bestand."
+      )
     )
   })
 
@@ -1676,7 +1735,11 @@ server <- function(input, output, session) {
       paste0("% met ", toupper(input$vak_keuze)),
       if (is.nan(pct)) "—" else paste0(pct, "%"),
       bg = NPULS_GROEN,
-      fg = NPULS_ZWART
+      fg = NPULS_ZWART,
+      definitie = paste0(
+        "Percentage studenten met een centraal examencijfer voor '",
+        input$vak_keuze, "' op de VAKHAVW-eindlijst."
+      )
     )
   })
 
@@ -1837,7 +1900,8 @@ server <- function(input, output, session) {
       "% bekostigd",
       if (length(pct) == 0 || is.nan(pct)) "—" else paste0(pct, "%"),
       bg = NPULS_GROEN,
-      fg = NPULS_ZWART
+      fg = NPULS_ZWART,
+      definitie = DEFINITIES[[analyse_niveau()]]$indicatie_bekostigd
     )
   })
 
@@ -1862,7 +1926,20 @@ server <- function(input, output, session) {
       "% hoofdinschrijving",
       if (length(pct) == 0 || is.nan(pct)) "—" else paste0(pct, "%"),
       bg = NPULS_GEEL,
-      fg = NPULS_ZWART
+      fg = NPULS_ZWART,
+      definitie = DEFINITIES[[analyse_niveau()]]$indicatie_hoofdinschrijving
+    )
+  })
+
+  output$kpi_pct_herstelbaar <- renderUI({
+    d <- df() |> dplyr::filter(!is.na(indicatie_herstelbaar))
+    pct <- round(mean(d$indicatie_herstelbaar, na.rm = TRUE) * 100)
+    vb(
+      "% herstelbaar (van niet bekostigd)",
+      if (nrow(d) == 0 || is.nan(pct)) "—" else paste0(pct, "%"),
+      bg = NPULS_ROZE,
+      fg = NPULS_ZWART,
+      definitie = DEFINITIES[[analyse_niveau()]]$indicatie_herstelbaar
     )
   })
 
@@ -1920,13 +1997,57 @@ server <- function(input, output, session) {
   output$plot_bek_vorm      <- renderPlotly(bek_pct_bar(df(), "opleidingsvorm", NULL))
   output$plot_bek_niveau    <- renderPlotly(bek_pct_bar(df(), "opleidingsniveau", NULL))
 
+  output$plot_bek_redenen <- renderPlotly({
+    d <- df() |> dplyr::filter(!is.na(reden_niet_bekostigd))
+    if (nrow(d) == 0) return(ggplotly(leeg_plot()))
+
+    ## Een rij kan meerdere, met "; " samengevoegde redenen hebben (zie
+    ## verrijk_met_bekostiging()); die worden hier los geteld.
+    tel <- tibble::tibble(
+      reden = unlist(strsplit(d$reden_niet_bekostigd, "; ", fixed = TRUE))
+    ) |>
+      dplyr::count(reden, name = "n", sort = TRUE) |>
+      dplyr::left_join(
+        dplyr::select(BEKOSTIGINGSTATUS_CODES, omschrijving, herstelbaar),
+        by = c("reden" = "omschrijving")
+      ) |>
+      dplyr::mutate(
+        categorie = dplyr::case_when(
+          is.na(herstelbaar) ~ "Onbekend",
+          herstelbaar        ~ "Herstelbaar",
+          TRUE               ~ "Structureel"
+        ),
+        reden_kort = dplyr::if_else(
+          nchar(reden) > 65,
+          paste0(substr(reden, 1, 62), "..."),
+          reden
+        )
+      ) |>
+      dplyr::slice_max(n, n = 10, with_ties = FALSE)
+
+    kleuren <- c(
+      "Herstelbaar"  = NPULS_GROEN,
+      "Structureel"  = NPULS_ORANJE,
+      "Onbekend"     = KLEUR_NEUTRAAL
+    )
+    p <- ggplot(tel, aes(x = fct_reorder(reden_kort, n), y = n, fill = categorie)) +
+      geom_col() +
+      geom_text(aes(label = n), hjust = -0.15, size = 3.3) +
+      scale_fill_manual(values = kleuren, breaks = names(kleuren)) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+      coord_flip() +
+      labs(x = NULL, y = "Aantal", fill = NULL) +
+      thema()
+    ggplotly(p) |> layout(legend = LEGEND_LAYOUT)
+  })
+
   ## Data tab ----
 
   output$tabel_dict <- renderDT({
     datatable(
       DICT,
       rownames = FALSE,
-      options = list(pageLength = 33, dom = "t", ordering = FALSE),
+      options = list(pageLength = nrow(DICT), dom = "t", ordering = FALSE),
       class = "compact stripe"
     ) |>
       formatStyle(
@@ -1938,9 +2059,13 @@ server <- function(input, output, session) {
             "Rendement",
             "Uitval",
             "Studiewissel",
-            "Vooropleiding (VAKHAVW)"
+            "Vooropleiding (VAKHAVW)",
+            "Bekostiging (VLPBEK)"
           ),
-          c("#CCEEE6", "#D6E2FD", "#FFE4D8", "#FFE4D8", "#FCF5D4", "#FFF3CD")
+          c(
+            "#CCEEE6", "#D6E2FD", "#FFE4D8", "#FFE4D8", "#FCF5D4", "#FFF3CD",
+            NPULS_ROZE
+          )
         ),
         fontWeight = "600"
       )
@@ -1980,7 +2105,8 @@ server <- function(input, output, session) {
           "pct_rendement_3jr", "pct_rendement_5jr", "pct_rendement_8jr",
           "pct_studiewissel_1jr", "pct_studiewissel_3jr",
           "pct_int_student", "gem_leeftijd_instroom",
-          "gem_eindcijfer", "pct_bekostigd", "pct_hoofdinschrijving"
+          "gem_eindcijfer", "gem_wiskundecijfer", "gem_aantal_vakken",
+          "pct_bekostigd", "pct_hoofdinschrijving", "pct_herstelbaar"
         ),
         Omschrijving = c(
           "Onderwijs-CROHO-sector (bijv. gezondheidszorg, techniek)",
@@ -1999,8 +2125,11 @@ server <- function(input, output, session) {
           "% internationale studenten in de groep",
           "Gemiddelde leeftijd bij instroom",
           "Gemiddeld eindcijfer vooropleiding (alleen aanwezig als VAKHAVW-bestand is geladen)",
+          "Gemiddeld centraal examencijfer wiskunde (alleen aanwezig als VAKHAVW-bestand is geladen)",
+          "Gemiddeld aantal vakken op de eindlijst (alleen aanwezig als VAKHAVW-bestand is geladen)",
           "% studenten met bekostigingsstatus 'bekostigd' (alleen aanwezig als VLPBEK-bestand is geladen)",
-          "% studenten met hoofdinschrijving (alleen aanwezig als VLPBEK-bestand is geladen)"
+          "% studenten met hoofdinschrijving (alleen aanwezig als VLPBEK-bestand is geladen)",
+          "% van de niet-bekostigde studenten waarvan de reden herstelbaar is (te late aanlevering; alleen aanwezig als VLPBEK-bestand is geladen)"
         ),
         Opmerking = c(
           "Rij met sector = 'totaal' is de optelling over alle groepen voor dat instroomjaar",
@@ -2009,7 +2138,8 @@ server <- function(input, output, session) {
           "Percentages zijn berekend over studenten met een definitieve uitkomst voor dit cohort",
           "", "", "", "", "", "", "",
           "Gemiddelde over de hoogste eindcijfers per student",
-          "", ""
+          "", "", "", "",
+          "Zie BEKOSTIGINGSTATUS_CODES in het R-pakket voor de volledige lijst redencodes"
         )
       )
 

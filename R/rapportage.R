@@ -43,8 +43,11 @@
 #'   `pct_uitval_1jr`, `pct_uitval_3jr`, `pct_rendement_3jr`,
 #'   `pct_rendement_5jr`, `pct_rendement_8jr`, `pct_studiewissel_1jr`,
 #'   `pct_studiewissel_3jr`, `pct_int_student`, `gem_leeftijd_instroom`,
-#'   plus optioneel `gem_eindcijfer`, `pct_bekostigd` en
-#'   `pct_hoofdinschrijving`. Het attribuut `gegenereerd_op` (POSIXct)
+#'   plus optioneel `gem_eindcijfer`, `gem_wiskundecijfer`,
+#'   `gem_aantal_vakken`, `pct_bekostigd`, `pct_hoofdinschrijving` en
+#'   `pct_herstelbaar` (van de niet-bekostigde rijen: percentage waarvan de
+#'   reden een te late aanlevering is en dus hersteld kan worden, zie
+#'   [BEKOSTIGINGSTATUS_CODES]). Het attribuut `gegenereerd_op` (POSIXct)
 #'   registreert het tijdstip.
 #'
 #' @examples
@@ -66,8 +69,11 @@
 maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
   heeft_studiewissel  <- "studiewissel_1jr"             %in% names(indicatoren)
   heeft_vakhawv       <- "vakhawv_gemiddeld_eindcijfer"  %in% names(indicatoren)
+  heeft_wiskunde      <- "vakhawv_wiskundecijfer"        %in% names(indicatoren)
+  heeft_aantal_vakken <- "vakhawv_aantal_vakken"         %in% names(indicatoren)
   heeft_bekostiging   <- "indicatie_bekostigd"           %in% names(indicatoren)
   heeft_hoofdinschr   <- "indicatie_hoofdinschrijving"   %in% names(indicatoren)
+  heeft_herstelbaar   <- "indicatie_herstelbaar"         %in% names(indicatoren)
 
   .pct <- function(x, label) {
     mean(as.character(x) == label, na.rm = TRUE) * 100
@@ -86,9 +92,14 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
         pct_studiewissel_3jr = if (heeft_studiewissel) .pct(studiewissel_3jr, "Gewisseld binnen 3 jaar") else NA_real_,
         pct_int_student      = .pct(int_student, "internationale student"),
         gem_leeftijd_instroom = mean(leeftijd_bij_instroom, na.rm = TRUE),
-        gem_eindcijfer        = if (heeft_vakhawv)     mean(vakhawv_gemiddeld_eindcijfer, na.rm = TRUE) else NA_real_,
-        pct_bekostigd         = if (heeft_bekostiging) mean(indicatie_bekostigd,          na.rm = TRUE) * 100 else NA_real_,
-        pct_hoofdinschrijving = if (heeft_hoofdinschr) mean(indicatie_hoofdinschrijving,  na.rm = TRUE) * 100 else NA_real_,
+        gem_eindcijfer        = if (heeft_vakhawv)      mean(vakhawv_gemiddeld_eindcijfer, na.rm = TRUE) else NA_real_,
+        gem_wiskundecijfer    = if (heeft_wiskunde)      mean(vakhawv_wiskundecijfer,       na.rm = TRUE) else NA_real_,
+        gem_aantal_vakken     = if (heeft_aantal_vakken) mean(vakhawv_aantal_vakken,        na.rm = TRUE) else NA_real_,
+        pct_bekostigd         = if (heeft_bekostiging)   mean(indicatie_bekostigd,          na.rm = TRUE) * 100 else NA_real_,
+        pct_hoofdinschrijving = if (heeft_hoofdinschr)   mean(indicatie_hoofdinschrijving,  na.rm = TRUE) * 100 else NA_real_,
+        ## indicatie_herstelbaar is NA voor bekostigde rijen, dus na.rm=TRUE
+        ## beperkt dit al automatisch tot de niet-bekostigde rijen.
+        pct_herstelbaar       = if (heeft_herstelbaar)   mean(indicatie_herstelbaar,        na.rm = TRUE) * 100 else NA_real_,
         .groups = "drop"
       )
   }
@@ -123,7 +134,8 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
     "pct_rendement_3jr", "pct_rendement_5jr", "pct_rendement_8jr",
     "pct_studiewissel_1jr", "pct_studiewissel_3jr",
     "pct_int_student", "gem_leeftijd_instroom",
-    "gem_eindcijfer", "pct_bekostigd", "pct_hoofdinschrijving"
+    "gem_eindcijfer", "gem_wiskundecijfer", "gem_aantal_vakken",
+    "pct_bekostigd", "pct_hoofdinschrijving", "pct_herstelbaar"
   )
   aanwezige_uitkomsten <- intersect(uitkomstkolommen, names(resultaat))
 
@@ -140,8 +152,11 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
   ## Verwijder optionele kolommen die volledig leeg zijn (optioneel bestand
   ## was niet geladen of koppeling leverde geen matches op)
   altijd_na  <- function(col) all(is.na(resultaat[[col]]))
-  optioneel  <- c("pct_studiewissel_1jr", "pct_studiewissel_3jr",
-                  "gem_eindcijfer", "pct_bekostigd", "pct_hoofdinschrijving")
+  optioneel  <- c(
+    "pct_studiewissel_1jr", "pct_studiewissel_3jr",
+    "gem_eindcijfer", "gem_wiskundecijfer", "gem_aantal_vakken",
+    "pct_bekostigd", "pct_hoofdinschrijving", "pct_herstelbaar"
+  )
   resultaat  <- dplyr::select(
     resultaat, -dplyr::all_of(Filter(altijd_na, optioneel))
   )

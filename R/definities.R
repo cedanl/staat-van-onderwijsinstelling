@@ -74,7 +74,33 @@ DEFINITIES <- list(
 
     vakhawv_aantal_vakken =
       "Aantal unieke vakken op de eindlijst van de vooropleiding, afkomstig
-      uit het VAKHAVW-bestand."
+      uit het VAKHAVW-bestand.",
+
+    ## Bekostiging (identiek op beide niveaus: beschrijft de koppeling via
+    ## persoonsgebonden_nummer + opleidingscode)
+    indicatie_bekostigd =
+      "Of DUO deze inschrijving bekostigt, afkomstig uit het VLPBEK-bestand.
+      Heeft de student meerdere BRD-regels voor dezelfde opleiding, dan
+      geldt: bekostigd zodra minstens een regel bekostigd is. Alleen
+      beschikbaar als een VLPBEK-bestand is geupload.",
+
+    indicatie_hoofdinschrijving =
+      "DUO-veld 'Bekostigingsindicatie' uit het VLPBEK-bestand: geeft aan of
+      de instelling deze inschrijving heeft aangeleverd als in aanmerking
+      komend voor bekostiging. Alleen beschikbaar als een VLPBEK-bestand is
+      geupload.",
+
+    reden_niet_bekostigd =
+      "Toelichting op de DUO-bekostigingsstatus als de inschrijving niet
+      bekostigd is, gedecodeerd uit de CodeBekostigingstatus van het
+      VLPBEK-bestand (zie BEKOSTIGINGSTATUS_CODES). Leeg als de inschrijving
+      wel bekostigd is.",
+
+    indicatie_herstelbaar =
+      "Of de reden voor niet-bekostiging een te late aanlevering door de
+      instelling is ('ti'/'tg') en dus hersteld kan worden door tijdig
+      opnieuw aan te leveren. 'Onwaar' bij een structurele of wettelijke
+      reden; leeg als de inschrijving wel bekostigd is."
   ),
 
   inschrijving = list(
@@ -135,7 +161,33 @@ DEFINITIES <- list(
 
     vakhawv_aantal_vakken =
       "Aantal unieke vakken op de eindlijst van de vooropleiding, afkomstig
-      uit het VAKHAVW-bestand."
+      uit het VAKHAVW-bestand.",
+
+    ## Bekostiging (identiek op beide niveaus: beschrijft de koppeling via
+    ## persoonsgebonden_nummer + opleidingscode)
+    indicatie_bekostigd =
+      "Of DUO deze inschrijving bekostigt, afkomstig uit het VLPBEK-bestand.
+      Heeft de student meerdere BRD-regels voor dezelfde opleiding, dan
+      geldt: bekostigd zodra minstens een regel bekostigd is. Alleen
+      beschikbaar als een VLPBEK-bestand is geupload.",
+
+    indicatie_hoofdinschrijving =
+      "DUO-veld 'Bekostigingsindicatie' uit het VLPBEK-bestand: geeft aan of
+      de instelling deze inschrijving heeft aangeleverd als in aanmerking
+      komend voor bekostiging. Alleen beschikbaar als een VLPBEK-bestand is
+      geupload.",
+
+    reden_niet_bekostigd =
+      "Toelichting op de DUO-bekostigingsstatus als de inschrijving niet
+      bekostigd is, gedecodeerd uit de CodeBekostigingstatus van het
+      VLPBEK-bestand (zie BEKOSTIGINGSTATUS_CODES). Leeg als de inschrijving
+      wel bekostigd is.",
+
+    indicatie_herstelbaar =
+      "Of de reden voor niet-bekostiging een te late aanlevering door de
+      instelling is ('ti'/'tg') en dus hersteld kan worden door tijdig
+      opnieuw aan te leveren. 'Onwaar' bij een structurele of wettelijke
+      reden; leeg als de inschrijving wel bekostigd is."
   )
 )
 

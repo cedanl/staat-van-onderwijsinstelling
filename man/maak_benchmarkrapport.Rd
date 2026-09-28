@@ -20,8 +20,11 @@ Een tibble met kolommen \code{sector}, \code{opleidingsvorm},
 \code{pct_uitval_1jr}, \code{pct_uitval_3jr}, \code{pct_rendement_3jr},
 \code{pct_rendement_5jr}, \code{pct_rendement_8jr}, \code{pct_studiewissel_1jr},
 \code{pct_studiewissel_3jr}, \code{pct_int_student}, \code{gem_leeftijd_instroom},
-plus optioneel \code{gem_eindcijfer}, \code{pct_bekostigd} en
-\code{pct_hoofdinschrijving}. Het attribuut \code{gegenereerd_op} (POSIXct)
+plus optioneel \code{gem_eindcijfer}, \code{gem_wiskundecijfer},
+\code{gem_aantal_vakken}, \code{pct_bekostigd}, \code{pct_hoofdinschrijving} en
+\code{pct_herstelbaar} (van de niet-bekostigde rijen: percentage waarvan de
+reden een te late aanlevering is en dus hersteld kan worden, zie
+\link{BEKOSTIGINGSTATUS_CODES}). Het attribuut \code{gegenereerd_op} (POSIXct)
 registreert het tijdstip.
 }
 \description{

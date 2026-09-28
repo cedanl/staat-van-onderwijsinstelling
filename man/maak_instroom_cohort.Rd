@@ -13,9 +13,12 @@ maak_instroom_cohort(basisbestand, soort_ho, niveau = "student")
 \code{soort_hoger_onderwijs}, bijv. \code{c("hoger beroepsonderwijs", "hbo")}}
 
 \item{niveau}{Analyseniveau: \code{"student"} (standaard) of \code{"inschrijving"}.
-Bij \code{"student"} is de sleutel \code{persoonsgebonden_nummer}; bij
-\code{"inschrijving"} is de sleutel de combinatie
-\code{persoonsgebonden_nummer} + \code{opleiding_actueel_equivalent}.}
+Bij \code{"student"} is de sleutel \code{persoonsgebonden_nummer} en wordt gefilterd
+op het eerste jaar aan de instelling (\code{verblijfsjaar_actuele_instelling}).
+Bij \code{"inschrijving"} is de sleutel \code{persoonsgebonden_nummer} +
+\code{opleiding_actueel_equivalent} en wordt gefilterd op het eerste jaar in de
+specifieke opleiding (\code{verblijfsjaar_actuele_opleiding_instelling}), zodat
+wisselaars als eerstejaars in hun nieuwe opleiding worden meegenomen.}
 }
 \value{
 Een tibble met een rij per student (bij \code{niveau = "student"}) of per
@@ -34,6 +37,7 @@ basis <- tibble::tibble(
   soort_inschrijving_actuele_instelling_label =
     "hoofdinschrijving binnen het domein actuele instelling",
   verblijfsjaar_actuele_instelling = 1L,
+  verblijfsjaar_actuele_opleiding_instelling = 1L,
   inschrijvingsjaar = 2020L,
   soort_diploma_instelling_label = NA_character_
 )

@@ -37,8 +37,9 @@ lees_vakhawv <- function(pad) {
     ))
   }
 
-  ## DUO slaat cijfers op als gehele getallen x 10 (69 = 6.9). Zet om naar
-  ## decimale waarden zodat ze direct leesbaar zijn in rapportages.
+  ## DUO slaat cijfers op als gehele getallen x 10 (69 = 6.9). Een waarde
+  ## van 0 betekent dat het onderdeel niet is afgelegd (geen CE of SE), niet
+  ## een werkelijk cijfer. Die worden omgezet naar NA.
   data |>
     dplyr::mutate(
       dplyr::across(
@@ -47,8 +48,12 @@ lees_vakhawv <- function(pad) {
           cijfer_eerste_centraal_examen,
           cijfer_schoolexamen
         ),
-        ~ suppressWarnings(as.numeric(.x)) / 10
+        ~ {
+          num <- suppressWarnings(as.numeric(.x))
+          dplyr::if_else(num == 0, NA_real_, num / 10)
+        }
       ),
+      persoonsgebonden_nummer = as.character(persoonsgebonden_nummer),
       afkorting_vak = tolower(as.character(afkorting_vak))
     )
 }
@@ -119,5 +124,9 @@ verrijk_met_vakhawv <- function(indicatoren, vakhawv) {
       ~ dplyr::if_else(is.infinite(.x) | is.nan(.x), NA_real_, .x)
     ))
 
-  dplyr::left_join(indicatoren, per_student, by = "persoonsgebonden_nummer")
+  dplyr::left_join(
+    dplyr::mutate(indicatoren, persoonsgebonden_nummer = as.character(persoonsgebonden_nummer)),
+    per_student,
+    by = "persoonsgebonden_nummer"
+  )
 }

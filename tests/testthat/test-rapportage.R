@@ -187,6 +187,50 @@ test_that("pct_hoofdinschrijving wordt berekend als de kolom aanwezig is", {
   expect_true("pct_hoofdinschrijving" %in% names(result))
 })
 
+test_that("gem_wiskundecijfer wordt berekend als de kolom aanwezig is", {
+  df <- basis_df(50L)
+  df$vakhawv_wiskundecijfer <- 6.5
+
+  result <- maak_benchmarkrapport(df, drempel = 1L)
+  expect_true("gem_wiskundecijfer" %in% names(result))
+
+  rij <- result[result$sector == "gezondheidszorg" & !is.na(result$sector), ]
+  expect_equal(rij$gem_wiskundecijfer[1], 6.5)
+})
+
+test_that("gem_wiskundecijfer ontbreekt als vakhawv_wiskundecijfer niet aanwezig is", {
+  result <- maak_benchmarkrapport(basis_df(50L), drempel = 1L)
+  expect_false("gem_wiskundecijfer" %in% names(result))
+})
+
+test_that("gem_aantal_vakken wordt berekend als de kolom aanwezig is", {
+  df <- basis_df(50L)
+  df$vakhawv_aantal_vakken <- c(rep(6L, 25L), rep(8L, 25L))
+
+  result <- maak_benchmarkrapport(df, drempel = 1L)
+  expect_true("gem_aantal_vakken" %in% names(result))
+
+  rij <- result[result$sector == "gezondheidszorg" & !is.na(result$sector), ]
+  expect_equal(rij$gem_aantal_vakken[1], 7)
+})
+
+test_that("pct_herstelbaar wordt berekend over de niet-bekostigde rijen", {
+  df <- basis_df(50L)
+  df$indicatie_bekostigd    <- c(rep(TRUE, 40L), rep(FALSE, 10L))
+  df$indicatie_herstelbaar  <- c(rep(NA, 40L), rep(TRUE, 4L), rep(FALSE, 6L))
+
+  result <- maak_benchmarkrapport(df, drempel = 1L)
+  expect_true("pct_herstelbaar" %in% names(result))
+
+  rij <- result[result$sector == "gezondheidszorg" & !is.na(result$sector), ]
+  expect_equal(rij$pct_herstelbaar[1], 40)
+})
+
+test_that("pct_herstelbaar ontbreekt als indicatie_herstelbaar niet aanwezig is", {
+  result <- maak_benchmarkrapport(basis_df(50L), drempel = 1L)
+  expect_false("pct_herstelbaar" %in% names(result))
+})
+
 ## Meerdere groepen ----
 
 test_that("meerdere sectoren en opleidingsvormen worden elk apart geaggregeerd", {
