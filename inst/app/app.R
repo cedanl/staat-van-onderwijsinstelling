@@ -115,7 +115,7 @@ KLEUREN <- c(
 DICT <- data.frame(
   Categorie = c(
     rep("Studentkenmerken", 12),
-    rep("Status", 2),
+    rep("Status", 4),
     rep("Rendement", 4),
     rep("Uitval", 4),
     rep("Studiewissel", 11),
@@ -137,6 +137,8 @@ DICT <- data.frame(
     "postcode4_vooropleiding_voorHO",
     "status",
     "soortdiploma",
+    "opleidingscode_diploma",
+    "diploma_in_instroomopleiding",
     "rendement_3jr",
     "rendement_5jr",
     "rendement_8jr",
@@ -179,6 +181,8 @@ DICT <- data.frame(
     "Postcode (4-cijferig) van vooropleiding voor HO",
     "Status na afloop van de observatieperiode",
     "Soort behaald diploma",
+    "CROHO-opleidingscode waarin het (eerste) diploma is behaald",
+    "Of het diploma in de instroomopleiding is behaald (FALSE = na een wissel elders in de instelling)",
     "Diplomaresultaat binnen 3 jaar na instroom",
     "Diplomaresultaat binnen 5 jaar na instroom",
     "Diplomaresultaat binnen 8 jaar na instroom",
@@ -521,12 +525,41 @@ n_label <- function(n) {
   formatC(n, format = "d", big.mark = ".")
 }
 
+## Op studentniveau filteren opleiding, sector en locatie op het instroomjaar,
+## terwijl uitkomsten instellingsbreed zijn. Het label maakt dat zichtbaar.
+filter_label <- function(tekst, niveau) {
+  if (niveau != "student") {
+    return(tekst)
+  }
+  tagList(
+    paste(tekst, "bij instroom"),
+    tooltip(
+      span("?", class = "filter-help"),
+      DEFINITIES[["student"]]$filter_instroom,
+      placement = "right"
+    )
+  )
+}
+
 ## CSS ----
 
 npuls_css <- "
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap');
 
 *, body { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+
+/* Uitleg bij filters op studentniveau */
+.filter-help {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.1em; height: 1.1em; margin-left: 0.35em;
+  border: 1.5px solid #3D68EC; color: #3D68EC; border-radius: 50%;
+  font-size: 0.7em; font-weight: 700; cursor: help; vertical-align: middle;
+}
+.filter-uitleg {
+  background: #FFFFFF; border-left: 3px solid #3D68EC; border-radius: 4px;
+  padding: 0.5rem 0.6rem; font-size: 0.75rem; line-height: 1.35;
+  margin: 0.25rem 0 0.5rem 0;
+}
 
 /* Upload scherm */
 .upload-achtergrond {
@@ -870,19 +903,19 @@ server <- function(input, output, session) {
             ),
             selectInput(
               "locatie_filter",
-              "Locatie",
+              filter_label("Locatie", analyse_niveau()),
               choices = c("Alle locaties" = "", locaties_d),
               selected = ""
             ),
             selectInput(
               "sector_filter",
-              "Sector",
+              filter_label("Sector", analyse_niveau()),
               choices = c("Alle sectoren" = "", sectoren_d),
               selected = ""
             ),
             selectInput(
               "opleiding_filter",
-              "Opleiding",
+              filter_label("Opleiding", analyse_niveau()),
               choices = c("Alle opleidingen" = "", opleidingen_d),
               selected = ""
             ),
@@ -909,6 +942,7 @@ server <- function(input, output, session) {
               selected = "",
               inline = TRUE
             ),
+            uiOutput("filter_uitleg"),
             tags$hr(),
             uiOutput("n_label"),
             downloadButton(
@@ -1390,6 +1424,44 @@ server <- function(input, output, session) {
       d <- filter(d, as.character(geslacht) == input$geslacht_filter)
     }
     d
+  })
+
+  ## Uitleg filters op studentniveau (#45) ----
+
+  output$filter_uitleg <- renderUI({
+    req(analyse_niveau() == "student")
+    actief <- vapply(
+      c("opleiding_filter", "sector_filter", "locatie_filter"),
+      function(id) !is.null(input[[id]]) && nchar(input[[id]]) > 0,
+      logical(1)
+    )
+    if (!any(actief)) {
+      return(NULL)
+    }
+    d <- df()
+    n_diploma <- sum(d$status == "Diploma behaald", na.rm = TRUE)
+    n_elders <- sum(
+      d$status == "Diploma behaald" & !d$diploma_in_instroomopleiding,
+      na.rm = TRUE
+    )
+    tags$div(
+      class = "filter-uitleg",
+      tags$strong("Studentniveau: "),
+      "je ziet studenten die hier zijn ingestroomd. Uitkomsten gelden voor de",
+      "hele instelling, ook na een wissel.",
+      if (n_diploma > 0) {
+        tags$span(
+          tags$br(),
+          sprintf(
+            "%s van de %s diploma's in deze selectie is in een andere opleiding behaald.",
+            n_label(n_elders),
+            n_label(n_diploma)
+          )
+        )
+      },
+      tags$br(),
+      tags$em("Kies inschrijvingsniveau om per opleiding te meten.")
+    )
   })
 
   ## Sidebar teller ----

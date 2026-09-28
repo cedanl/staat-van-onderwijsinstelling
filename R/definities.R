@@ -13,6 +13,15 @@
 #' @export
 DEFINITIES <- list(
   student = list(
+    filter_instroom =
+      "Op studentniveau filteren opleiding, sector en locatie op de
+      opleiding waarin de student is ingestroomd. Alle uitkomsten gelden
+      voor de hele instelling: een student die wisselt en in een andere
+      opleiding een diploma haalt, telt bij de instroomopleiding als
+      'Diploma behaald' en niet als uitgevallen. Studenten die in een
+      opleiding instromen na een wissel zijn daar niet te zien. Kies
+      inschrijvingsniveau om per opleiding te meten.",
+
     instroom =
       "Eerstejaars studenten aan de instelling: ingeschreven als
       hoofdinschrijving en voor het eerst aan deze instelling
@@ -122,6 +131,12 @@ DEFINITIES <- list(
   ),
 
   inschrijving = list(
+    filter_instroom =
+      "Op inschrijvingsniveau is elke opleiding een eigen cohort: een
+      wissel telt als uitval uit de oude opleiding en als instroom in de
+      nieuwe. Filters op opleiding, sector en locatie meten dus per
+      opleiding.",
+
     instroom =
       "Eerstejaars inschrijvingen per opleiding: een student telt mee
       zodra zij voor het eerst in een specifieke opleiding aan deze
