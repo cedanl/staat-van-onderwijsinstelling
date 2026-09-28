@@ -67,6 +67,7 @@ utils::globalVariables(c(
   "rendement_3jr",
   "rendement_5jr",
   "rendement_8jr",
+  "rendement_xjaar",
   "sector",
   "sector_na_switch3jr",
   "soort_diploma",

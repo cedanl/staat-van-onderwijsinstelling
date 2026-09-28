@@ -148,7 +148,7 @@ combineer_indicatoren <- function(
     dplyr::mutate(
       opleidingsvorm = hercodeer(
         opleidingsvorm,
-        c("duaal" = "coöp-student of duaal onderwijs (vanaf het studiejaar 1998-1999)")
+        c("duaal" = "co\u00f6p-student of duaal onderwijs (vanaf het studiejaar 1998-1999)")
       ),
       sector = hercodeer(
         sector,

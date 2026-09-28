@@ -14,18 +14,16 @@ Het package berekent vier indicatoren per instroomcohort: **instroom**, **rendem
 
 ## Installeren
 
-Installeer de stabiele versie van CRAN:
-
-```r
-install.packages("staat1cho")
-```
-
-Of installeer de ontwikkelversie direct van GitHub:
+Installeer de ontwikkelversie direct van GitHub:
 
 ```r
 # install.packages("pak")
 pak::pak("cedanl/staat-van-onderwijsinstelling")
 ```
+
+> **Let op:** CRAN heeft nog versie 0.1.0 (april 2026), zonder VAKHAVW, bekostiging, benchmarkrapport en de correctie voor onvolledige cohorten. Gebruik tot versie 0.2.0 op CRAN staat de GitHub-versie hierboven.
+
+Voor het dashboard zijn extra packages nodig (`bslib`, `DT`, `ggplot2`, `plotly`, `scales`, `tidyr`, `writexl`). `start_dashboard()` vraagt erom als ze ontbreken.
 
 ---
 
@@ -42,21 +40,30 @@ start_dashboard()
 
 Het dashboard opent in je browser. Je kunt:
 
-- Een 1CHO-bestand uploaden en verwerken
-- Filteren op jaar, locatie, sector, opleiding, opleidingsvorm en geslacht
-- Trends bekijken voor instroom, rendement, uitval en studiewissel
-- De verwerkte data downloaden als CSV
+- Een 1CHO-bestand uploaden, optioneel met VAKHAVW- en VLPBEK-bestand
+- Kiezen tussen studentniveau en inschrijvingsniveau
+- Filteren op jaar, locatie, sector, opleiding, opleidingsniveau, opleidingsvorm en geslacht
+- Trends bekijken voor instroom, rendement, uitval, studiewissel, vooropleiding en bekostiging
+- De verwerkte data downloaden als CSV en een geanonimiseerd benchmarkrapport als Excel
+
+Geen eigen data bij de hand? Maak een synthetisch voorbeeldbestand en upload dat:
+
+```r
+readr::write_delim(maak_synthetische_1cho(), "demo_1cho.csv", delim = ";", na = "")
+```
 
 ### Pipeline
 
-Voor batch-verwerking is er een `pipeline.R` in de projectroot. Stel bovenaan het jaar en het type instelling in:
+Voor batch-verwerking is er een `pipeline.R` in de projectroot. Stel bovenaan het pad naar je 1CHO-bestand, het analyseniveau en eventueel VAKHAVW/VLPBEK in:
 
 ```r
-jaar     <- 2025
-soort_ho <- c("wetenschappelijk onderwijs", "wo")  # of "hoger beroepsonderwijs", "hbo"
+pad_1cho    <- "pad/naar/EV..._enriched.csv"  # leeg = synthetische demodata
+niveau      <- "student"                       # of "inschrijving"
+vakhawv_pad <- ""
+vlpbek_pad  <- ""
 ```
 
-De pipeline verwerkt instroom, rendement, uitval, studiewissel en combinatie in volgorde en slaat de tussenbestanden op in `Output/<jaar>/`.
+Het peiljaar en het soort hoger onderwijs worden uit de data afgeleid. De pipeline slaat de tussenbestanden en het benchmarkrapport op in `Output/<jaar>/`.
 
 ### Losse functies
 
@@ -69,10 +76,14 @@ basis      <- maak_basisbestand("pad/naar/bestand.csv")
 cohort     <- maak_instroom_cohort(basis, soort_ho = c("wetenschappelijk onderwijs", "wo"))
 diploma    <- maak_diploma_behaald(basis)
 rendement  <- bereken_rendement(cohort, diploma)
-uitval     <- bereken_uitval(basis, diploma, cohort, jaar = 2025)
+uitval     <- bereken_uitval(basis, diploma, cohort)  # peiljaar uit de data
 wissel     <- bereken_studiewissel(basis, cohort, diploma, uitval)
 resultaat  <- combineer_indicatoren(cohort, rendement, uitval, wissel)
+rapport    <- maak_benchmarkrapport(resultaat)
+schrijf_benchmarkrapport(rapport, "benchmark.xlsx")
 ```
+
+Zie `vignette("staat1cho")` voor een uitgewerkt voorbeeld.
 
 ---
 
@@ -99,7 +110,7 @@ Als een verplichte kolom ontbreekt, meldt het dashboard dit direct na het upload
 
 ## Uitvoer
 
-Per student worden de volgende indicatoren berekend:
+Per student (of per inschrijving) worden de volgende indicatoren berekend:
 
 | Categorie | Indicatoren |
 |---|---|
@@ -107,7 +118,17 @@ Per student worden de volgende indicatoren berekend:
 | Status | status na observatieperiode, soort diploma |
 | Rendement | diploma binnen 3, 5 en 8 jaar |
 | Uitval | uitval binnen 1 en 3 jaar |
-| Studiewissel | gewisseld binnen 1 en 3 jaar, opleiding/sector na wissel |
+| Studiewissel | gewisseld binnen 1 en 3 jaar, opleiding/sector na wissel (alleen studentniveau) |
+| Vooropleiding (optioneel) | eindcijfer, wiskundecijfer en aantal vakken uit VAKHAVW |
+| Bekostiging (optioneel) | bekostigd, reden niet bekostigd, herstelbaar uit VLPBEK |
+
+### Onvolledige cohorten
+
+Rendement binnen 5 jaar is voor een cohort dat pas 2 jaar in de data zit nog niet te meten. Zulke studenten krijgen `"Nog niet waarneembaar"` en tellen niet mee in percentages. Recente cohorten hebben daardoor lege waarden voor de langere termijnen; dat is verwacht.
+
+### Studentniveau of inschrijvingsniveau
+
+Op **studentniveau** telt elke student één keer, bij de opleiding waarin die instroomt, en gelden uitkomsten voor de hele instelling: een wisselaar die elders een diploma haalt, telt bij de instroomopleiding als geslaagd. Op **inschrijvingsniveau** is elke opleiding een eigen cohort en telt een wissel als uitval uit de oude opleiding. Gebruik inschrijvingsniveau om opleidingen te vergelijken.
 
 ---
 
@@ -123,6 +144,12 @@ Per student worden de volgende indicatoren berekend:
 | `bereken_uitval()` | Uitvalstatus binnen 1 en 3 jaar |
 | `bereken_studiewissel()` | Studiewissel binnen 1 en 3 jaar |
 | `combineer_indicatoren()` | Voegt alle indicatoren samen tot analysebestand |
+| `lees_vakhawv()` / `verrijk_met_vakhawv()` | Leest VAKHAVW-vakcijfers en koppelt ze per student |
+| `lees_bekostiging()` / `verrijk_met_bekostiging()` | Leest een VLPBEK-bestand en koppelt de bekostigingsstatus |
+| `maak_benchmarkrapport()` | Geaggregeerd rapport met privacyonderdrukking |
+| `schrijf_benchmarkrapport()` | Slaat het benchmarkrapport op als Excel met toelichting en metadata |
+| `maak_synthetische_1cho()` | Synthetisch 1CHO-bestand met bekende uitkomsten voor demo en validatie |
+| `DEFINITIES`, `BEKOSTIGINGSTATUS_CODES` | Definities van indicatoren en DUO-redencodes |
 
 ---
 

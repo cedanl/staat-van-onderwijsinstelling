@@ -284,7 +284,7 @@ samenvoegen_redenen <- function(redenen) {
 #'   sector                     = c("gezondheidszorg", "economie"),
 #'   bekostigingsstatus         = c("bekostigd", "niet bekostigd"),
 #'   code_bekostigingstatus     = c(NA, "nf"),
-#'   reden_niet_bekostigd       = c(NA, "Niet bekostigd i.v.m. overschrijden maximaal aantal bekostigde inschrijvingen, rekening houdend met eerder behaalde graden."),
+#'   reden_niet_bekostigd       = c(NA, "Maximaal aantal bekostigde inschrijvingen overschreden."),
 #'   indicatie_herstelbaar      = c(NA, FALSE)
 #' )
 #' verrijk_met_bekostiging(indicatoren, bekostiging)

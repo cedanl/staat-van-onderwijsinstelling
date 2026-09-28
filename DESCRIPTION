@@ -1,6 +1,6 @@
 Package: staat1cho
 Title: Study Indicators Based on Dutch Higher Education Data (1CHO)
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
     person("Aslam", "Tanjung", email = "aslam.tanjung@surf.nl", role = c("aut", "cre")),
     person("Veerle", "van Son", role = "aut"),
