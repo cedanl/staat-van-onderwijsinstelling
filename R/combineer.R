@@ -137,35 +137,30 @@ combineer_indicatoren <- function(
 
     ## Lange categorielabels inkorten en ongeldige postcodes verwijderen
     dplyr::mutate(
-      opleidingsvorm = forcats::fct_recode(
+      opleidingsvorm = hercodeer(
         opleidingsvorm,
-        "duaal" = "co\u00f6p-student of duaal onderwijs (vanaf het studiejaar 1998-1999)"
+        c("duaal" = "coöp-student of duaal onderwijs (vanaf het studiejaar 1998-1999)")
       ),
-      sector = forcats::fct_recode(
+      sector = hercodeer(
         sector,
-        "gedrag & maatschappij" = "gedrag en maatschappij",
-        "taal & cultuur" = "taal en cultuur"
+        c(
+          "gedrag & maatschappij" = "gedrag en maatschappij",
+          "taal & cultuur" = "taal en cultuur"
+        )
       ),
       ## 0010-0040 zijn onbekende postcodewaarden in de 1CHO-data
-      postcode4_student_1okt = forcats::fct_recode(
+      postcode4_student_1okt = hercodeer(
         postcode4_student_1okt,
-        NULL = "0010",
-        NULL = "0020",
-        NULL = "0030",
-        NULL = "0040"
+        verwijder = ONBEKENDE_POSTCODES
       ),
-      postcode4_vooropleiding_voorHO = forcats::fct_recode(
+      postcode4_vooropleiding_voorHO = hercodeer(
         postcode4_vooropleiding_voorHO,
-        NULL = "0010",
-        NULL = "0020",
-        NULL = "0030",
-        NULL = "0040"
+        verwijder = ONBEKENDE_POSTCODES
       ),
-      opleidingsniveau = forcats::fct_recode(
+      opleidingsniveau = hercodeer(
         opleidingsniveau,
-        NULL = "postinitiele master",
-        bachelor = "ba",
-        master = "ma"
+        c(bachelor = "ba", master = "ma"),
+        verwijder = "postinitiele master"
       )
     ) |>
 

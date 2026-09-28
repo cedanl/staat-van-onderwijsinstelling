@@ -16,8 +16,15 @@
 #' basis <- suppressMessages(maak_basisbestand(pad))
 #' @export
 maak_basisbestand <- function(pad_invoer) {
-  invoer <- readr::read_csv2(
+  ## Alles als tekst inlezen: readr raadt types op de eerste 1000 rijen, wat
+  ## voorloopnullen in ID's en postcodes ("0010") weggooit en leeftijd ("021")
+  ## soms als tekst en soms als getal oplevert. De numerieke kolommen worden
+  ## hieronder expliciet omgezet.
+  invoer <- readr::read_delim(
     pad_invoer,
+    delim = ";",
+    show_col_types = FALSE,
+    col_types = readr::cols(.default = readr::col_character()),
     locale = readr::locale(encoding = "UTF-8")
   )
 
@@ -27,15 +34,10 @@ maak_basisbestand <- function(pad_invoer) {
     )
   }
 
+  invoer <- zet_om_naar_integer(invoer, INTEGER_KOLOMMEN_1CHO)
+
   invoer |>
     dplyr::mutate(
-      verblijfsjaar_actuele_instelling = as.integer(
-        verblijfsjaar_actuele_instelling
-      ),
-      verblijfsjaar_actuele_opleiding_instelling = as.integer(
-        verblijfsjaar_actuele_opleiding_instelling
-      ),
-      diplomajaar = suppressWarnings(as.integer(diplomajaar)),
       soort_inschrijving_actuele_instelling_label = soort_inschrijving_actuele_instelling,
       geslacht_label = geslacht,
       opleidingsvorm_label = opleidingsvorm,

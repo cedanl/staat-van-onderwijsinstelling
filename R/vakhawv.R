@@ -23,9 +23,11 @@ lees_vakhawv <- function(pad) {
     "cijfer_schoolexamen"
   )
 
-  data <- readr::read_csv2(
+  data <- readr::read_delim(
     pad,
+    delim = ";",
     show_col_types = FALSE,
+    col_types = readr::cols(.default = readr::col_character()),
     locale = readr::locale(encoding = "UTF-8")
   )
 
