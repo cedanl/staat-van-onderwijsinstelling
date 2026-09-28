@@ -1,4 +1,4 @@
-# staat1cho
+# Staat van de Onderwijsinstelling (staat1cho)
 
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/staat1cho)](https://CRAN.R-project.org/package=staat1cho)
@@ -6,90 +6,301 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->
 
-R-package voor het berekenen van studie-indicatoren op basis van 1CHO-data van DUO. Oorspronkelijk ontwikkeld voor Avans Hogeschool door Veerle van Son en Damiëtte Bakx-van den Brink, doorontwikkeld door CEDA/Npuls.
+Met staat1cho maak je van de 1cijferHO-levering van DUO een overzicht van studiesucces aan je eigen instelling: hoeveel studenten instromen, hoeveel een diploma halen, hoeveel uitvallen en hoeveel van opleiding wisselen. Je bekijkt de cijfers in een dashboard in je browser en maakt met één klik een benchmarkrapport in Excel dat je kunt delen.
 
-Het package berekent vier indicatoren per instroomcohort: **instroom**, **rendement**, **uitval** en **studiewissel**. De resultaten zijn te bekijken via een interactief Shiny-dashboard of te verwerken via een R-pipeline.
+staat1cho is oorspronkelijk ontwikkeld voor Avans Hogeschool door Veerle van Son en Damiëtte Bakx-van den Brink en wordt doorontwikkeld door CEDA/Npuls.
+
+Deze handleiding neemt je mee van de ruwe DUO-bestanden tot en met een gedeeld rapport. Je hoeft niet te kunnen programmeren. Je typt of plakt een paar opdrachten; elke opdracht staat hieronder uitgeschreven.
 
 ---
 
-## Installeren
+## Wat levert het op?
 
-Installeer de ontwikkelversie direct van GitHub:
+- **Een dashboard** met tabbladen voor instroom, rendement (diploma binnen 3, 5 en 8 jaar), uitval (binnen 1 en 3 jaar) en studiewissel. Je filtert op jaar, locatie, sector, opleiding, niveau, opleidingsvorm, geslacht, vooropleiding en of een student voor het eerst in het hoger onderwijs zit.
+- **Een benchmarkrapport** (Excel) met percentages per sector, opleidingsvorm, niveau en instroomjaar. Er staan geen persoonsnummers in en kleine groepen zijn weggelaten, zodat je het met andere instellingen kunt uitwisselen.
+- **Een volledig analysebestand** (CSV) met één regel per student. Dat bevat wel persoonsgegevens en blijft binnen je instelling.
 
-```r
-# install.packages("pak")
-pak::pak("cedanl/staat-van-onderwijsinstelling")
+---
+
+## De route in het kort
+
+```
+ DUO-bestanden      1cijferho            staat1cho             resultaat
+ (.asc en .txt) ──► omzetten naar ──► dashboard of     ──► cijfers en
+                    leesbare CSV        pipeline              benchmarkrapport
 ```
 
-> **Let op:** CRAN heeft nog versie 0.1.0 (april 2026), zonder VAKHAVW, bekostiging, benchmarkrapport en de correctie voor onvolledige cohorten. Gebruik tot versie 0.2.0 op CRAN staat de GitHub-versie hierboven.
+| Stap | Wat je doet | Hoe vaak |
+|---|---|---|
+| 1 | De DUO-bestanden verzamelen | Elke nieuwe levering |
+| 2 | De bestanden omzetten met 1cijferho | Elke nieuwe levering |
+| 3 | R, RStudio en staat1cho installeren | Eenmalig |
+| 4 | Het dashboard starten en je bestand laden | Elke keer dat je de cijfers wilt bekijken |
+| 5 | De cijfers lezen | |
+| 6 | Het benchmarkrapport delen | Na een nieuwe levering |
 
-Voor het dashboard zijn extra packages nodig (`bslib`, `DT`, `ggplot2`, `plotly`, `scales`, `tidyr`, `writexl`). `start_dashboard()` vraagt erom als ze ontbreken.
+Reken voor de eerste keer op een ochtend, vooral voor het installeren. Daarna kost een nieuwe levering verwerken een half uur tot een uur.
 
 ---
 
-## Gebruik
+## Voordat je begint
 
-### Dashboard
+**Privacy.** De 1cijferHO-bestanden bevatten persoonsgegevens, waaronder het BSN. Werk op een beveiligde werkplek van je instelling, zet de bestanden niet op een USB-stick of in je mail, en stem met je privacy officer of FG af dat je deze analyse mag doen. Het benchmarkrapport is gemaakt om te delen; laat de privacy officer of FG ook daar eenmalig naar kijken.
 
-Upload een 1CHO CSV-bestand en verken de indicatoren interactief:
+**Wat je nodig hebt:**
+
+- Een Windows- of Mac-computer waarop je programma's mag installeren. Mag dat niet, vraag dan je IT-afdeling om R, RStudio en uv te installeren (zie stap 2 en 3).
+- Enkele gigabytes vrije schijfruimte: de omgezette bestanden zijn veel groter dan de originelen.
+
+**Een paar begrippen:**
+
+| Begrip | Wat het is |
+|---|---|
+| Opdrachtregel of PowerShell | Een venster waarin je opdrachten typt en met Enter uitvoert, zoals vroeger in MS-DOS. Op de Mac heet dit Terminal. |
+| Map en pad | Een map is een directory. Het pad is het volledige adres ervan, zoals `C:\Tools\1cijferho`. |
+| R en RStudio | R is de rekentaal waarin staat1cho is geschreven. RStudio is het programma waarin je met R werkt. |
+| Console | Het venster in RStudio (meestal linksonder) waarin je R-opdrachten plakt en met Enter uitvoert. |
+| Pakket | Een uitbreiding voor R. staat1cho is zo'n pakket. |
+
+---
+
+## Stap 1: Verzamel de DUO-bestanden
+
+DUO levert de 1cijferHO-bestanden elk jaar aan je instelling. Meestal ontvangt de afdeling BI, informatiemanagement of de studentenadministratie ze. Vraag daar naar de meest recente levering. Een levering bevat de hele geschiedenis van je studenten, dus je hebt alleen de nieuwste nodig.
+
+Je hebt deze bestanden nodig:
+
+| Bestand | Herken je aan | Nodig? |
+|---|---|---|
+| Het inschrijvingsbestand | Naam begint met `EV`, eindigt op `.asc` | **Ja** |
+| De bestandsbeschrijving | `Bestandsbeschrijving_1cyferho_...txt` | **Ja** |
+| De decodeertabellen en hun beschrijving | `Dec_...asc` en `Bestandsbeschrijving_Dec-bestanden.txt` | **Ja** |
+| Het vakcijferbestand van havo/vwo | Naam begint met `VAKHAVW`, plus `Bestandsbeschrijving_Vakkenbestanden.txt` | Optioneel, [zie hieronder](#optionele-bestanden-vakhavw-en-bekostiging) |
+| Het bekostigingsbestand | Voorlopige bekostiging (VLPBEK) van DUO | Optioneel, [zie hieronder](#optionele-bestanden-vakhavw-en-bekostiging) |
+
+Zijn de bestanden ingepakt (`.zip`), pak ze dan eerst uit.
+
+---
+
+## Stap 2: Zet de bestanden om met 1cijferho
+
+De DUO-bestanden zijn tekstbestanden met vaste kolombreedtes en codes in plaats van omschrijvingen. De gratis tool [1cijferho](https://github.com/cedanl/1cijferho) (ook van CEDA) zet ze om naar gewone CSV-bestanden met leesbare omschrijvingen. Dat is het bestand dat staat1cho inleest.
+
+### 2a. Installeer uv (eenmalig)
+
+1cijferho draait op Python. Het hulpprogramma uv regelt dat voor je.
+
+1. Open PowerShell: klik op Start, typ `PowerShell` en druk op Enter.
+2. Plak deze regel en druk op Enter:
+
+   ```powershell
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+3. Sluit PowerShell en open het opnieuw, zodat de nieuwe opdracht `uv` bekend is.
+
+Op een Mac gebruik je in Terminal: `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+
+### 2b. Download 1cijferho (eenmalig)
+
+1. Download [het ZIP-bestand van 1cijferho](https://github.com/cedanl/1cijferho/archive/refs/heads/main.zip).
+2. Pak het uit naar een vaste plek, bijvoorbeeld `C:\Tools\1cijferho`.
+
+### 2c. Start 1cijferho
+
+1. Open in de Verkenner de map `C:\Tools\1cijferho`.
+2. Klik in de adresbalk bovenin, typ `powershell` en druk op Enter. Er opent een PowerShell-venster dat al in de juiste map staat.
+3. De eerste keer installeer je de onderdelen. Dit duurt een paar minuten:
+
+   ```powershell
+   uv sync --extra frontend
+   ```
+
+4. Start de tool:
+
+   ```powershell
+   uv run streamlit run src/main.py
+   ```
+
+De tool opent in je browser. Laat het PowerShell-venster open zolang je met de tool werkt; sluit het venster als je klaar bent.
+
+### 2d. Zet de DUO-bestanden in de invoermap
+
+Kopieer alle bestanden uit stap 1 naar de map `data\01-input` binnen de 1cijferho-map, dus `C:\Tools\1cijferho\data\01-input`. Zet ze direct in die map, niet in een submap.
+
+### 2e. Doorloop de stappen in 1cijferho
+
+Klik op de startpagina op **Eigen data uploaden**. Volg daarna de pagina's in het menu links:
+
+1. **Bestanden uploaden**: klik op *Bestanden controleren*. De tool laat zien welke bestanden hij heeft gevonden.
+2. **Stap 1 · Metadata extraheren**: de tool leest de bestandsbeschrijvingen.
+3. **Stap 2 · Metadata valideren**: de tool controleert of elk databestand een passende beschrijving heeft.
+4. **Stap 3 · Turbo Conversie**: kies de instellingen uit de tabel hieronder en klik op *Start Turbo Convert*.
+
+| Instelling in Turbo Conversie | Kies | Waarom |
+|---|---|---|
+| Instelmodus | **Eigen instellingen** | De voorinstellingen voor andere projecten (NFWA, Evaluatietool) zetten te weinig kolommen om voor staat1cho. |
+| EV-bestanden | **Aan** | Dit is het hoofdbestand. |
+| VAKHAVW-bestanden | Aan als je een VAKHAVW-bestand hebt | |
+| Gedecodeerde variant | **Aan** | Nodig voor de verrijkte variant. |
+| Verrijkte variant | **Aan** | staat1cho leest de verrijkte variant. |
+| Kolomselectie | **Alles aan laten** | staat1cho gebruikt onder meer opleidingsnaam, vooropleiding en soort diploma. |
+| Parquet | Maakt niet uit | staat1cho gebruikt de CSV-bestanden. |
+| snake_case | **Aan** | staat1cho verwacht kolomnamen als `persoonsgebonden_nummer`. |
+| Studentnummer koppeling | **Leeg laten** | staat1cho heeft dit niet nodig. |
+
+Stap 4 (*Output valideren*) is optioneel. Het is een extra controle op de omgezette bestanden.
+
+### 2f. Het resultaat
+
+In de map `data\02-output` staan nu nieuwe bestanden. Voor staat1cho heb je het bestand nodig dat begint met `EV` en eindigt op **`_enriched.csv`**, bijvoorbeeld `EV21PL24_enriched.csv`.
+
+Dit bestand is groot. Een kleine instelling heeft al snel een paar honderd megabyte. Hoe groot het bij jou is, bepaalt in stap 4 welke route je kiest.
+
+---
+
+## Stap 3: Installeer R, RStudio en staat1cho (eenmalig)
+
+1. Installeer **R** via [cran.r-project.org](https://cran.r-project.org/) (kies je besturingssysteem en dan *base*).
+2. Installeer **RStudio Desktop** via [posit.co](https://posit.co/download/rstudio-desktop/).
+3. Open RStudio. Plak in de Console (linksonder) deze drie regels en druk op Enter:
+
+   ```r
+   install.packages("pak")
+   pak::pak("cedanl/staat-van-onderwijsinstelling")
+   install.packages(c("bslib", "DT", "ggplot2", "plotly", "scales", "tidyr", "writexl"))
+   ```
+
+Het installeren duurt enkele minuten en er verschijnt veel tekst, soms in rood. Rode tekst is niet altijd een fout. Het is gelukt als de Console weer een `>` toont en er niet `Error` staat.
+
+> **Let op:** installeer staat1cho niet met `install.packages("staat1cho")`. Die versie (0.1.0) is verouderd en rekent voor recente cohorten een onterecht rendement van 0%. Gebruik de opdracht hierboven tot versie 0.2.0 officieel verschenen is.
+
+---
+
+## Stap 4: Start het dashboard en laad je bestand
+
+Plak in de Console van RStudio:
 
 ```r
 library(staat1cho)
 start_dashboard()
 ```
 
-Het dashboard opent in je browser. Je kunt:
+Het dashboard opent in je browser. Dan:
 
-- Een 1CHO-bestand uploaden, optioneel met VAKHAVW- en VLPBEK-bestand
-- Kiezen tussen studentniveau en inschrijvingsniveau
-- Filteren op jaar, locatie, sector, opleiding, opleidingsniveau, opleidingsvorm en geslacht
-- Trends bekijken voor instroom, rendement, uitval, studiewissel, vooropleiding en bekostiging
-- De verwerkte data downloaden als CSV en een geanonimiseerd benchmarkrapport als Excel
+1. Klik bij **1CHO CSV-bestand** op *Bladeren...* en kies het `_enriched.csv`-bestand uit stap 2f.
+2. Kies het **Analyseniveau**:
+   - **Studentniveau**: elke student telt één keer, bij de opleiding waarin die begon. Geschikt voor cijfers over de instelling als geheel.
+   - **Inschrijvingsniveau**: elke opleiding is een eigen cohort. Geschikt om opleidingen met elkaar te vergelijken.
+3. Laat de optionele bestanden (VAKHAVW en VLPBEK) voor nu leeg, [zie hieronder](#optionele-bestanden-vakhavw-en-bekostiging).
+4. Klik op **Data verwerken**. Bij een groot bestand duurt dit enkele minuten.
 
-Geen eigen data bij de hand? Maak een synthetisch voorbeeldbestand en upload dat:
+Controleer daarna twee dingen:
+
+- Bovenin staat de **peildatum**, bijvoorbeeld *Peildatum 01-10-2024*. Die moet passen bij de levering die je gebruikt.
+- Het aantal studenten in de linkerkolom moet ongeveer overeenkomen met wat je van je eigen instelling verwacht.
+
+**Stoppen:** sluit het browsertabblad en klik in RStudio op het rode stopteken boven de Console.
+
+### Is je bestand groter dan 500 MB? Gebruik de pipeline
+
+Het dashboard accepteert bestanden tot 500 MB. Voor grotere bestanden, of als je het rapport elk jaar op dezelfde manier wilt maken, gebruik je de pipeline:
+
+1. Download [het ZIP-bestand van staat1cho](https://github.com/cedanl/staat-van-onderwijsinstelling/archive/refs/heads/main.zip) en pak het uit.
+2. Open in RStudio het bestand `pipeline.R` (menu *File* > *Open File...*).
+3. Vul bovenin het pad naar je bestand in. Gebruik in R schuine strepen naar voren (`/`), ook op Windows:
+
+   ```r
+   pad_1cho <- "C:/Tools/1cijferho/data/02-output/EV21PL24_enriched.csv"
+   niveau   <- "student"    # of "inschrijving"
+   ```
+
+4. Kies in het menu *Session* > *Set Working Directory* > *To Source File Location*. Zo komt de uitvoer naast `pipeline.R` terecht.
+5. Klik rechtsboven in het scriptvenster op **Source**.
+
+De pipeline maakt een map `Output/<jaar>` aan naast `pipeline.R`, met daarin het benchmarkrapport (Excel) en de tussenbestanden.
+
+---
+
+## Stap 5: De cijfers lezen
+
+Elk getal in het dashboard heeft een **?**-icoon. Houd je muis erboven voor de precieze definitie. De belangrijkste keuzes:
+
+- **Instroom**: studenten in hun eerste jaar aan de instelling (studentniveau) of in de opleiding (inschrijvingsniveau). Alleen hoofdinschrijvingen tellen mee.
+- **Rendement**: het percentage dat binnen 3, 5 of 8 jaar een diploma haalt aan de instelling. Propedeuses tellen niet mee.
+- **Uitval**: niet meer ingeschreven aan de instelling en geen diploma. Een student die naar een andere instelling gaat, telt hier dus als uitval.
+- **Studiewissel**: overstappen naar een andere opleiding binnen de instelling. Alleen zichtbaar op studentniveau.
+- **Nog niet waarneembaar**: voor recente cohorten is bijvoorbeeld rendement na 5 jaar nog niet te meten. Die studenten tellen niet mee in het percentage. Lege waarden bij recente jaren zijn dus normaal.
+- **Vooropleiding**: de hoogste vooropleiding vóór het hoger onderwijs, samengevat als havo, vwo, mbo, ho, buitenlands, overig of onbekend.
+- **Eerstejaars HO of eerder in HO**: of het eerste jaar aan de instelling ook het eerste jaar in het hoger onderwijs is. Filter op *Eerstejaars HO* als je wilt vergelijken met landelijke cijfers over eerstejaars.
+- **Peildatum**: de cijfers beschrijven de stand op 1 oktober van het laatste jaar in de levering. Bij een nieuwe levering kunnen cijfers van eerdere cohorten iets veranderen, bijvoorbeeld als een student na een tussenjaar terugkomt en dan niet meer als uitgevallen telt. Vergelijk daarom alleen cijfers met dezelfde peildatum.
+
+---
+
+## Stap 6: Delen
+
+In de linkerkolom van het dashboard staan twee knoppen:
+
+| Knop | Wat je krijgt | Delen? |
+|---|---|---|
+| **Download benchmarkrapport** | Excel met percentages per groep, een toelichting per kolom en de peildatum. Geen persoonsnummers. Groepen van minder dan 30 studenten zijn weggelaten. Een percentage blijft leeg als het over minder dan 5 studenten gaat, of als op minder dan 5 na iedereen in de groep het betreft (bijvoorbeeld 0% of 100% uitval). | Ja, geschikt om met andere instellingen te delen. |
+| **Download als CSV** | Het volledige analysebestand, één regel per student, met persoonsnummers. | **Nee**, alleen binnen de instelling. |
+
+---
+
+## Optionele bestanden: VAKHAVW en bekostiging
+
+- **VAKHAVW** voegt de eindcijfers van havo en vwo toe (gemiddeld eindcijfer, wiskundecijfer, aantal vakken).
+- **VLPBEK** (voorlopige bekostiging) laat zien welke inschrijvingen DUO bekostigt, waarom andere niet, en welke je nog kunt herstellen door ze alsnog tijdig aan te leveren.
+
+> **Status: nog niet gebruiken.** Beide koppelingen werken op dit moment niet betrouwbaar. In het EV-bestand is het persoonsnummer een eigen nummer van DUO, terwijl VAKHAVW en VLPBEK het BSN gebruiken. We passen de koppeling daarop aan. Tot die tijd vindt het dashboard (vrijwel) geen studenten terug; na het verwerken zie je dat aan het koppelpercentage in de melding rechtsonder. De rest van het dashboard werkt zonder deze bestanden gewoon.
+
+---
+
+## Als het niet lukt
+
+| Wat je ziet | Wat je kunt doen |
+|---|---|
+| In PowerShell: *uv wordt niet herkend* | Sluit PowerShell en open het opnieuw. Helpt dat niet, herstart dan de computer. |
+| In 1cijferho: *Geen bestanden gevonden* | Staan de bestanden direct in `data\01-input` en niet in een submap? Klik daarna opnieuw op *Bestanden controleren*. |
+| In het dashboard: *Ontbrekende kolom(men)* | Je hebt waarschijnlijk niet het `_enriched.csv`-bestand gekozen, of in 1cijferho stond *snake_case* of *Verrijkte variant* uit, of je gebruikte een voorinstelling. Zet de bestanden opnieuw om met de instellingen uit stap 2e. |
+| Het uploaden stopt of lukt niet | Het bestand is waarschijnlijk groter dan 500 MB. Gebruik de pipeline uit stap 4. |
+| In RStudio: *there is no package called 'pak'* | Voer eerst `install.packages("pak")` uit. |
+| De cijfers wijken af van vorig jaar | Kijk naar de peildatum. Een nieuwe levering kan oudere cohorten iets bijwerken. |
+| Rendement is 0% voor recente cohorten | Je gebruikt de verouderde versie 0.1.0. Installeer opnieuw met de opdrachten uit stap 3. |
+
+Kom je er niet uit, meld het dan via [GitHub Issues](https://github.com/cedanl/staat-van-onderwijsinstelling/issues). Stuur daarbij nooit echte studentgegevens mee.
+
+---
+
+## Oefenen zonder echte data
+
+Wil je eerst oefenen? staat1cho kan een verzonnen bestand maken met dezelfde opbouw als een echte levering. Plak in de Console van RStudio:
 
 ```r
-readr::write_delim(maak_synthetische_1cho(), "demo_1cho.csv", delim = ";", na = "")
+library(staat1cho)
+readr::write_delim(maak_synthetische_1cho(), "oefenbestand_1cho.csv", delim = ";", na = "")
+getwd()
 ```
 
-### Pipeline
+De laatste regel toont de map waarin `oefenbestand_1cho.csv` is opgeslagen. Start daarna het dashboard en upload dit bestand.
 
-Voor batch-verwerking is er een `pipeline.R` in de projectroot. Stel bovenaan het pad naar je 1CHO-bestand, het analyseniveau en eventueel VAKHAVW/VLPBEK in:
+1cijferho heeft ook een demomodus met voorbeeldbestanden in DUO-formaat: klik op de startpagina van 1cijferho op *Probeer met demo*.
 
-```r
-pad_1cho    <- "pad/naar/EV..._enriched.csv"  # leeg = synthetische demodata
-niveau      <- "student"                       # of "inschrijving"
-vakhawv_pad <- ""
-vlpbek_pad  <- ""
-```
+---
 
-Het peiljaar en het soort hoger onderwijs worden uit de data afgeleid.
-
-De pipeline slaat de tussenbestanden en het benchmarkrapport op in `Output/<jaar>/`.
-
-### Welke 1cijferho-uitvoer gebruik je?
-
-1cijferho kan de persoonsnummers uitleveren met het **BSN behouden**, **omgezet naar studentnummer** of **gepseudonimiseerd**. Wat je kiest bepaalt wat je kunt koppelen:
-
-| 1cijferho-uitvoer | Indicatoren | VAKHAVW | VLPBEK (bekostiging) |
-|---|---|---|---|
-| BSN behouden | ja | ja | **ja** |
-| Studentnummer | ja | ja, als EV en VAKHAVW dezelfde uitvoer zijn | nee |
-| Gepseudonimiseerd | ja | ja, als EV en VAKHAVW dezelfde uitvoer zijn | nee |
-
-Het VLPBEK-bestand komt rechtstreeks van DUO en bevat altijd het echte BSN of onderwijsnummer. **Wil je bekostiging koppelen, gebruik dan de uitvoer met het BSN behouden.** staat1cho pseudonimiseert of vertaalt zelf geen nummers. Koppel je toch een gepseudonimiseerd bestand, dan stopt staat1cho met een foutmelding; bij studentnummers volgt een waarschuwing over het lage koppelpercentage.
-
-Het benchmarkrapport bevat nooit persoonsnummers en is geschikt om te delen. De volledige CSV-download uit het dashboard bevat ze wel: die blijft binnen de instelling.
+## Voor ontwikkelaars
 
 ### Losse functies
 
-Je kunt de functies ook zelf samenstellen:
+Alle stappen van het dashboard zijn ook los te gebruiken:
 
 ```r
 library(staat1cho)
 
-basis      <- maak_basisbestand("pad/naar/bestand.csv")
-cohort     <- maak_instroom_cohort(basis, soort_ho = c("wetenschappelijk onderwijs", "wo"))
+basis      <- maak_basisbestand("pad/naar/EV..._enriched.csv")
+soort_ho   <- unique(basis$soort_hoger_onderwijs)
+cohort     <- maak_instroom_cohort(basis, soort_ho)
 diploma    <- maak_diploma_behaald(basis)
 rendement  <- bereken_rendement(cohort, diploma)
 uitval     <- bereken_uitval(basis, diploma, cohort)  # peiljaar uit de data
@@ -101,85 +312,30 @@ schrijf_benchmarkrapport(rapport, "benchmark.xlsx")
 
 Zie `vignette("staat1cho")` voor een uitgewerkt voorbeeld.
 
----
-
-## Invoerdata
-
-Het package verwacht de **enriched** output van de [1cijferho tool](https://github.com/cedanl/1cijferho): het CSV-bestand met `_enriched` in de naam, waarbij codes al zijn omgezet naar leesbare labels.
-
-Het bestand moet onder andere deze kolommen bevatten:
-
-| Kolom | Omschrijving |
-|---|---|
-| `persoonsgebonden_nummer` | Pseudonummer student |
-| `inschrijvingsjaar` | Startjaar academisch jaar |
-| `verblijfsjaar_actuele_instelling` | Jaar aan de instelling |
-| `verblijfsjaar_actuele_opleiding_instelling` | Jaar in deze opleiding aan de instelling |
-| `diplomajaar` | Academisch jaar van diploma |
-| `soort_hoger_onderwijs` | Bijv. `"wetenschappelijk onderwijs"` |
-| `geslacht`, `opleidingsvorm`, `opleiding_actueel_equivalent` | Kenmerken |
-| `vestigingsnummer_gemeentenaam_volgens_rio` | Locatienaam |
-
-Als een verplichte kolom ontbreekt, meldt het dashboard dit direct na het uploaden.
-
----
-
-## Uitvoer
-
-Per student (of per inschrijving) worden de volgende indicatoren berekend:
-
-| Categorie | Indicatoren |
-|---|---|
-| Studentkenmerken | instroomjaar, geslacht, locatie, sector, opleidingsvorm, leeftijd bij instroom, vooropleiding, eerstejaars HO |
-| Status | status na observatieperiode, soort diploma |
-| Rendement | diploma binnen 3, 5 en 8 jaar |
-| Uitval | uitval binnen 1 en 3 jaar |
-| Studiewissel | gewisseld binnen 1 en 3 jaar, opleiding/sector na wissel (alleen studentniveau) |
-| Vooropleiding (optioneel) | eindcijfer, wiskundecijfer en aantal vakken uit VAKHAVW |
-| Bekostiging (optioneel) | bekostigd, reden niet bekostigd, herstelbaar uit VLPBEK |
-
-### Onvolledige cohorten
-
-Rendement binnen 5 jaar is voor een cohort dat pas 2 jaar in de data zit nog niet te meten. Zulke studenten krijgen `"Nog niet waarneembaar"` en tellen niet mee in percentages. Recente cohorten hebben daardoor lege waarden voor de langere termijnen; dat is verwacht.
-
-### Vooropleiding en eerstejaars HO
-
-`vooropleiding` vat de hoogste vooropleiding vóór het HO samen tot havo, vwo, mbo, ho, buitenlands, overig of onbekend. `eerstejaars_ho` zegt of het instroomjaar ook het eerste jaar in het hoger onderwijs is, of dat de student al eerder in het HO stond (bijvoorbeeld bij een andere instelling). Filter op "eerstejaars HO" om te vergelijken met landelijke cijfers over eerstejaars. Beide komen uit optionele kolommen van de 1cijferho-uitvoer (`hoogste_vooropleiding_voor_het_ho_omschrijving_vooropleiding` en `eerste_jaar_in_het_hoger_onderwijs`); ontbreken die, dan is de waarde "onbekend".
-
-### Peildatum
-
-Alle cijfers beschrijven de stand van de 1CHO-data op de peildatum: 1 oktober van het laatste inschrijvingsjaar. Bij een nieuwere aanlevering kunnen cijfers van eerdere cohorten veranderen, bijvoorbeeld als een student na een tussenjaar terugkeert en dan niet meer als uitgevallen telt. Het benchmarkrapport zet de peildatum op elke rij; vergelijk alleen rapporten met dezelfde peildatum. Geef met `maak_benchmarkrapport(..., peildatum = "2024-10-01")` zelf een datum op als dat nodig is.
-
-### Studentniveau of inschrijvingsniveau
-
-Op **studentniveau** telt elke student één keer, bij de opleiding waarin die instroomt, en gelden uitkomsten voor de hele instelling: een wisselaar die elders een diploma haalt, telt bij de instroomopleiding als geslaagd. Op **inschrijvingsniveau** is elke opleiding een eigen cohort en telt een wissel als uitval uit de oude opleiding. Gebruik inschrijvingsniveau om opleidingen te vergelijken.
-
----
-
-## Functies
-
 | Functie | Wat het doet |
 |---|---|
 | `start_dashboard()` | Start het interactieve Shiny-dashboard |
 | `maak_basisbestand()` | Laadt het 1CHO-bestand en voegt labelkolommen toe |
-| `maak_instroom_cohort()` | Maakt cohortbestand aan (nieuwe instromers) |
+| `maak_instroom_cohort()` | Maakt het cohortbestand aan (nieuwe instromers) |
 | `maak_diploma_behaald()` | Bepaalt diplomaresultaten per student |
 | `bereken_rendement()` | Rendement binnen 3, 5 en 8 jaar |
 | `bereken_uitval()` | Uitvalstatus binnen 1 en 3 jaar |
 | `bereken_studiewissel()` | Studiewissel binnen 1 en 3 jaar |
-| `combineer_indicatoren()` | Voegt alle indicatoren samen tot analysebestand |
+| `combineer_indicatoren()` | Voegt alle indicatoren samen, met vooropleiding, eerstejaars HO en het attribuut `peildatum` |
 | `lees_vakhawv()` / `verrijk_met_vakhawv()` | Leest VAKHAVW-vakcijfers en koppelt ze per student |
-| `lees_bekostiging()` / `verrijk_met_bekostiging()` | Leest een VLPBEK-bestand en koppelt de bekostigingsstatus (vereist 1cijferho-uitvoer met BSN) |
-| `is_gepseudonimiseerd()` | Herkent door 1cijferho gepseudonimiseerde persoonsnummers |
+| `lees_bekostiging()` / `verrijk_met_bekostiging()` | Leest een VLPBEK-bestand en koppelt de bekostigingsstatus |
+| `is_gepseudonimiseerd()` | Herkent gepseudonimiseerde persoonsnummers |
 | `maak_benchmarkrapport()` | Geaggregeerd rapport met peildatum en privacyonderdrukking (groepen < 30, cellen < 5) |
-| `schrijf_benchmarkrapport()` | Slaat het benchmarkrapport op als Excel met toelichting en metadata |
+| `schrijf_benchmarkrapport()` | Slaat het benchmarkrapport op als Excel met toelichting, validatie en metadata |
 | `maak_synthetische_1cho()` | Synthetisch 1CHO-bestand met bekende uitkomsten voor demo en validatie |
-| `DEFINITIES`, `BEKOSTIGINGSTATUS_CODES` | Definities van indicatoren en DUO-redencodes |
+| `DEFINITIES`, `BEKOSTIGINGSTATUS_CODES` | Definities van de indicatoren en de DUO-redencodes |
 
----
+### Invoer
 
-## Vereisten
+staat1cho verwacht de `_enriched.csv` van 1cijferho (puntkomma-gescheiden, UTF-8, kolomnamen in snake_case). Het dashboard controleert na het uploaden of de verplichte kolommen aanwezig zijn, zoals `persoonsgebonden_nummer`, `inschrijvingsjaar`, `verblijfsjaar_actuele_instelling`, `verblijfsjaar_actuele_opleiding_instelling`, `diplomajaar`, `soort_hoger_onderwijs`, `soort_inschrijving_actuele_instelling`, `soort_diploma_instelling`, `opleiding_actueel_equivalent` en `opleidingscode_naam_opleiding`. De kolommen `hoogste_vooropleiding_voor_het_ho_omschrijving_vooropleiding` en `eerste_jaar_in_het_hoger_onderwijs` zijn optioneel; zonder die kolommen worden vooropleiding en eerstejaars HO "onbekend".
 
-- R >= 4.1.0
-- Tidyverse-packages (`dplyr`, `ggplot2`, `readr`, `tidyr`, `forcats`, `scales`)
-- Shiny-packages (`shiny`, `bslib`, `DT`, `plotly`)
+### Vereisten
+
+- R 4.1.0 of nieuwer
+- Tidyverse-pakketten (`dplyr`, `ggplot2`, `readr`, `tidyr`, `forcats`, `scales`)
+- Voor het dashboard: `shiny`, `bslib`, `DT`, `plotly`, `writexl`
