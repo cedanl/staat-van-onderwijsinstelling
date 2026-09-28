@@ -8,7 +8,7 @@ bereken_uitval(
   basisbestand,
   diploma_behaald,
   cohorten_instroom,
-  jaar,
+  jaar = NULL,
   niveau = "student"
 )
 }
@@ -20,7 +20,10 @@ bereken_uitval(
 \item{cohorten_instroom}{Tibble zoals gemaakt door \code{\link[=maak_instroom_cohort]{maak_instroom_cohort()}}}
 
 \item{jaar}{Integer, peiljaar van de analyse (bijv. \code{2025}). Studenten die
-in \code{jaar - 1} nog ingeschreven staan, gelden als zittend.}
+in \code{jaar - 1} nog ingeschreven staan, gelden als zittend. Standaard het
+jaar na het laatste inschrijvingsjaar in \code{basisbestand}. Een \code{jaar} waarbij
+de data inschrijvingen na \code{jaar - 1} bevat geeft een fout, omdat zittende
+studenten dan als uitgevallen zouden tellen.}
 
 \item{niveau}{Analyseniveau: \code{"student"} (standaard) of \code{"inschrijving"}.
 Moet overeenkomen met het niveau waarop de andere invoertibbles zijn
@@ -30,7 +33,9 @@ aangemaakt.}
 Een tibble met de sleutelkolom(men), \code{laatste_jaar_inschrijving},
 \code{diploma}, \code{status} (factor: Diploma behaald / Zittend / Uitgevallen),
 \code{uitval_xjr} (jaar van uitval t.o.v. instroomjaar), \code{uitval_1jr} en
-\code{uitval_3jr} (factoren). Gooit een fout bij dubbele sleutelcombinaties of
+\code{uitval_3jr} (factoren). Cohorten waarvoor de periode nog niet volledig
+in de data zit (instroomjaar + 1 resp. + 3 na \code{jaar - 1}) krijgen
+\code{"Nog niet waarneembaar"}. Gooit een fout bij dubbele sleutelcombinaties of
 ontbrekende statussen.
 }
 \description{

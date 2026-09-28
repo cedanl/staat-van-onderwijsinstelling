@@ -251,3 +251,24 @@ test_that("resultaat is gesorteerd op inschrijvingsjaar", {
   jaren <- result$inschrijvingsjaar[result$sector != "totaal"]
   expect_equal(jaren, sort(jaren))
 })
+
+
+## Onvolledige cohorten ----
+
+test_that("niet-waarneembare rijen tellen niet mee in de noemer", {
+  df <- basis_df(40L)
+  df$rendement_5jr <- factor(c(
+    rep("Diploma binnen 5 jaar", 10),
+    rep("Geen diploma", 10),
+    rep("Nog niet waarneembaar", 20)
+  ))
+  result <- maak_benchmarkrapport(df, drempel = 1L)
+  expect_equal(result$pct_rendement_5jr[result$sector != "totaal"], 50)
+})
+
+test_that("percentage is NA als niemand in de groep waarneembaar is", {
+  df <- basis_df(40L)
+  df$rendement_8jr <- factor(rep("Nog niet waarneembaar", 40))
+  result <- maak_benchmarkrapport(df, drempel = 1L)
+  expect_true(all(is.na(result$pct_rendement_8jr)))
+})

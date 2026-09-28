@@ -8,7 +8,10 @@
 #' @param diploma_behaald Tibble zoals gemaakt door [maak_diploma_behaald()]
 #' @param cohorten_instroom Tibble zoals gemaakt door [maak_instroom_cohort()]
 #' @param jaar Integer, peiljaar van de analyse (bijv. `2025`). Studenten die
-#'   in `jaar - 1` nog ingeschreven staan, gelden als zittend.
+#'   in `jaar - 1` nog ingeschreven staan, gelden als zittend. Standaard het
+#'   jaar na het laatste inschrijvingsjaar in `basisbestand`. Een `jaar` waarbij
+#'   de data inschrijvingen na `jaar - 1` bevat geeft een fout, omdat zittende
+#'   studenten dan als uitgevallen zouden tellen.
 #' @param niveau Analyseniveau: `"student"` (standaard) of `"inschrijving"`.
 #'   Moet overeenkomen met het niveau waarop de andere invoertibbles zijn
 #'   aangemaakt.
@@ -16,7 +19,9 @@
 #' @return Een tibble met de sleutelkolom(men), `laatste_jaar_inschrijving`,
 #'   `diploma`, `status` (factor: Diploma behaald / Zittend / Uitgevallen),
 #'   `uitval_xjr` (jaar van uitval t.o.v. instroomjaar), `uitval_1jr` en
-#'   `uitval_3jr` (factoren). Gooit een fout bij dubbele sleutelcombinaties of
+#'   `uitval_3jr` (factoren). Cohorten waarvoor de periode nog niet volledig
+#'   in de data zit (instroomjaar + 1 resp. + 3 na `jaar - 1`) krijgen
+#'   `"Nog niet waarneembaar"`. Gooit een fout bij dubbele sleutelcombinaties of
 #'   ontbrekende statussen.
 #'
 #' @examples
@@ -41,10 +46,22 @@ bereken_uitval <- function(
   basisbestand,
   diploma_behaald,
   cohorten_instroom,
-  jaar,
+  jaar = NULL,
   niveau = "student"
 ) {
   sleutels <- niveau_sleutels(niveau)
+
+  laatste_in_data <- max(basisbestand$inschrijvingsjaar, na.rm = TRUE)
+  if (is.null(jaar)) {
+    jaar <- laatste_in_data + 1L
+  } else if (laatste_in_data > jaar - 1) {
+    cli::cli_abort(c(
+      "De data bevat inschrijvingen in {laatste_in_data}, na het peiljaar {.arg jaar} - 1 = {jaar - 1}.",
+      "i" = "Studenten die in {laatste_in_data} nog ingeschreven staan zouden als uitgevallen tellen.",
+      "i" = "Gebruik {.code jaar = {laatste_in_data + 1}} of laat {.arg jaar} weg."
+    ))
+  }
+  laatste_jaar <- jaar - 1
 
   ## Bepaal het laatste inschrijvingsjaar per sleutelcombinatie
   uitstroom <- basisbestand |>
@@ -93,11 +110,15 @@ bereken_uitval <- function(
           1 -
           eerstejaar_instelling
       ),
+      ## Uitval binnen x jaar is pas vast te stellen als instroomjaar + x in
+      ## de data zit: anders weten we nog niet of de student terugkomt.
       uitval_1jr = factor(dplyr::case_when(
+        eerstejaar_instelling + 1 > laatste_jaar ~ NIET_WAARNEEMBAAR,
         uitval_xjr == 1 ~ "Uitgevallen binnen 1 jaar",
         TRUE ~ "Na 1 jaar nog ingeschreven of diploma behaald"
       )),
       uitval_3jr = factor(dplyr::case_when(
+        eerstejaar_instelling + 3 > laatste_jaar ~ NIET_WAARNEEMBAAR,
         uitval_xjr <= 3 ~ "Uitgevallen binnen 3 jaar",
         TRUE ~ "Na 3 jaar nog ingeschreven of diploma behaald"
       ))

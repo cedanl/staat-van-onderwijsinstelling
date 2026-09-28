@@ -179,3 +179,14 @@ test_that("maak_basisbestand waarschuwt als een getalkolom geen getallen bevat",
 
   expect_warning(maak_basisbestand(pad), "verblijfsjaar_actuele_instelling")
 })
+
+test_that("maak_basisbestand ziet 1cijferho-labels voor code 0 als leeg", {
+  pad <- tempfile(fileext = ".csv")
+  writeLines(c(
+    "persoonsgebonden_nummer;inschrijvingsjaar;verblijfsjaar_actuele_instelling;verblijfsjaar_actuele_opleiding_instelling;diplomajaar;soort_inschrijving_actuele_instelling;geslacht;opleidingsvorm;indicatie_internationale_student;indicatie_eer_actueel;croho_onderdeel_actuele_opleiding;soort_diploma_instelling;vestigingsnummer_gemeentenaam_volgens_rio",
+    "1;2020;1;1;geen examen geregistreerd > 0000 voor overige inschrijvingen;hoofd;vrouw;voltijd;N;N;techniek;;Breda"
+  ), pad)
+
+  expect_no_warning(basis <- maak_basisbestand(pad))
+  expect_true(is.na(basis$diplomajaar))
+})

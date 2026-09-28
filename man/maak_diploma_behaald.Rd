@@ -16,7 +16,9 @@ Bepaalt de sleutel waarop gededupliceerd wordt.}
 Een tibble met één rij per student (bij \code{niveau = "student"}) of per
 student-opleidingcombinatie (bij \code{niveau = "inschrijving"}), met kolommen
 voor de sleutel(s), \code{jaar_eerste_diploma}, \code{verblijfsjaar_eerste_diploma}
-en \code{diploma}. Gooit een fout bij dubbele sleutelcombinaties.
+(verblijfsjaar aan de instelling resp. in de opleiding), \code{diploma},
+\code{soort_diploma} en \code{opleidingscode_diploma} (de opleiding waarin het
+diploma behaald is). Gooit een fout bij dubbele sleutelcombinaties.
 }
 \description{
 Filtert het basisbestand op diplomasoorten die gelden als afgeronde opleiding

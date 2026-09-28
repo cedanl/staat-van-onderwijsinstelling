@@ -105,7 +105,9 @@ KLEUREN <- c(
   "Gewisseld in het 2e of 3e jaar" = NPULS_GROEN,
   "Niet gewisseld binnen 1 jaar" = "#D1D5DB",
   "Niet gewisseld binnen 3 jaar" = "#E5E7EB",
-  "Geen switch bepaald" = "#F3F4F6"
+  "Geen switch bepaald" = "#F3F4F6",
+  ## Onvolledige cohorten
+  "Nog niet waarneembaar" = "#F9FAFB"
 )
 
 ## Datadictionary ----
@@ -380,9 +382,9 @@ rendement_trend <- function(data, titel = "Rendement per cohortjaar") {
   }
   agg <- data |>
     mutate(
-      `3 jaar` = rendement_3jr == "Diploma binnen 3 jaar",
-      `5 jaar` = rendement_5jr == "Diploma binnen 5 jaar",
-      `8 jaar` = rendement_8jr == "Diploma binnen 8 jaar"
+      `3 jaar` = waargenomen(rendement_3jr, "Diploma binnen 3 jaar"),
+      `5 jaar` = waargenomen(rendement_5jr, "Diploma binnen 5 jaar"),
+      `8 jaar` = waargenomen(rendement_8jr, "Diploma binnen 8 jaar")
     ) |>
     group_by(inschrijvingsjaar) |>
     summarise(
@@ -411,8 +413,8 @@ uitval_trend <- function(data, titel = "Uitval per cohortjaar") {
   }
   agg <- data |>
     mutate(
-      `binnen 1 jaar` = uitval_1jr == "Uitgevallen binnen 1 jaar",
-      `binnen 3 jaar` = uitval_3jr == "Uitgevallen binnen 3 jaar"
+      `binnen 1 jaar` = waargenomen(uitval_1jr, "Uitgevallen binnen 1 jaar"),
+      `binnen 3 jaar` = waargenomen(uitval_3jr, "Uitgevallen binnen 3 jaar")
     ) |>
     group_by(inschrijvingsjaar) |>
     summarise(
@@ -440,8 +442,8 @@ wissel_trend <- function(data, titel = "Studiewissel per cohortjaar") {
   }
   agg <- data |>
     mutate(
-      `binnen 1 jaar` = studiewissel_1jr == "Gewisseld binnen 1 jaar",
-      `binnen 3 jaar` = studiewissel_3jr == "Gewisseld binnen 3 jaar"
+      `binnen 1 jaar` = waargenomen(studiewissel_1jr, "Gewisseld binnen 1 jaar"),
+      `binnen 3 jaar` = waargenomen(studiewissel_3jr, "Gewisseld binnen 3 jaar")
     ) |>
     group_by(inschrijvingsjaar) |>
     summarise(
@@ -498,7 +500,21 @@ pct_label <- function(data, conditie) {
   if (nrow(data) == 0) {
     return("—")
   }
-  paste0(round(mean(conditie(data), na.rm = TRUE) * 100), "%")
+  waarde <- mean(conditie(data), na.rm = TRUE)
+  ## NaN: niemand in de selectie is waarneembaar voor deze indicator
+  if (is.nan(waarde)) {
+    return("—")
+  }
+  paste0(round(waarde * 100), "%")
+}
+
+## TRUE/FALSE of de indicator gelijk is aan `label`; NA voor studenten in een
+## cohort waarvan het meetvenster nog niet in de data zit. Met
+## mean(na.rm = TRUE) tellen die rijen zo niet mee in de noemer.
+NIET_WAARNEEMBAAR <- "Nog niet waarneembaar"
+waargenomen <- function(x, label) {
+  x <- as.character(x)
+  dplyr::if_else(x == NIET_WAARNEEMBAAR, NA, x == label)
 }
 
 n_label <- function(n) {
@@ -1233,7 +1249,9 @@ server <- function(input, output, session) {
           diploma <- maak_diploma_behaald(basisbestand, niveau = niv)
 
           setProgress(0.55, detail = "Rendement berekenen")
-          rendement <- bereken_rendement(cohorten, diploma, niveau = niv)
+          rendement <- bereken_rendement(
+            cohorten, diploma, niveau = niv, laatste_jaar = jaar - 1L
+          )
 
           setProgress(0.70, detail = "Uitval berekenen")
           uitval <- bereken_uitval(
@@ -1431,7 +1449,7 @@ server <- function(input, output, session) {
     } else {
       vb(
         "Gewisseld binnen 1 jaar",
-        pct_label(df(), \(d) d$studiewissel_1jr == "Gewisseld binnen 1 jaar"),
+        pct_label(df(), \(d) waargenomen(d$studiewissel_1jr, "Gewisseld binnen 1 jaar")),
         bg = NPULS_GEEL,
         fg = NPULS_ZWART,
         definitie = DEFINITIES[[analyse_niveau()]]$studiewissel_1jr
@@ -1443,21 +1461,21 @@ server <- function(input, output, session) {
 
   output$kpi_rend3 <- renderUI(vb(
     "Diploma binnen 3 jaar",
-    pct_label(df(), \(d) d$rendement_3jr == "Diploma binnen 3 jaar"),
+    pct_label(df(), \(d) waargenomen(d$rendement_3jr, "Diploma binnen 3 jaar")),
     bg = NPULS_ORANJE,
     fg = NPULS_ZWART,
     definitie = DEFINITIES[[analyse_niveau()]]$rendement_3jr
   ))
   output$kpi_rend5 <- renderUI(vb(
     "Diploma binnen 5 jaar",
-    pct_label(df(), \(d) d$rendement_5jr == "Diploma binnen 5 jaar"),
+    pct_label(df(), \(d) waargenomen(d$rendement_5jr, "Diploma binnen 5 jaar")),
     bg = NPULS_BLAUW,
     fg = NPULS_GEEL,
     definitie = DEFINITIES[[analyse_niveau()]]$rendement_5jr
   ))
   output$kpi_rend8 <- renderUI(vb(
     "Diploma binnen 8 jaar",
-    pct_label(df(), \(d) d$rendement_8jr == "Diploma binnen 8 jaar"),
+    pct_label(df(), \(d) waargenomen(d$rendement_8jr, "Diploma binnen 8 jaar")),
     bg = NPULS_GROEN,
     fg = NPULS_ZWART,
     definitie = DEFINITIES[[analyse_niveau()]]$rendement_8jr
@@ -1474,14 +1492,14 @@ server <- function(input, output, session) {
   ))
   output$kpi_uitval1 <- renderUI(vb(
     "Uitval binnen 1 jaar",
-    pct_label(df(), \(d) d$uitval_1jr == "Uitgevallen binnen 1 jaar"),
+    pct_label(df(), \(d) waargenomen(d$uitval_1jr, "Uitgevallen binnen 1 jaar")),
     bg = NPULS_ORANJE,
     fg = NPULS_ZWART,
     definitie = DEFINITIES[[analyse_niveau()]]$uitval_1jr
   ))
   output$kpi_uitval3 <- renderUI(vb(
     "Uitval binnen 3 jaar",
-    pct_label(df(), \(d) d$uitval_3jr == "Uitgevallen binnen 3 jaar"),
+    pct_label(df(), \(d) waargenomen(d$uitval_3jr, "Uitgevallen binnen 3 jaar")),
     bg = NPULS_BLAUW,
     fg = NPULS_GEEL,
     definitie = DEFINITIES[[analyse_niveau()]]$uitval_3jr
@@ -1491,14 +1509,14 @@ server <- function(input, output, session) {
 
   output$kpi_wissel1 <- renderUI(vb(
     "Gewisseld binnen 1 jaar",
-    pct_label(df(), \(d) d$studiewissel_1jr == "Gewisseld binnen 1 jaar"),
+    pct_label(df(), \(d) waargenomen(d$studiewissel_1jr, "Gewisseld binnen 1 jaar")),
     bg = NPULS_GEEL,
     fg = NPULS_ZWART,
     definitie = DEFINITIES[[analyse_niveau()]]$studiewissel_1jr
   ))
   output$kpi_wissel3 <- renderUI(vb(
     "Gewisseld binnen 3 jaar",
-    pct_label(df(), \(d) d$studiewissel_3jr == "Gewisseld binnen 3 jaar"),
+    pct_label(df(), \(d) waargenomen(d$studiewissel_3jr, "Gewisseld binnen 3 jaar")),
     bg = NPULS_GROEN,
     fg = NPULS_ZWART,
     definitie = DEFINITIES[[analyse_niveau()]]$studiewissel_3jr

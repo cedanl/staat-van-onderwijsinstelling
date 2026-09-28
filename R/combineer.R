@@ -94,6 +94,14 @@ combineer_indicatoren <- function(
     )
   }
 
+  ## Soort en opleiding van het behaalde diploma komen uit het diplomabestand
+  ## (via rendement). Oudere aanroepen zonder die kolommen blijven werken.
+  for (kol in c("soort_diploma", "opleidingscode_diploma")) {
+    if (!kol %in% names(result)) {
+      result[[kol]] <- NA_character_
+    }
+  }
+
   result <- result |>
     dplyr::select(
       persoonsgebonden_nummer,
@@ -110,7 +118,8 @@ combineer_indicatoren <- function(
       postcode4_student_1okt = postcodecijfers_student_op_1_oktober,
       postcode4_vooropleiding_voorHO = postcodecijfers_van_de_hoogste_vooropl_voor_het_ho,
       status,
-      soortdiploma = soort_diploma_instelling_label,
+      soortdiploma = soort_diploma,
+      opleidingscode_diploma,
       rendement_3jr:rendement_8jr,
       uitval_xjr:uitval_3jr,
       dplyr::any_of(c(
@@ -177,7 +186,8 @@ combineer_indicatoren <- function(
         rendement_8jr == "Diploma binnen 8 jaar" ~ "Diploma binnen 5-8 jaar",
         rendement_8jr == "Diploma na 8 jaar" ~ "Diploma na 8 jaar",
         rendement_8jr == "Geen diploma" ~ "Geen diploma",
-        rendement_8jr == "Onbekend (diplomajaar voor instroomjaar)" ~ "Onbekend"
+        rendement_8jr == "Onbekend (diplomajaar voor instroomjaar)" ~ "Onbekend",
+        rendement_8jr == NIET_WAARNEEMBAAR ~ NIET_WAARNEEMBAAR
       )
     )
 
@@ -189,10 +199,25 @@ combineer_indicatoren <- function(
             "Gewisseld binnen 1 jaar" ~ "Gewisseld binnen 1 jaar",
           studiewissel_3jr ==
             "Gewisseld binnen 3 jaar" ~ "Gewisseld in het 2e of 3e jaar",
+          studiewissel_3jr == NIET_WAARNEEMBAAR ~ NIET_WAARNEEMBAAR,
           TRUE ~ "Niet gewisseld"
         )
       )
   }
 
+  ## Op studentniveau worden opleiding, sector en locatie van het instroomjaar
+  ## getoond, maar uitkomsten gelden instellingsbreed. Deze kolom maakt
+  ## zichtbaar of het diploma in de instroomopleiding is behaald (#45).
+  result <- result |>
+    dplyr::mutate(
+      diploma_in_instroomopleiding = dplyr::if_else(
+        is.na(opleidingscode_diploma),
+        NA,
+        as.character(opleidingscode_diploma) == as.character(opleidingscode)
+      ),
+      .after = opleidingscode_diploma
+    )
+
+  attr(result, "niveau") <- niveau
   result
 }

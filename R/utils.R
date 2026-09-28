@@ -24,6 +24,10 @@ zet_om_naar_integer <- function(data, kolommen) {
   for (kol in intersect(kolommen, names(data))) {
     ruw <- trimws(as.character(data[[kol]]))
     ruw[ruw == ""] <- NA_character_
+    ## 1cijferho zet "niet van toepassing" (code 0/00/0000) om naar een label
+    ## als "geen examen geregistreerd > 0000 voor overige inschrijvingen".
+    ## Dat is een lege waarde, geen fout.
+    ruw[grepl(">\\s*0+\\b", ruw)] <- NA_character_
     omgezet <- suppressWarnings(as.integer(ruw))
     verloren <- sum(!is.na(ruw) & is.na(omgezet))
     if (verloren > 0) {
@@ -59,3 +63,7 @@ hercodeer <- function(x, nieuw_oud = character(), verwijder = character()) {
   }
   x
 }
+
+## Label voor indicatoren waarvan het meetvenster voor een cohort nog niet
+## volledig in de data zit. Telt niet mee in teller of noemer.
+NIET_WAARNEEMBAAR <- "Nog niet waarneembaar"

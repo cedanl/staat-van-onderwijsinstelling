@@ -21,44 +21,62 @@ DEFINITIES <- list(
 
     status =
       "Eindstatus van de student na de observatieperiode.
-      'Diploma behaald': behaalde een bachelor-, master- of ad-diploma
-      aan de instelling (excl. propedeuse). 'Zittend': nog ingeschreven,
+      'Diploma behaald': behaalde een hoofd- of nevendiploma aan de
+      instelling (associate degree, bachelor, master, doctoraal,
+      beroepsfase of postinitiele master; excl. propedeuse), in welke
+      opleiding dan ook. 'Zittend': nog ingeschreven,
       geen diploma behaald. 'Uitgevallen': niet meer ingeschreven en
       geen diploma behaald.",
 
     rendement_3jr =
       "Percentage studenten dat een diploma behaalde binnen 3 academische
       jaren na instroom aan de instelling. Berekend als:
-      diplomajaar - instroomjaar + 1 <= 3.",
+      diplomajaar - instroomjaar + 1 <= 3.
+      Cohorten die nog geen 3 jaar in de data zitten zijn
+      'Nog niet waarneembaar' en tellen niet mee in het percentage.",
 
     rendement_5jr =
       "Percentage studenten dat een diploma behaalde binnen 5 academische
-      jaren na instroom aan de instelling.",
+      jaren na instroom aan de instelling.
+      Cohorten die nog geen 5 jaar in de data zitten zijn
+      'Nog niet waarneembaar' en tellen niet mee in het percentage.",
 
     rendement_8jr =
       "Percentage studenten dat een diploma behaalde binnen 8 academische
-      jaren na instroom. Dit is de maximale observatietermijn.",
+      jaren na instroom. Dit is de maximale observatietermijn.
+      Cohorten die nog geen 8 jaar in de data zitten zijn
+      'Nog niet waarneembaar' en tellen niet mee in het percentage.",
 
     uitval_1jr =
       "Percentage studenten dat na het eerste jaar niet meer ingeschreven
       is aan de instelling en geen diploma heeft behaald. Studenten die
       naar een andere opleiding binnen de instelling zijn overgestapt
-      tellen niet mee als uitgevallen.",
+      tellen niet mee als uitgevallen.
+      Uitval binnen 1 jaar is pas vast te stellen als instroomjaar + 1
+      in de data zit; recentere cohorten zijn 'Nog niet waarneembaar'
+      en tellen niet mee.",
 
     uitval_3jr =
       "Percentage studenten dat binnen 3 jaar na instroom aan de
       instelling niet meer ingeschreven is en geen diploma heeft behaald.
-      Telt cumulatief: ook studenten die al in jaar 1 uitvielen.",
+      Telt cumulatief: ook studenten die al in jaar 1 uitvielen.
+      Uitval binnen 3 jaar is pas vast te stellen als instroomjaar + 3
+      in de data zit; recentere cohorten zijn 'Nog niet waarneembaar'
+      en tellen niet mee.",
 
     studiewissel_1jr =
       "Percentage studenten dat na jaar 1 een andere opleiding volgt dan
       bij instroom. Vastgesteld door de opleiding in verblijfsjaar 2 te
-      vergelijken met verblijfsjaar 1.",
+      vergelijken met verblijfsjaar 1.
+      Cohorten waarvan verblijfsjaar 2 nog niet in de data zit zijn
+      'Nog niet waarneembaar' en tellen niet mee.",
 
     studiewissel_3jr =
       "Percentage studenten dat uiterlijk in jaar 4 naar een andere
       opleiding is overgestapt, gemeten bij verblijfsjaar 4 ten opzichte
-      van verblijfsjaar 1.",
+      van verblijfsjaar 1.
+      Cohorten waarvan verblijfsjaar 4 nog niet in de data zit zijn
+      'Nog niet waarneembaar' en tellen niet mee.",
 
     ## VAKHAVW (identiek op beide niveaus: beschrijft de student)
     vakhawv_gemiddeld_eindcijfer =
@@ -113,35 +131,48 @@ DEFINITIES <- list(
 
     status =
       "Eindstatus van de inschrijving na de observatieperiode.
-      'Diploma behaald': behaalde een bachelor-, master- of ad-diploma
-      voor deze opleiding (excl. propedeuse). 'Zittend': nog ingeschreven
+      'Diploma behaald': behaalde een hoofd- of nevendiploma voor deze
+      opleiding (associate degree, bachelor, master, doctoraal, beroepsfase
+      of postinitiele master; excl. propedeuse). 'Zittend': nog ingeschreven
       in de opleiding, geen diploma behaald. 'Uitgevallen': niet meer
       ingeschreven in de opleiding en geen diploma behaald.",
 
     rendement_3jr =
       "Percentage inschrijvingen met een diploma binnen 3 academische
       jaren na eerste inschrijving in de opleiding. Berekend als:
-      diplomajaar - instroomjaar + 1 <= 3.",
+      diplomajaar - instroomjaar + 1 <= 3.
+      Cohorten die nog geen 3 jaar in de data zitten zijn
+      'Nog niet waarneembaar' en tellen niet mee in het percentage.",
 
     rendement_5jr =
       "Percentage inschrijvingen met een diploma binnen 5 academische
-      jaren na eerste inschrijving in de opleiding.",
+      jaren na eerste inschrijving in de opleiding.
+      Cohorten die nog geen 5 jaar in de data zitten zijn
+      'Nog niet waarneembaar' en tellen niet mee in het percentage.",
 
     rendement_8jr =
       "Percentage inschrijvingen met een diploma binnen 8 academische
       jaren na eerste inschrijving in de opleiding. Dit is de maximale
-      observatietermijn.",
+      observatietermijn.
+      Cohorten die nog geen 8 jaar in de data zitten zijn
+      'Nog niet waarneembaar' en tellen niet mee in het percentage.",
 
     uitval_1jr =
       "Percentage inschrijvingen waarbij de student na het eerste jaar
       niet meer in deze opleiding ingeschreven is en geen diploma heeft
       behaald. Een overstap naar een andere opleiding telt hier als uitval
-      uit de opleiding.",
+      uit de opleiding.
+      Uitval binnen 1 jaar is pas vast te stellen als instroomjaar + 1
+      in de data zit; recentere cohorten zijn 'Nog niet waarneembaar'
+      en tellen niet mee.",
 
     uitval_3jr =
       "Percentage inschrijvingen waarbij de student binnen 3 jaar na
       instroom in de opleiding niet meer ingeschreven is en geen diploma
-      heeft behaald. Telt cumulatief.",
+      heeft behaald. Telt cumulatief.
+      Uitval binnen 3 jaar is pas vast te stellen als instroomjaar + 3
+      in de data zit; recentere cohorten zijn 'Nog niet waarneembaar'
+      en tellen niet mee.",
 
     ## Studiewissel is niet beschikbaar op inschrijvingsniveau
     studiewissel_1jr = NULL,

@@ -75,8 +75,16 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
   heeft_hoofdinschr   <- "indicatie_hoofdinschrijving"   %in% names(indicatoren)
   heeft_herstelbaar   <- "indicatie_herstelbaar"         %in% names(indicatoren)
 
+  ## Percentage over de waarneembare rijen: studenten in cohorten waarvan het
+  ## meetvenster nog niet in de data zit tellen niet mee in de noemer. Is
+  ## niemand in de groep waarneembaar, dan is het percentage NA.
   .pct <- function(x, label) {
-    mean(as.character(x) == label, na.rm = TRUE) * 100
+    x <- as.character(x)
+    waarneembaar <- !is.na(x) & x != NIET_WAARNEEMBAAR
+    if (!any(waarneembaar)) {
+      return(NA_real_)
+    }
+    mean(x[waarneembaar] == label) * 100
   }
 
   .groepeer <- function(data) {
