@@ -18,7 +18,8 @@ schrijf_benchmarkrapport(rapport, pad)
 Schrijft het rapport uit \code{\link[=maak_benchmarkrapport]{maak_benchmarkrapport()}} naar een \code{.xlsx} met
 vier tabbladen: \code{Rapport}, \code{Toelichting} (per kolom, afgestemd op
 analyseniveau en drempel), \code{Validatie} (controlepunten voor CEDA) en
-\code{Metadata} (niveau, drempel, packageversie, laatste inschrijvingsjaar).
+\code{Metadata} (peildatum, niveau, drempel, packageversie, laatste
+inschrijvingsjaar).
 Vereist het package \code{writexl}.
 }
 \examples{

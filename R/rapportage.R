@@ -19,10 +19,10 @@
 #'   onderdrukt, dan is die groep terug te rekenen uit de totaalrij min de
 #'   zichtbare groepen. Daarom wordt dan ook de kleinste zichtbare groep in
 #'   dat jaar onderdrukt.
-#' - **Cellen (optioneel):** met `min_cel > 0` wordt een percentage `NA` als
-#'   de teller of het complement (noemer - teller) kleiner is dan `min_cel`,
-#'   zodat bijvoorbeeld "0% uitval" in een groep niets over iedereen in die
-#'   groep verraadt.
+#' - **Cellen:** een percentage wordt `NA` als de teller of het complement
+#'   (noemer - teller) kleiner is dan `min_cel` (standaard 5), zodat
+#'   bijvoorbeeld "0% uitval" in een groep niets over iedereen in die groep
+#'   verraadt. Zet `min_cel = 0` om dit uit te zetten.
 #' - Percentages worden afgerond op hele procenten, gemiddelden op één
 #'   decimaal.
 #'
@@ -32,6 +32,24 @@
 #'
 #' De kolom `onderdrukt` maakt zichtbaar welke rijen zijn onderdrukt
 #' (primair of secundair) zonder iets te onthullen over de werkelijke omvang.
+#'
+#' ## Peildatum
+#'
+#' Elke rij krijgt de `peildatum` van de data: standaard 1 oktober van het
+#' laatste inschrijvingsjaar (het attribuut `peildatum` dat
+#' [combineer_indicatoren()] zet). Cijfers van eerdere cohorten kunnen bij een
+#' latere peildatum veranderen, bijvoorbeeld als een student na een tussenjaar
+#' terugkeert en dan niet meer als uitgevallen telt. Vergelijk daarom alleen
+#' rapporten met dezelfde peildatum, en vermeld de peildatum bij elk gedeeld
+#' cijfer.
+#'
+#' ## Samenstelling instroom
+#'
+#' Als het analysebestand `vooropleiding` en `eerstejaars_ho` bevat (zie
+#' [combineer_indicatoren()]), geeft het rapport per groep het aandeel havo-,
+#' vwo- en mbo-instromers en het aandeel eerstejaars HO. Onbekende waarden
+#' tellen niet mee in de noemer. Verschillen in rendement en uitval tussen
+#' instellingen hangen sterk samen met deze samenstelling.
 #'
 #' ## Gebruik als validatiemiddel
 #'
@@ -55,23 +73,29 @@
 #' @param drempel Minimale groepsgrootte. Groepen kleiner dan deze waarde
 #'   krijgen NA voor alle kolommen inclusief `n`. Standaard 30.
 #' @param min_cel Minimale celgrootte voor percentages (zie hierboven).
-#'   Standaard 0 (uit).
+#'   Standaard 5; 0 zet celonderdrukking uit.
 #' @param niveau Analyseniveau waarop `indicatoren` is gemaakt (`"student"`
 #'   of `"inschrijving"`). Standaard het attribuut `niveau` dat
 #'   [combineer_indicatoren()] zet. Wordt vastgelegd in de metadata, zodat
 #'   rapporten van verschillende instellingen vergelijkbaar blijven.
+#' @param peildatum Peildatum van de data (`Date` of `"JJJJ-MM-DD"`).
+#'   Standaard het attribuut `peildatum` dat [combineer_indicatoren()] zet;
+#'   ontbreekt dat, dan 1 oktober van het laatste instroomjaar in
+#'   `indicatoren`.
 #'
-#' @return Een tibble met kolommen `sector`, `opleidingsvorm`,
+#' @return Een tibble met kolommen `peildatum`, `sector`, `opleidingsvorm`,
 #'   `opleidingsniveau`, `inschrijvingsjaar`, `onderdrukt`, `n`,
 #'   `pct_uitval_1jr`, `pct_uitval_3jr`, `pct_rendement_3jr`,
 #'   `pct_rendement_5jr`, `pct_rendement_8jr`, `pct_studiewissel_1jr`,
 #'   `pct_studiewissel_3jr`, `pct_int_student`, `gem_leeftijd_instroom`,
-#'   plus optioneel `gem_eindcijfer`, `gem_wiskundecijfer`,
+#'   plus optioneel `pct_eerstejaars_ho`, `pct_vooropl_havo`,
+#'   `pct_vooropl_vwo`, `pct_vooropl_mbo`, `gem_eindcijfer`,
+#'   `gem_wiskundecijfer`,
 #'   `gem_aantal_vakken`, `pct_bekostigd`, `pct_hoofdinschrijving` en
 #'   `pct_herstelbaar` (van de niet-bekostigde rijen: percentage waarvan de
 #'   reden een te late aanlevering is en dus hersteld kan worden, zie
 #'   [BEKOSTIGINGSTATUS_CODES]). Attributen: `gegenereerd_op` (POSIXct) en
-#'   `metadata` (lijst met niveau, drempel, min_cel, laatste
+#'   `metadata` (lijst met peildatum, niveau, drempel, min_cel, laatste
 #'   inschrijvingsjaar, packageversie en tijdstip).
 #'
 #' @seealso [schrijf_benchmarkrapport()] om het rapport met toelichting als
@@ -96,13 +120,20 @@
 maak_benchmarkrapport <- function(
   indicatoren,
   drempel = 30L,
-  min_cel = 0L,
-  niveau = attr(indicatoren, "niveau")
+  min_cel = 5L,
+  niveau = attr(indicatoren, "niveau"),
+  peildatum = attr(indicatoren, "peildatum")
 ) {
   if (is.null(niveau)) {
     niveau <- "onbekend"
   }
+  if (is.null(peildatum)) {
+    peildatum <- peildatum_1cho(max(indicatoren$inschrijvingsjaar, na.rm = TRUE))
+  }
+  peildatum <- as.Date(peildatum)
   heeft_studiewissel  <- "studiewissel_1jr"             %in% names(indicatoren)
+  heeft_vooropl       <- "vooropleiding"                 %in% names(indicatoren)
+  heeft_eerstejaars   <- "eerstejaars_ho"                %in% names(indicatoren)
   heeft_vakhawv       <- "vakhawv_gemiddeld_eindcijfer"  %in% names(indicatoren)
   heeft_wiskunde      <- "vakhawv_wiskundecijfer"        %in% names(indicatoren)
   heeft_aantal_vakken <- "vakhawv_aantal_vakken"         %in% names(indicatoren)
@@ -133,6 +164,12 @@ maak_benchmarkrapport <- function(
     .aandeel(dplyr::if_else(x == NIET_WAARNEEMBAAR, NA, x == label))
   }
 
+  ## Aandeel in de samenstelling: "onbekend" telt niet mee in de noemer
+  .samenstelling <- function(x, label) {
+    x <- as.character(x)
+    .aandeel(dplyr::if_else(x == "onbekend", NA, x == label))
+  }
+
   .groepeer <- function(data) {
     data |>
       dplyr::summarise(
@@ -146,7 +183,11 @@ maak_benchmarkrapport <- function(
         pct_studiewissel_3jr = if (heeft_studiewissel) .pct(studiewissel_3jr, "Gewisseld binnen 3 jaar") else NA_real_,
         pct_int_student      = .pct(int_student, "internationale student"),
         gem_leeftijd_instroom = mean(leeftijd_bij_instroom, na.rm = TRUE),
-        gem_eindcijfer        = if (heeft_vakhawv)      mean(vakhawv_gemiddeld_eindcijfer, na.rm = TRUE) else NA_real_,
+        pct_eerstejaars_ho    = if (heeft_eerstejaars) .samenstelling(eerstejaars_ho, "eerstejaars HO") else NA_real_,
+        pct_vooropl_havo      = if (heeft_vooropl)     .samenstelling(vooropleiding, "havo") else NA_real_,
+        pct_vooropl_vwo       = if (heeft_vooropl)     .samenstelling(vooropleiding, "vwo")  else NA_real_,
+        pct_vooropl_mbo       = if (heeft_vooropl)     .samenstelling(vooropleiding, "mbo")  else NA_real_,
+        gem_eindcijfer       = if (heeft_vakhawv)      mean(vakhawv_gemiddeld_eindcijfer, na.rm = TRUE) else NA_real_,
         gem_wiskundecijfer    = if (heeft_wiskunde)      mean(vakhawv_wiskundecijfer,       na.rm = TRUE) else NA_real_,
         gem_aantal_vakken     = if (heeft_aantal_vakken) mean(vakhawv_aantal_vakken,        na.rm = TRUE) else NA_real_,
         pct_bekostigd         = if (heeft_bekostiging)   .aandeel(indicatie_bekostigd)         else NA_real_,
@@ -204,6 +245,7 @@ maak_benchmarkrapport <- function(
     "pct_rendement_3jr", "pct_rendement_5jr", "pct_rendement_8jr",
     "pct_studiewissel_1jr", "pct_studiewissel_3jr",
     "pct_int_student", "gem_leeftijd_instroom",
+    "pct_eerstejaars_ho", "pct_vooropl_havo", "pct_vooropl_vwo", "pct_vooropl_mbo",
     "gem_eindcijfer", "gem_wiskundecijfer", "gem_aantal_vakken",
     "pct_bekostigd", "pct_hoofdinschrijving", "pct_herstelbaar"
   )
@@ -224,6 +266,7 @@ maak_benchmarkrapport <- function(
   altijd_na  <- function(col) all(is.na(resultaat[[col]]))
   optioneel  <- c(
     "pct_studiewissel_1jr", "pct_studiewissel_3jr",
+    "pct_eerstejaars_ho", "pct_vooropl_havo", "pct_vooropl_vwo", "pct_vooropl_mbo",
     "gem_eindcijfer", "gem_wiskundecijfer", "gem_aantal_vakken",
     "pct_bekostigd", "pct_hoofdinschrijving", "pct_herstelbaar"
   )
@@ -239,9 +282,14 @@ maak_benchmarkrapport <- function(
       dplyr::across(dplyr::starts_with("gem_"), ~ round(.x, 1))
     )
 
+  ## Peildatum als eerste kolom, zodat die meegaat als rapporten van
+  ## verschillende instellingen worden samengevoegd
+  resultaat <- dplyr::mutate(resultaat, peildatum = peildatum, .before = 1)
+
   gegenereerd_op <- Sys.time()
   attr(resultaat, "gegenereerd_op") <- gegenereerd_op
   attr(resultaat, "metadata") <- list(
+    peildatum = peildatum,
     niveau = niveau,
     drempel = drempel,
     min_cel = min_cel,
@@ -259,7 +307,8 @@ maak_benchmarkrapport <- function(
 #' Schrijft het rapport uit [maak_benchmarkrapport()] naar een `.xlsx` met
 #' vier tabbladen: `Rapport`, `Toelichting` (per kolom, afgestemd op
 #' analyseniveau en drempel), `Validatie` (controlepunten voor CEDA) en
-#' `Metadata` (niveau, drempel, packageversie, laatste inschrijvingsjaar).
+#' `Metadata` (peildatum, niveau, drempel, packageversie, laatste
+#' inschrijvingsjaar).
 #' Vereist het package `writexl`.
 #'
 #' @param rapport Tibble zoals gemaakt door [maak_benchmarkrapport()]
@@ -315,7 +364,9 @@ benchmark_toelichting <- function(rapport) {
 
   toelichting <- tibble::tribble(
     ~Kolom, ~Omschrijving, ~Opmerking,
-    "sector", "Onderwijs-CROHO-sector (bijv. gezondheidszorg, techniek)",
+    "peildatum", "Peildatum van de 1CHO-data waarop het rapport is gebaseerd",
+    "Cijfers van eerdere cohorten kunnen bij een latere peildatum veranderen; vergelijk alleen rapporten met dezelfde peildatum",
+    "sector","Onderwijs-CROHO-sector (bijv. gezondheidszorg, techniek)",
     "Rij met sector = 'totaal' is het totaal over alle groepen voor dat instroomjaar",
     "opleidingsvorm", "Voltijd, deeltijd of duaal", "",
     "opleidingsniveau", "Associate degree, bachelor of master", "",
@@ -336,6 +387,14 @@ benchmark_toelichting <- function(rapport) {
     paste0("Alleen op studentniveau. ", waarneembaar),
     "pct_int_student", paste("% internationale", eenheid, "in de groep"), "",
     "gem_leeftijd_instroom", "Gemiddelde leeftijd bij instroom", "",
+    "pct_eerstejaars_ho", paste("%", eenheid, "waarvoor het instroomjaar ook het eerste jaar in het hoger onderwijs is"),
+    "Onbekend telt niet mee in de noemer",
+    "pct_vooropl_havo", paste("%", eenheid, "met havo als hoogste vooropleiding voor het HO"),
+    "Onbekend telt niet mee in de noemer",
+    "pct_vooropl_vwo", paste("%", eenheid, "met vwo als hoogste vooropleiding voor het HO"),
+    "Onbekend telt niet mee in de noemer",
+    "pct_vooropl_mbo", paste("%", eenheid, "met mbo als hoogste vooropleiding voor het HO"),
+    "Onbekend telt niet mee in de noemer",
     "gem_eindcijfer", "Gemiddeld eindcijfer vooropleiding",
     "Alleen als een VAKHAVW-bestand is geladen; gemiddelde over het hoogste eindcijfer per student",
     "gem_wiskundecijfer", "Gemiddeld centraal examencijfer wiskunde",
@@ -363,6 +422,7 @@ benchmark_validatie <- function(rapport) {
       "Rendementpercentages",
       "Recente cohorten",
       "Optionele kolommen",
+      "Peildatum",
       "Reproduceerbaarheid"
     ),
     Toelichting = c(
@@ -375,6 +435,11 @@ benchmark_validatie <- function(rapport) {
       "Rendement binnen 5 jaar ligt doorgaans tussen 40% en 80% voor bachelor. Waarden van 0% of 100% zijn verdacht.",
       "Lege percentages bij de laatste cohorten zijn verwacht: die cohorten zitten nog niet lang genoeg in de data voor het meetvenster.",
       "Als VLPBEK of VAKHAVW is geladen, moeten pct_bekostigd resp. gem_eindcijfer aanwezig en voor de meeste rijen gevuld zijn. Kolommen die volledig leeg zijn duiden op een koppelfout (bijv. andere ID's of onjuiste opleidingscode).",
+      paste0(
+        "Peildatum: ", if (is.null(meta$peildatum)) "onbekend" else format(meta$peildatum, "%Y-%m-%d"),
+        ". Vergelijk alleen rapporten met dezelfde peildatum: bij een latere peildatum kunnen cijfers van ",
+        "eerdere cohorten veranderen, bijvoorbeeld als een student na een tussenjaar terugkeert."
+      ),
       paste0(
         "Gegenereerd op: ", format(tijdstip, "%Y-%m-%d %H:%M:%S"),
         ". Hetzelfde invoerbestand moet altijd dezelfde uitkomsten geven."
@@ -391,10 +456,11 @@ benchmark_metadata <- function(rapport) {
   waarde <- function(x) if (is.null(x)) "onbekend" else as.character(x)
   tibble::tibble(
     Kenmerk = c(
-      "Analyseniveau", "Drempel groepsgrootte", "Minimale celgrootte",
+      "Peildatum", "Analyseniveau", "Drempel groepsgrootte", "Minimale celgrootte",
       "Laatste inschrijvingsjaar in de data", "Versie staat1cho", "Gegenereerd op"
     ),
     Waarde = c(
+      if (is.null(meta$peildatum)) "onbekend" else format(meta$peildatum, "%Y-%m-%d"),
       waarde(meta$niveau), waarde(meta$drempel), waarde(meta$min_cel),
       waarde(meta$laatste_inschrijvingsjaar), waarde(meta$packageversie),
       if (is.null(meta$gegenereerd_op)) "onbekend" else format(meta$gegenereerd_op, "%Y-%m-%d %H:%M:%S")

@@ -7,8 +7,9 @@
 maak_benchmarkrapport(
   indicatoren,
   drempel = 30L,
-  min_cel = 0L,
-  niveau = attr(indicatoren, "niveau")
+  min_cel = 5L,
+  niveau = attr(indicatoren, "niveau"),
+  peildatum = attr(indicatoren, "peildatum")
 )
 }
 \arguments{
@@ -20,25 +21,32 @@ eventueel aangevuld via \code{\link[=verrijk_met_vakhawv]{verrijk_met_vakhawv()}
 krijgen NA voor alle kolommen inclusief \code{n}. Standaard 30.}
 
 \item{min_cel}{Minimale celgrootte voor percentages (zie hierboven).
-Standaard 0 (uit).}
+Standaard 5; 0 zet celonderdrukking uit.}
 
 \item{niveau}{Analyseniveau waarop \code{indicatoren} is gemaakt (\code{"student"}
 of \code{"inschrijving"}). Standaard het attribuut \code{niveau} dat
 \code{\link[=combineer_indicatoren]{combineer_indicatoren()}} zet. Wordt vastgelegd in de metadata, zodat
 rapporten van verschillende instellingen vergelijkbaar blijven.}
+
+\item{peildatum}{Peildatum van de data (\code{Date} of \code{"JJJJ-MM-DD"}).
+Standaard het attribuut \code{peildatum} dat \code{\link[=combineer_indicatoren]{combineer_indicatoren()}} zet;
+ontbreekt dat, dan 1 oktober van het laatste instroomjaar in
+\code{indicatoren}.}
 }
 \value{
-Een tibble met kolommen \code{sector}, \code{opleidingsvorm},
+Een tibble met kolommen \code{peildatum}, \code{sector}, \code{opleidingsvorm},
 \code{opleidingsniveau}, \code{inschrijvingsjaar}, \code{onderdrukt}, \code{n},
 \code{pct_uitval_1jr}, \code{pct_uitval_3jr}, \code{pct_rendement_3jr},
 \code{pct_rendement_5jr}, \code{pct_rendement_8jr}, \code{pct_studiewissel_1jr},
 \code{pct_studiewissel_3jr}, \code{pct_int_student}, \code{gem_leeftijd_instroom},
-plus optioneel \code{gem_eindcijfer}, \code{gem_wiskundecijfer},
+plus optioneel \code{pct_eerstejaars_ho}, \code{pct_vooropl_havo},
+\code{pct_vooropl_vwo}, \code{pct_vooropl_mbo}, \code{gem_eindcijfer},
+\code{gem_wiskundecijfer},
 \code{gem_aantal_vakken}, \code{pct_bekostigd}, \code{pct_hoofdinschrijving} en
 \code{pct_herstelbaar} (van de niet-bekostigde rijen: percentage waarvan de
 reden een te late aanlevering is en dus hersteld kan worden, zie
 \link{BEKOSTIGINGSTATUS_CODES}). Attributen: \code{gegenereerd_op} (POSIXct) en
-\code{metadata} (lijst met niveau, drempel, min_cel, laatste
+\code{metadata} (lijst met peildatum, niveau, drempel, min_cel, laatste
 inschrijvingsjaar, packageversie en tijdstip).
 }
 \description{
@@ -63,10 +71,10 @@ krijgen \code{NA} voor alle uitkomsten, inclusief \code{n}.
 onderdrukt, dan is die groep terug te rekenen uit de totaalrij min de
 zichtbare groepen. Daarom wordt dan ook de kleinste zichtbare groep in
 dat jaar onderdrukt.
-\item \strong{Cellen (optioneel):} met \code{min_cel > 0} wordt een percentage \code{NA} als
-de teller of het complement (noemer - teller) kleiner is dan \code{min_cel},
-zodat bijvoorbeeld "0\% uitval" in een groep niets over iedereen in die
-groep verraadt.
+\item \strong{Cellen:} een percentage wordt \code{NA} als de teller of het complement
+(noemer - teller) kleiner is dan \code{min_cel} (standaard 5), zodat
+bijvoorbeeld "0\% uitval" in een groep niets over iedereen in die groep
+verraadt. Zet \code{min_cel = 0} om dit uit te zetten.
 \item Percentages worden afgerond op hele procenten, gemiddelden op één
 decimaal.
 }
@@ -77,6 +85,26 @@ norm. Laat een privacy officer of FG van de deelnemende instellingen
 
 De kolom \code{onderdrukt} maakt zichtbaar welke rijen zijn onderdrukt
 (primair of secundair) zonder iets te onthullen over de werkelijke omvang.
+}
+
+\subsection{Peildatum}{
+
+Elke rij krijgt de \code{peildatum} van de data: standaard 1 oktober van het
+laatste inschrijvingsjaar (het attribuut \code{peildatum} dat
+\code{\link[=combineer_indicatoren]{combineer_indicatoren()}} zet). Cijfers van eerdere cohorten kunnen bij een
+latere peildatum veranderen, bijvoorbeeld als een student na een tussenjaar
+terugkeert en dan niet meer als uitgevallen telt. Vergelijk daarom alleen
+rapporten met dezelfde peildatum, en vermeld de peildatum bij elk gedeeld
+cijfer.
+}
+
+\subsection{Samenstelling instroom}{
+
+Als het analysebestand \code{vooropleiding} en \code{eerstejaars_ho} bevat (zie
+\code{\link[=combineer_indicatoren]{combineer_indicatoren()}}), geeft het rapport per groep het aandeel havo-,
+vwo- en mbo-instromers en het aandeel eerstejaars HO. Onbekende waarden
+tellen niet mee in de noemer. Verschillen in rendement en uitval tussen
+instellingen hangen sterk samen met deze samenstelling.
 }
 
 \subsection{Gebruik als validatiemiddel}{

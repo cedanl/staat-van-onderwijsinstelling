@@ -114,7 +114,7 @@ KLEUREN <- c(
 
 DICT <- data.frame(
   Categorie = c(
-    rep("Studentkenmerken", 12),
+    rep("Studentkenmerken", 14),
     rep("Status", 4),
     rep("Rendement", 4),
     rep("Uitval", 4),
@@ -133,6 +133,8 @@ DICT <- data.frame(
     "indicatie_EER",
     "sector",
     "leeftijd_bij_instroom",
+    "vooropleiding",
+    "eerstejaars_ho",
     "postcode4_student_1okt",
     "postcode4_vooropleiding_voorHO",
     "status",
@@ -177,6 +179,8 @@ DICT <- data.frame(
     "Indicator EER-student (Europese Economische Ruimte)",
     "Sector van de opleiding (CROHO-onderdeel)",
     "Leeftijd van de student bij aanvang opleiding",
+    "Hoogste vooropleiding voor het HO (havo, vwo, mbo, ho, buitenlands, overig, onbekend)",
+    "Of het instroomjaar ook het eerste jaar in het hoger onderwijs is",
     "Postcode (4-cijferig) van de student op 1 oktober",
     "Postcode (4-cijferig) van vooropleiding voor HO",
     "Status na afloop van de observatieperiode",
@@ -311,7 +315,8 @@ pct_bar <- function(data, x, titel = NULL) {
       hjust = -0.05,
       size = 3.3
     ) +
-    scale_y_continuous(labels = percent, limits = c(0, 1.2)) +
+    ## Weinig ticks: de kaarten zijn smal en 25%-stappen overlappen
+    scale_y_continuous(labels = percent, limits = c(0, 1.2), breaks = c(0, 0.5, 1)) +
     scale_fill_manual(values = kleuren, breaks = names(kleuren)) +
     coord_flip() +
     labs(x = NULL, y = NULL, title = titel) +
@@ -519,6 +524,33 @@ NIET_WAARNEEMBAAR <- "Nog niet waarneembaar"
 waargenomen <- function(x, label) {
   x <- as.character(x)
   dplyr::if_else(x == NIET_WAARNEEMBAAR, NA, x == label)
+}
+
+## Percentage per groep (bijv. vooropleiding) over de waarneembare rijen.
+## `conditie` is een functie zoals bij pct_label(); NA telt niet mee.
+pct_per_groep <- function(data, groep, conditie, titel) {
+  if (nrow(data) == 0) {
+    return(leeg_plot())
+  }
+  agg <- data |>
+    mutate(groep = droplevels(as.factor({{ groep }})), treffer = conditie(data)) |>
+    filter(!is.na(treffer), !is.na(groep)) |>
+    group_by(groep) |>
+    summarise(pct = mean(treffer), n = n(), .groups = "drop")
+  if (nrow(agg) == 0) {
+    return(leeg_plot())
+  }
+  ggplot(agg, aes(x = fct_rev(groep), y = pct)) +
+    geom_col(fill = NPULS_BLAUW, show.legend = FALSE) +
+    geom_text(
+      aes(label = paste0(round(pct * 100), "% (n=", n, ")")),
+      hjust = -0.05,
+      size = 3.3
+    ) +
+    scale_y_continuous(labels = percent, limits = c(0, 1.2), breaks = c(0, 0.5, 1)) +
+    coord_flip() +
+    labs(x = NULL, y = NULL, title = titel) +
+    thema()
 }
 
 n_label <- function(n) {
@@ -732,6 +764,7 @@ server <- function(input, output, session) {
   fase <- reactiveVal("upload")
   df_data <- reactiveVal(NULL)
   analyse_niveau <- reactiveVal("student")
+  peildatum <- reactiveVal(NULL)
   heeft_vakhawv <- reactiveVal(FALSE)
   vakhawv_raw <- reactiveVal(NULL)
   heeft_bekostiging <- reactiveVal(FALSE)
@@ -863,6 +896,8 @@ server <- function(input, output, session) {
       niveaus_d <- sort(na.omit(unique(as.character(d$opleidingsniveau))))
       vormen_d <- sort(na.omit(unique(as.character(d$opleidingsvorm))))
       opleidingen_d <- sort(na.omit(unique(as.character(d$opleidingsnaam))))
+      ## Vaste volgorde (havo, vwo, mbo, ...) in plaats van alfabetisch
+      vooropleidingen_d <- as.character(unique(sort(d$vooropleiding)))
 
       tagList(
         tags$div(
@@ -880,6 +915,16 @@ server <- function(input, output, session) {
             },
             style = "margin-left:1rem;background:#D6E2FD;color:#3D68EC;font-size:0.7rem;font-weight:600;padding:0.2rem 0.65rem;border-radius:999px;text-transform:uppercase;letter-spacing:0.06em;"
           ),
+          if (!is.null(peildatum())) {
+            tags$span(
+              paste("Peildatum", format(peildatum(), "%d-%m-%Y")),
+              title = paste(
+                "Stand van de 1CHO-data. Cijfers van eerdere cohorten kunnen",
+                "bij een latere peildatum veranderen."
+              ),
+              style = "margin-left:0.5rem;background:#FFFFFF;border:1px solid #D6E2FD;color:#374151;font-size:0.7rem;font-weight:600;padding:0.2rem 0.65rem;border-radius:999px;letter-spacing:0.04em;"
+            )
+          },
           tags$div(
             style = "margin-left:auto;",
             actionButton(
@@ -957,6 +1002,23 @@ server <- function(input, output, session) {
               selected = "",
               inline = TRUE
             ),
+            selectInput(
+              "vooropleiding_filter",
+              "Vooropleiding",
+              choices = c("Alle vooropleidingen" = "", vooropleidingen_d),
+              selected = ""
+            ),
+            radioButtons(
+              "eerstejaars_ho_filter",
+              "Eerder in het HO?",
+              choices = c(
+                "Alle" = "",
+                "Eerstejaars HO" = "eerstejaars HO",
+                "Eerder in HO" = "eerder in HO"
+              ),
+              selected = "",
+              inline = TRUE
+            ),
             uiOutput("filter_uitleg"),
             tags$hr(),
             uiOutput("n_label"),
@@ -983,6 +1045,7 @@ server <- function(input, output, session) {
               "Overzicht",
               layout_columns(
                 col_widths = c(3, 3, 3, 3),
+                fill = FALSE,
                 uiOutput("kpi_n"),
                 uiOutput("kpi_diploma"),
                 uiOutput("kpi_uitval_ov"),
@@ -1031,6 +1094,17 @@ server <- function(input, output, session) {
                   plotlyOutput("plot_instroom_geslacht", height = "280px")
                 )
               ),
+              layout_columns(
+                col_widths = c(6, 6),
+                card(
+                  card_header("Vooropleiding"),
+                  plotlyOutput("plot_instroom_vooropleiding", height = "280px")
+                ),
+                card(
+                  card_header("Eerstejaars HO of eerder in HO"),
+                  plotlyOutput("plot_instroom_eerstejaars_ho", height = "280px")
+                )
+              ),
               card(
                 card_header("Leeftijdsverdeling bij instroom"),
                 plotlyOutput("plot_instroom_leeftijd", height = "260px")
@@ -1042,6 +1116,7 @@ server <- function(input, output, session) {
               "Rendement",
               layout_columns(
                 col_widths = c(4, 4, 4),
+                fill = FALSE,
                 uiOutput("kpi_rend3"),
                 uiOutput("kpi_rend5"),
                 uiOutput("kpi_rend8")
@@ -1064,6 +1139,17 @@ server <- function(input, output, session) {
                   card_header("Rendement 8 jaar"),
                   plotlyOutput("plot_rend8", height = "240px")
                 )
+              ),
+              layout_columns(
+                col_widths = c(6, 6),
+                card(
+                  card_header("Diploma binnen 5 jaar per vooropleiding"),
+                  plotlyOutput("plot_rend5_vooropleiding", height = "280px")
+                ),
+                card(
+                  card_header("Diploma binnen 5 jaar: eerstejaars HO of eerder in HO"),
+                  plotlyOutput("plot_rend5_eerstejaars_ho", height = "280px")
+                )
               )
             ),
 
@@ -1072,6 +1158,7 @@ server <- function(input, output, session) {
               "Uitval",
               layout_columns(
                 col_widths = c(4, 4, 4),
+                fill = FALSE,
                 uiOutput("kpi_uitval_kpi"),
                 uiOutput("kpi_uitval1"),
                 uiOutput("kpi_uitval3")
@@ -1090,6 +1177,17 @@ server <- function(input, output, session) {
                   card_header("Uitval per sector"),
                   plotlyOutput("plot_uitval_sector", height = "260px")
                 )
+              ),
+              layout_columns(
+                col_widths = c(6, 6),
+                card(
+                  card_header("Uitval binnen 1 jaar per vooropleiding"),
+                  plotlyOutput("plot_uitval1_vooropleiding", height = "280px")
+                ),
+                card(
+                  card_header("Uitval binnen 1 jaar: eerstejaars HO of eerder in HO"),
+                  plotlyOutput("plot_uitval1_eerstejaars_ho", height = "280px")
+                )
               )
             ),
 
@@ -1099,6 +1197,7 @@ server <- function(input, output, session) {
                 "Studiewissel",
                 layout_columns(
                   col_widths = c(6, 6),
+                  fill = FALSE,
                   uiOutput("kpi_wissel1"),
                   uiOutput("kpi_wissel3")
                 ),
@@ -1133,6 +1232,7 @@ server <- function(input, output, session) {
                 uiOutput("bek_peiljaar_badge"),
                 layout_columns(
                   col_widths = c(3, 3, 3, 3),
+                  fill = FALSE,
                   uiOutput("kpi_pct_bekostigd"),
                   uiOutput("kpi_n_bekostigd"),
                   uiOutput("kpi_n_niet_bekostigd"),
@@ -1179,6 +1279,7 @@ server <- function(input, output, session) {
                 "Vooropleiding",
                 layout_columns(
                   col_widths = c(4, 4, 4),
+                  fill = FALSE,
                   uiOutput("kpi_gem_eindcijfer"),
                   uiOutput("kpi_aantal_vakken"),
                   uiOutput("kpi_pct_met_vakhawv")
@@ -1363,6 +1464,7 @@ server <- function(input, output, session) {
             wissel,
             niveau = niv
           )
+          peildatum(attr(result, "peildatum"))
 
           naam_tabel <- dplyr::distinct(
             basisbestand,
@@ -1472,6 +1574,12 @@ server <- function(input, output, session) {
     }
     if (!is.null(input$geslacht_filter) && nchar(input$geslacht_filter) > 0) {
       d <- filter(d, as.character(geslacht) == input$geslacht_filter)
+    }
+    if (!is.null(input$vooropleiding_filter) && nchar(input$vooropleiding_filter) > 0) {
+      d <- filter(d, as.character(vooropleiding) == input$vooropleiding_filter)
+    }
+    if (!is.null(input$eerstejaars_ho_filter) && nchar(input$eerstejaars_ho_filter) > 0) {
+      d <- filter(d, as.character(eerstejaars_ho) == input$eerstejaars_ho_filter)
     }
     d
   })
@@ -1674,6 +1782,14 @@ server <- function(input, output, session) {
     df(),
     geslacht
   )))
+  output$plot_instroom_vooropleiding <- renderPlotly(ggplotly(pct_bar(
+    df(),
+    vooropleiding
+  )))
+  output$plot_instroom_eerstejaars_ho <- renderPlotly(ggplotly(pct_bar(
+    df(),
+    eerstejaars_ho
+  )))
   output$plot_instroom_leeftijd <- renderPlotly({
     d <- df()
     if (nrow(d) == 0) {
@@ -1723,7 +1839,23 @@ server <- function(input, output, session) {
     "Rendement 8 jaar"
   )))
 
+  rend5 <- \(d) waargenomen(d$rendement_5jr, "Diploma binnen 5 jaar")
+  output$plot_rend5_vooropleiding <- renderPlotly(ggplotly(pct_per_groep(
+    df(), vooropleiding, rend5, "% diploma binnen 5 jaar"
+  )))
+  output$plot_rend5_eerstejaars_ho <- renderPlotly(ggplotly(pct_per_groep(
+    df(), eerstejaars_ho, rend5, "% diploma binnen 5 jaar"
+  )))
+
   ## Plots uitval ----
+
+  uitval1 <- \(d) waargenomen(d$uitval_1jr, "Uitgevallen binnen 1 jaar")
+  output$plot_uitval1_vooropleiding <- renderPlotly(ggplotly(pct_per_groep(
+    df(), vooropleiding, uitval1, "% uitgevallen binnen 1 jaar"
+  )))
+  output$plot_uitval1_eerstejaars_ho <- renderPlotly(ggplotly(pct_per_groep(
+    df(), eerstejaars_ho, uitval1, "% uitgevallen binnen 1 jaar"
+  )))
 
   output$plot_uitval_trend <- renderPlotly(
     ggplotly(uitval_trend(df()), tooltip = c("x", "y", "colour")) |>
@@ -2232,10 +2364,14 @@ server <- function(input, output, session) {
 
   output$download_benchmark <- downloadHandler(
     filename = function() {
-      paste0("Benchmarkrapport_", Sys.Date(), ".xlsx")
+      paste0("Benchmarkrapport_peildatum_", peildatum(), ".xlsx")
     },
     content = function(file) {
-      rapport <- maak_benchmarkrapport(df_data(), niveau = analyse_niveau())
+      rapport <- maak_benchmarkrapport(
+        df_data(),
+        niveau = analyse_niveau(),
+        peildatum = peildatum()
+      )
       schrijf_benchmarkrapport(rapport, file)
     }
   )

@@ -21,8 +21,9 @@
 #'   `uitval_xjr` (jaar van uitval t.o.v. instroomjaar), `uitval_1jr` en
 #'   `uitval_3jr` (factoren). Cohorten waarvoor de periode nog niet volledig
 #'   in de data zit (instroomjaar + 1 resp. + 3 na `jaar - 1`) krijgen
-#'   `"Nog niet waarneembaar"`. Gooit een fout bij dubbele sleutelcombinaties of
-#'   ontbrekende statussen.
+#'   `"Nog niet waarneembaar"`. Attribuut `laatste_jaar` is `jaar - 1`, het
+#'   laatste inschrijvingsjaar in de data. Gooit een fout bij dubbele
+#'   sleutelcombinaties of ontbrekende statussen.
 #'
 #' @examples
 #' basis <- tibble::tibble(
@@ -135,5 +136,7 @@ bereken_uitval <- function(
     rlang::abort("Niet alle statussen zijn gevuld")
   }
 
+  ## combineer_indicatoren() leidt hier de peildatum van af
+  attr(uitval, "laatste_jaar") <- as.integer(laatste_jaar)
   uitval
 }

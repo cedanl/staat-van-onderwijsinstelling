@@ -104,6 +104,7 @@ Data_1cHO_indicatoren <- combineer_indicatoren(
   Studiewissel_indicatoren,
   niveau = niveau
 )
+cli::cli_alert_info("Peildatum van de data: {format(attr(Data_1cHO_indicatoren, 'peildatum'))}")
 
 
 ## VAKHAVW (optioneel) ----

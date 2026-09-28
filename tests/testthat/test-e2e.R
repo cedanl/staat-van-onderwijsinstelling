@@ -62,6 +62,17 @@ test_that("studiewissel binnen 1 jaar klopt exact", {
   )
 })
 
+test_that("vooropleiding en eerstejaars HO komen overeen met de waarheid", {
+  gekoppeld <- dplyr::left_join(
+    ind,
+    dplyr::rename(waarheid, vooropleiding_waar = vooropleiding),
+    by = "persoonsgebonden_nummer"
+  )
+  expect_equal(as.character(gekoppeld$vooropleiding), gekoppeld$vooropleiding_waar)
+  expect_equal(gekoppeld$eerstejaars_ho == "eerder in HO", gekoppeld$eerder_in_ho)
+  expect_equal(attr(ind, "peildatum"), as.Date("2023-10-01"))
+})
+
 test_that("gemiddelde leeftijd staat in het benchmarkrapport (#39)", {
   rapport <- maak_benchmarkrapport(ind, drempel = 1L)
   expect_false(anyNA(rapport$gem_leeftijd_instroom))

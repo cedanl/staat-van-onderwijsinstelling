@@ -130,7 +130,7 @@ Per student (of per inschrijving) worden de volgende indicatoren berekend:
 
 | Categorie | Indicatoren |
 |---|---|
-| Studentkenmerken | instroomjaar, geslacht, locatie, sector, opleidingsvorm, leeftijd bij instroom |
+| Studentkenmerken | instroomjaar, geslacht, locatie, sector, opleidingsvorm, leeftijd bij instroom, vooropleiding, eerstejaars HO |
 | Status | status na observatieperiode, soort diploma |
 | Rendement | diploma binnen 3, 5 en 8 jaar |
 | Uitval | uitval binnen 1 en 3 jaar |
@@ -141,6 +141,14 @@ Per student (of per inschrijving) worden de volgende indicatoren berekend:
 ### Onvolledige cohorten
 
 Rendement binnen 5 jaar is voor een cohort dat pas 2 jaar in de data zit nog niet te meten. Zulke studenten krijgen `"Nog niet waarneembaar"` en tellen niet mee in percentages. Recente cohorten hebben daardoor lege waarden voor de langere termijnen; dat is verwacht.
+
+### Vooropleiding en eerstejaars HO
+
+`vooropleiding` vat de hoogste vooropleiding vóór het HO samen tot havo, vwo, mbo, ho, buitenlands, overig of onbekend. `eerstejaars_ho` zegt of het instroomjaar ook het eerste jaar in het hoger onderwijs is, of dat de student al eerder in het HO stond (bijvoorbeeld bij een andere instelling). Filter op "eerstejaars HO" om te vergelijken met landelijke cijfers over eerstejaars. Beide komen uit optionele kolommen van de 1cijferho-uitvoer (`hoogste_vooropleiding_voor_het_ho_omschrijving_vooropleiding` en `eerste_jaar_in_het_hoger_onderwijs`); ontbreken die, dan is de waarde "onbekend".
+
+### Peildatum
+
+Alle cijfers beschrijven de stand van de 1CHO-data op de peildatum: 1 oktober van het laatste inschrijvingsjaar. Bij een nieuwere aanlevering kunnen cijfers van eerdere cohorten veranderen, bijvoorbeeld als een student na een tussenjaar terugkeert en dan niet meer als uitgevallen telt. Het benchmarkrapport zet de peildatum op elke rij; vergelijk alleen rapporten met dezelfde peildatum. Geef met `maak_benchmarkrapport(..., peildatum = "2024-10-01")` zelf een datum op als dat nodig is.
 
 ### Studentniveau of inschrijvingsniveau
 
@@ -163,7 +171,7 @@ Op **studentniveau** telt elke student één keer, bij de opleiding waarin die i
 | `lees_vakhawv()` / `verrijk_met_vakhawv()` | Leest VAKHAVW-vakcijfers en koppelt ze per student |
 | `lees_bekostiging()` / `verrijk_met_bekostiging()` | Leest een VLPBEK-bestand en koppelt de bekostigingsstatus (vereist 1cijferho-uitvoer met BSN) |
 | `is_gepseudonimiseerd()` | Herkent door 1cijferho gepseudonimiseerde persoonsnummers |
-| `maak_benchmarkrapport()` | Geaggregeerd rapport met privacyonderdrukking |
+| `maak_benchmarkrapport()` | Geaggregeerd rapport met peildatum en privacyonderdrukking (groepen < 30, cellen < 5) |
 | `schrijf_benchmarkrapport()` | Slaat het benchmarkrapport op als Excel met toelichting en metadata |
 | `maak_synthetische_1cho()` | Synthetisch 1CHO-bestand met bekende uitkomsten voor demo en validatie |
 | `DEFINITIES`, `BEKOSTIGINGSTATUS_CODES` | Definities van indicatoren en DUO-redencodes |

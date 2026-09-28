@@ -35,8 +35,9 @@ Een tibble met de sleutelkolom(men), \code{laatste_jaar_inschrijving},
 \code{uitval_xjr} (jaar van uitval t.o.v. instroomjaar), \code{uitval_1jr} en
 \code{uitval_3jr} (factoren). Cohorten waarvoor de periode nog niet volledig
 in de data zit (instroomjaar + 1 resp. + 3 na \code{jaar - 1}) krijgen
-\code{"Nog niet waarneembaar"}. Gooit een fout bij dubbele sleutelcombinaties of
-ontbrekende statussen.
+\code{"Nog niet waarneembaar"}. Attribuut \code{laatste_jaar} is \code{jaar - 1}, het
+laatste inschrijvingsjaar in de data. Gooit een fout bij dubbele
+sleutelcombinaties of ontbrekende statussen.
 }
 \description{
 Bepaalt voor elke student (of inschrijving) in het instroomcohort of zij zijn

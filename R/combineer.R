@@ -20,6 +20,17 @@
 #'   onderliggende deelscores. Bij `niveau = "student"` zijn ook
 #'   studiewisselkolommen aanwezig als `studiewissel_indicatoren` is meegegeven.
 #'
+#'   `vooropleiding` vat de hoogste vooropleiding voor het HO samen (havo,
+#'   vwo, mbo, ho, buitenlands, overig of onbekend). `eerstejaars_ho` geeft
+#'   aan of het instroomjaar ook het eerste jaar in het hoger onderwijs is
+#'   (`"eerstejaars HO"`) of dat de student al eerder in het HO stond
+#'   (`"eerder in HO"`). Beide zijn `"onbekend"` als de 1CHO-kolommen
+#'   `hoogste_vooropleiding_voor_het_ho_omschrijving_vooropleiding` resp.
+#'   `eerste_jaar_in_het_hoger_onderwijs` ontbreken.
+#'
+#'   Attributen: `niveau` en `peildatum` (1 oktober van het laatste
+#'   inschrijvingsjaar in de data, zie [maak_benchmarkrapport()]).
+#'
 #' @examples
 #' cohort <- tibble::tibble(
 #'   persoonsgebonden_nummer = "S1",
@@ -102,6 +113,17 @@ combineer_indicatoren <- function(
     }
   }
 
+  ## Vooropleiding en eerste jaar HO zijn optionele 1CHO-kolommen; zonder
+  ## die kolommen wordt alles "onbekend".
+  kolom_of_na <- function(kol) {
+    if (kol %in% names(result)) result[[kol]] else rep(NA, nrow(result))
+  }
+  result$vooropleiding <- categoriseer_vooropleiding(kolom_of_na(VOOROPLEIDING_KOLOM))
+  result$eerstejaars_ho <- bepaal_eerstejaars_ho(
+    suppressWarnings(as.integer(kolom_of_na(EERSTE_JAAR_HO_KOLOM))),
+    result$inschrijvingsjaar
+  )
+
   result <- result |>
     dplyr::select(
       persoonsgebonden_nummer,
@@ -115,6 +137,8 @@ combineer_indicatoren <- function(
       indicatie_EER = indicatie_eer_actueel_label,
       sector = croho_onderdeel_actuele_opleiding_label,
       leeftijd_bij_instroom = leeftijd_per_peildatum_1_oktober,
+      vooropleiding,
+      eerstejaars_ho,
       postcode4_student_1okt = postcodecijfers_student_op_1_oktober,
       postcode4_vooropleiding_voorHO = postcodecijfers_van_de_hoogste_vooropl_voor_het_ho,
       status,
@@ -218,6 +242,12 @@ combineer_indicatoren <- function(
       .after = opleidingscode_diploma
     )
 
+  laatste_jaar <- attr(uitval_indicatoren, "laatste_jaar")
+  if (is.null(laatste_jaar)) {
+    laatste_jaar <- max(cohorten_instroom$inschrijvingsjaar, na.rm = TRUE)
+  }
+
   attr(result, "niveau") <- niveau
+  attr(result, "peildatum") <- peildatum_1cho(laatste_jaar)
   result
 }

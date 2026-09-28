@@ -28,8 +28,10 @@ Een tibble met één rij per student per inschrijvingsjaar, klaar om
 met \code{readr::write_delim(x, pad, delim = ";", na = "")} weg te schrijven en
 in te lezen met \code{\link[=maak_basisbestand]{maak_basisbestand()}}. Het attribuut \code{waarheid} bevat per
 student \code{persoonsgebonden_nummer}, \code{instroomjaar}, \code{uitval_na} (jaar van
-uitval of \code{NA}), \code{diploma_na} (studiejaar van diplomering of \code{NA}) en
-\code{gewisseld} (\code{TRUE} bij een wissel in jaar 2), zonder afkapping.
+uitval of \code{NA}), \code{diploma_na} (studiejaar van diplomering of \code{NA}),
+\code{gewisseld} (\code{TRUE} bij een wissel in jaar 2), \code{vooropleiding} (havo,
+vwo, mbo, buitenlands of onbekend) en \code{eerder_in_ho} (\code{TRUE} als de
+student twee jaar voor instroom al in het HO stond), zonder afkapping.
 }
 \description{
 Simuleert instroomcohorten van een fictieve hbo-instelling met vaste kansen

@@ -2,6 +2,21 @@
 
 ## Nieuwe functies
 
+* **Vooropleiding en eerstejaars HO**: `combineer_indicatoren()` voegt
+  `vooropleiding` (havo, vwo, mbo, ho, buitenlands, overig, onbekend) en
+  `eerstejaars_ho` (eerstejaars HO of eerder in HO) toe, uit de 1CHO-kolommen
+  `hoogste_vooropleiding_voor_het_ho_omschrijving_vooropleiding` en
+  `eerste_jaar_in_het_hoger_onderwijs`. Ontbreken die kolommen, dan is de
+  waarde "onbekend". Het dashboard heeft filters en uitsplitsingen van
+  rendement en uitval op beide; het benchmarkrapport toont de samenstelling
+  (`pct_eerstejaars_ho`, `pct_vooropl_havo`, `pct_vooropl_vwo`,
+  `pct_vooropl_mbo`).
+* **Peildatum**: het analysebestand krijgt een attribuut `peildatum`
+  (1 oktober van het laatste inschrijvingsjaar). Het benchmarkrapport zet de
+  peildatum in een eigen kolom, in de metadata en in de toelichting;
+  `maak_benchmarkrapport()` heeft een argument `peildatum` om die expliciet op
+  te geven. Het dashboard toont de peildatum in de kopbalk.
+
 * `lees_vakhawv()` en `verrijk_met_vakhawv()`: vooropleidingscijfers uit
   VAKHAVW koppelen per student.
 * `lees_bekostiging()`, `verrijk_met_bekostiging()` en
@@ -27,8 +42,9 @@
   als tekst en zetten getalkolommen expliciet om. Voorloopnullen in ID's en
   postcodes blijven behouden; leeftijd is een geheel getal (daardoor was
   `gem_leeftijd_instroom` altijd leeg).
-* **Benchmarkrapport** (#41): secundaire onderdrukking, optionele
-  celonderdrukking (`min_cel`), afronding op hele procenten en een
+* **Benchmarkrapport** (#41): secundaire onderdrukking, celonderdrukking
+  (`min_cel`, standaard 5: een percentage is leeg als teller of complement
+  kleiner dan 5 is), afronding op hele procenten en een
   `metadata`-attribuut met niveau, drempel en packageversie.
 * **VLPBEK** (#42): studenten zonder BSN krijgen hun onderwijsnummer als
   sleutel, de kolomindeling wordt gecontroleerd, "herstelbaar" vereist dat

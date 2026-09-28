@@ -87,6 +87,19 @@ DEFINITIES <- list(
       Cohorten waarvan verblijfsjaar 4 nog niet in de data zit zijn
       'Nog niet waarneembaar' en tellen niet mee.",
 
+    vooropleiding =
+      "Hoogste vooropleiding voor het hoger onderwijs volgens DUO,
+      samengevat tot havo, vwo, mbo, ho, buitenlands (incl. Europees
+      baccalaureaat), overig (o.a. vmbo, toelatingsexamen, beschikking)
+      of onbekend.",
+
+    eerstejaars_ho =
+      "'eerstejaars HO': het instroomjaar aan de instelling is ook het
+      eerste jaar in het hoger onderwijs. 'eerder in HO': de student stond
+      al eerder in het hoger onderwijs ingeschreven, bijvoorbeeld bij een
+      andere instelling. Kies 'eerstejaars HO' om te vergelijken met
+      landelijke cijfers over eerstejaars in het hoger onderwijs.",
+
     ## VAKHAVW (identiek op beide niveaus: beschrijft de student)
     vakhawv_gemiddeld_eindcijfer =
       "Gemiddeld eindcijfer van de vooropleiding (schaal 1-10), afkomstig
@@ -192,6 +205,18 @@ DEFINITIES <- list(
     ## Studiewissel is niet beschikbaar op inschrijvingsniveau
     studiewissel_1jr = NULL,
     studiewissel_3jr = NULL,
+
+    vooropleiding =
+      "Hoogste vooropleiding voor het hoger onderwijs volgens DUO,
+      samengevat tot havo, vwo, mbo, ho, buitenlands (incl. Europees
+      baccalaureaat), overig (o.a. vmbo, toelatingsexamen, beschikking)
+      of onbekend.",
+
+    eerstejaars_ho =
+      "'eerstejaars HO': het eerste jaar in deze opleiding is ook het
+      eerste jaar in het hoger onderwijs. 'eerder in HO': de student stond
+      al eerder in het hoger onderwijs ingeschreven, bij een andere
+      instelling of bij een andere opleiding van deze instelling.",
 
     ## VAKHAVW (identiek op beide niveaus: beschrijft de student, niet de inschrijving)
     vakhawv_gemiddeld_eindcijfer =

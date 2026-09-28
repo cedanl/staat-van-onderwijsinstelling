@@ -25,6 +25,7 @@ utils::globalVariables(c(
   "diplomajaar",
   "duur",
   "eerstejaar_instelling",
+  "eerstejaars_ho",
   "gemiddeld_cijfer_cijferlijst",
   "geslacht",
   "geslacht_label",
@@ -93,5 +94,6 @@ utils::globalVariables(c(
   "verblijfsjaar_eerste_diploma",
   "verblijfsjaar_opleiding",
   "verschil_kalenderjaren",
+  "vooropleiding",
   "vestigingsnummer_gemeentenaam_volgens_rio"
 ))

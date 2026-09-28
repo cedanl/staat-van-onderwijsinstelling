@@ -29,8 +29,10 @@
 #'   met `readr::write_delim(x, pad, delim = ";", na = "")` weg te schrijven en
 #'   in te lezen met [maak_basisbestand()]. Het attribuut `waarheid` bevat per
 #'   student `persoonsgebonden_nummer`, `instroomjaar`, `uitval_na` (jaar van
-#'   uitval of `NA`), `diploma_na` (studiejaar van diplomering of `NA`) en
-#'   `gewisseld` (`TRUE` bij een wissel in jaar 2), zonder afkapping.
+#'   uitval of `NA`), `diploma_na` (studiejaar van diplomering of `NA`),
+#'   `gewisseld` (`TRUE` bij een wissel in jaar 2), `vooropleiding` (havo,
+#'   vwo, mbo, buitenlands of onbekend) en `eerder_in_ho` (`TRUE` als de
+#'   student twee jaar voor instroom al in het HO stond), zonder afkapping.
 #'
 #' @examples
 #' synth <- maak_synthetische_1cho(n_per_jaar = 20, jaren = 2018:2023)
@@ -85,7 +87,13 @@ maak_synthetische_1cho <- function(
       geslacht = sample(c("man", "vrouw"), n, replace = TRUE),
       internationaal = stats::runif(n) < 0.08,
       postcode = sprintf("%04d", sample(c(10L, 4811:4838, 5211:5236), n, replace = TRUE)),
-      leeftijd = sample(17:22, n, replace = TRUE, prob = c(0.2, 0.35, 0.2, 0.12, 0.08, 0.05))
+      leeftijd = sample(17:22, n, replace = TRUE, prob = c(0.2, 0.35, 0.2, 0.12, 0.08, 0.05)),
+      ## Na de bestaande trekkingen, zodat die met dezelfde seed gelijk blijven
+      vooropleiding = sample(
+        names(SYNTH_VOOROPLEIDING), n, replace = TRUE,
+        prob = c(0.45, 0.10, 0.35, 0.05, 0.05)
+      ),
+      eerder_in_ho = stats::runif(n) < 0.12
     )
   })
 
@@ -127,14 +135,27 @@ maak_synthetische_1cho <- function(
     postcodecijfers_student_op_1_oktober = rijen$postcode,
     postcodecijfers_van_de_hoogste_vooropl_voor_het_ho = rijen$postcode,
     opleidingscode_naam_opleiding = opleidingen$naam[rijen$opl],
-    vestigingsnummer_gemeentenaam_volgens_rio = opleidingen$locatie[rijen$opl]
+    vestigingsnummer_gemeentenaam_volgens_rio = opleidingen$locatie[rijen$opl],
+    hoogste_vooropleiding_voor_het_ho_omschrijving_vooropleiding =
+      unname(SYNTH_VOOROPLEIDING[rijen$vooropleiding]),
+    eerste_jaar_in_het_hoger_onderwijs = rijen$instroomjaar - 2L * rijen$eerder_in_ho
   ) |>
     structure(
       waarheid = dplyr::select(
-        waarheid, persoonsgebonden_nummer, instroomjaar, uitval_na, diploma_na, gewisseld
+        waarheid, persoonsgebonden_nummer, instroomjaar, uitval_na, diploma_na, gewisseld,
+        vooropleiding, eerder_in_ho
       )
     )
 }
+
+## Voorbeeldomschrijvingen zoals 1cijferho ze levert, per hoofdcategorie
+SYNTH_VOOROPLEIDING <- c(
+  havo = "havo profiel economie & maatschappij",
+  vwo = "vwo profiel natuur & gezondheid",
+  mbo = "mbo economie niveau 4",
+  buitenlands = "overig buitenlands diploma / Europees baccalaureaat",
+  onbekend = "vooropleiding onbekend"
+)
 
 ## Herhaal elke student voor jaar_index 1..duur, afgekapt op het laatste jaar
 tidyr_uncount_jaren <- function(data, laatste_jaar) {
