@@ -31,8 +31,14 @@ cijferlijst (max over meerdere opleidingsjaren als die voorkomen)
 }
 
 Studenten zonder overeenkomst in de VAKHAVW-data krijgen \code{NA} voor alle
-drie de kolommen. De functie meldt het koppelpercentage en waarschuwt
-onder de 50\% (attribuut \code{koppeling}). Werkt op zowel student- als inschrijvingsniveau: bij
+drie de kolommen. De functie meldt welk deel van de VAKHAVW-studenten is
+teruggevonden (attribuut \code{koppeling}) en waarschuwt onder de 10\%. Een
+lager aandeel dan 100\% is normaal: VAKHAVW bevat ook studenten die voor
+het eerste cohort in de data begonnen.
+
+DUO vult het persoonsgebonden nummer in EV aan met spaties en in VAKHAVW
+met nullen; de koppeling negeert voorloopnullen. Werkt op zowel student-
+als inschrijvingsniveau: bij
 inschrijvingsniveau worden de vooropleidingsgegevens van een student
 voor elke opleiding herhaald.
 }

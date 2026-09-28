@@ -75,8 +75,8 @@ Je hebt deze bestanden nodig:
 | Het inschrijvingsbestand | Naam begint met `EV`, eindigt op `.asc` | **Ja** |
 | De bestandsbeschrijving | `Bestandsbeschrijving_1cyferho_...txt` | **Ja** |
 | De decodeertabellen en hun beschrijving | `Dec_...asc` en `Bestandsbeschrijving_Dec-bestanden.txt` | **Ja** |
-| Het vakcijferbestand van havo/vwo | Naam begint met `VAKHAVW`, plus `Bestandsbeschrijving_Vakkenbestanden.txt` | Optioneel, [zie hieronder](#optionele-bestanden-vakhavw-en-bekostiging) |
-| Het bekostigingsbestand | Voorlopige bekostiging (VLPBEK) van DUO | Optioneel, [zie hieronder](#optionele-bestanden-vakhavw-en-bekostiging) |
+| Het vakcijferbestand van havo/vwo | Naam begint met `VAKHAVW`, plus `Bestandsbeschrijving_Vakkenbestanden.txt` | Optioneel, [zie hieronder](#vakhavw-havo--en-vwo-cijfers) |
+| Het bekostigingsbestand | Voorlopige bekostiging (VLPBEK) van DUO | Optioneel, nog niet te gebruiken, [zie hieronder](#vlpbek-bekostiging) |
 
 Zijn de bestanden ingepakt (`.zip`), pak ze dan eerst uit.
 
@@ -155,7 +155,9 @@ Stap 4 (*Output valideren*) is optioneel. Het is een extra controle op de omgeze
 
 In de map `data\02-output` staan nu nieuwe bestanden. Voor staat1cho heb je het bestand nodig dat begint met `EV` en eindigt op **`_enriched.csv`**, bijvoorbeeld `EV21PL24_enriched.csv`.
 
-Dit bestand is groot. Een kleine instelling heeft al snel een paar honderd megabyte. Hoe groot het bij jou is, bepaalt in stap 4 welke route je kiest.
+Heb je ook een VAKHAVW-bestand omgezet, dan staat daar ook een bestand dat begint met `VAKHAVW` en eindigt op **`_decoded.csv`**. Dat is het bestand voor de havo/vwo-cijfers.
+
+Het EV-bestand is groot: al snel honderden megabytes, bij een grote instelling enkele gigabytes. Zie [stap 4](#stap-4-start-het-dashboard-en-laad-je-bestand) voor wat je computer daarvoor nodig heeft.
 
 ---
 
@@ -192,7 +194,7 @@ Het dashboard opent in je browser. Dan:
 2. Kies het **Analyseniveau**:
    - **Studentniveau**: elke student telt één keer, bij de opleiding waarin die begon. Geschikt voor cijfers over de instelling als geheel.
    - **Inschrijvingsniveau**: elke opleiding is een eigen cohort. Geschikt om opleidingen met elkaar te vergelijken.
-3. Laat de optionele bestanden (VAKHAVW en VLPBEK) voor nu leeg, [zie hieronder](#optionele-bestanden-vakhavw-en-bekostiging).
+3. Heb je een VAKHAVW-bestand? Kies dan bij **VAKHAVW-bestand** het `VAKHAVW..._decoded.csv`-bestand uit dezelfde map. Laat **VLPBEK-bestand** leeg, [zie hieronder](#optionele-bestanden-vakhavw-en-bekostiging).
 4. Klik op **Data verwerken**. Bij een groot bestand duurt dit enkele minuten.
 
 Controleer daarna twee dingen:
@@ -202,17 +204,23 @@ Controleer daarna twee dingen:
 
 **Stoppen:** sluit het browsertabblad en klik in RStudio op het rode stopteken boven de Console.
 
-### Is je bestand groter dan 500 MB? Gebruik de pipeline
+### Grote bestanden en werkgeheugen
 
-Het dashboard accepteert bestanden tot 500 MB. Voor grotere bestanden, of als je het rapport elk jaar op dezelfde manier wilt maken, gebruik je de pipeline:
+Het dashboard accepteert bestanden tot 10 GB. De echte grens is het werkgeheugen van je computer: reken op vrij geheugen van ongeveer **drie keer de bestandsgrootte**. Voor een EV-bestand van 2 GB heb je dus zo'n 6 GB vrij werkgeheugen nodig. Sluit andere zware programma's tijdens het verwerken. Is je laptop te krap, gebruik dan een computer of virtuele werkplek met meer geheugen.
+
+### Liever een vast script? Gebruik de pipeline
+
+Wil je het rapport elk jaar op precies dezelfde manier maken, zonder door het dashboard te klikken? Gebruik dan de pipeline:
 
 1. Download [het ZIP-bestand van staat1cho](https://github.com/cedanl/staat-van-onderwijsinstelling/archive/refs/heads/main.zip) en pak het uit.
 2. Open in RStudio het bestand `pipeline.R` (menu *File* > *Open File...*).
 3. Vul bovenin het pad naar je bestand in. Gebruik in R schuine strepen naar voren (`/`), ook op Windows:
 
    ```r
-   pad_1cho <- "C:/Tools/1cijferho/data/02-output/EV21PL24_enriched.csv"
-   niveau   <- "student"    # of "inschrijving"
+   pad_1cho    <- "C:/Tools/1cijferho/data/02-output/EV21PL24_enriched.csv"
+   niveau      <- "student"    # of "inschrijving"
+   vakhawv_pad <- "C:/Tools/1cijferho/data/02-output/VAKHAVW21PL_decoded.csv"  # of "" zonder VAKHAVW
+   vlpbek_pad  <- ""           # nog leeg laten, zie hieronder
    ```
 
 4. Kies in het menu *Session* > *Set Working Directory* > *To Source File Location*. Zo komt de uitvoer naast `pipeline.R` terecht.
@@ -250,10 +258,19 @@ In de linkerkolom van het dashboard staan twee knoppen:
 
 ## Optionele bestanden: VAKHAVW en bekostiging
 
-- **VAKHAVW** voegt de eindcijfers van havo en vwo toe (gemiddeld eindcijfer, wiskundecijfer, aantal vakken).
-- **VLPBEK** (voorlopige bekostiging) laat zien welke inschrijvingen DUO bekostigt, waarom andere niet, en welke je nog kunt herstellen door ze alsnog tijdig aan te leveren.
+### VAKHAVW: havo- en vwo-cijfers
 
-> **Status: nog niet gebruiken.** Beide koppelingen werken op dit moment niet betrouwbaar. In het EV-bestand is het persoonsnummer een eigen nummer van DUO, terwijl VAKHAVW en VLPBEK het BSN gebruiken. We passen de koppeling daarop aan. Tot die tijd vindt het dashboard (vrijwel) geen studenten terug; na het verwerken zie je dat aan het koppelpercentage in de melding rechtsonder. De rest van het dashboard werkt zonder deze bestanden gewoon.
+Het VAKHAVW-bestand voegt de eindcijfers van havo en vwo toe: gemiddeld eindcijfer, wiskundecijfer en aantal vakken. Het dashboard krijgt dan een extra tabblad *Vooropleiding*.
+
+- Zet het VAKHAVW-bestand samen met het EV-bestand om in dezelfde 1cijferho-run (stap 2e).
+- Upload in het dashboard het `VAKHAVW..._decoded.csv`-bestand.
+- Na het verwerken meldt het dashboard rechtsonder hoeveel VAKHAVW-studenten het heeft teruggevonden. Dat zijn er nooit 100%: VAKHAVW bevat ook studenten die al vóór het eerste jaar in je data begonnen. Alleen studenten met een havo- of vwo-diploma hebben cijfers, dus mbo-instromers en buitenlandse studenten blijven leeg.
+
+### VLPBEK: bekostiging
+
+Het VLPBEK-bestand (voorlopige bekostiging) laat zien welke inschrijvingen DUO bekostigt, waarom andere niet, en welke je nog kunt herstellen door ze alsnog tijdig aan te leveren.
+
+> **Status: nog niet gebruiken.** Het VLPBEK-bestand gebruikt het BSN, terwijl staat1cho koppelt op het eigen persoonsnummer van DUO uit het EV-bestand. Die twee zijn verschillende nummers, dus het dashboard vindt (vrijwel) geen inschrijvingen terug. We passen de koppeling aan. De rest van het dashboard werkt zonder dit bestand gewoon.
 
 ---
 
@@ -264,7 +281,8 @@ In de linkerkolom van het dashboard staan twee knoppen:
 | In PowerShell: *uv wordt niet herkend* | Sluit PowerShell en open het opnieuw. Helpt dat niet, herstart dan de computer. |
 | In 1cijferho: *Geen bestanden gevonden* | Staan de bestanden direct in `data\01-input` en niet in een submap? Klik daarna opnieuw op *Bestanden controleren*. |
 | In het dashboard: *Ontbrekende kolom(men)* | Je hebt waarschijnlijk niet het `_enriched.csv`-bestand gekozen, of in 1cijferho stond *snake_case* of *Verrijkte variant* uit, of je gebruikte een voorinstelling. Zet de bestanden opnieuw om met de instellingen uit stap 2e. |
-| Het uploaden stopt of lukt niet | Het bestand is waarschijnlijk groter dan 500 MB. Gebruik de pipeline uit stap 4. |
+| Het verwerken stopt halverwege of R loopt vast | Waarschijnlijk te weinig werkgeheugen. Sluit andere programma's of gebruik een computer met meer geheugen, zie [Grote bestanden en werkgeheugen](#grote-bestanden-en-werkgeheugen). |
+| VAKHAVW: bijna niemand teruggevonden | Gebruik het EV- en VAKHAVW-bestand uit dezelfde levering en dezelfde 1cijferho-run. |
 | In RStudio: *there is no package called 'pak'* | Voer eerst `install.packages("pak")` uit. |
 | De cijfers wijken af van vorig jaar | Kijk naar de peildatum. Een nieuwe levering kan oudere cohorten iets bijwerken. |
 | Rendement is 0% voor recente cohorten | Je gebruikt de verouderde versie 0.1.0. Installeer opnieuw met de opdrachten uit stap 3. |

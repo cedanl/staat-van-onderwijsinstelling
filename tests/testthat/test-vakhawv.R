@@ -159,3 +159,29 @@ test_that("werkt op inschrijvingsniveau: herhaalt vakhawv-data per opleiding", {
   expect_equal(nrow(result), 2)
   expect_equal(result$vakhawv_gemiddeld_eindcijfer, c(7.2, 7.2))
 })
+
+test_that("koppelt ondanks andere aanvulling van het DUO-nummer in EV en VAKHAVW", {
+  ## EV: spaties (na 1cijferho "2"), VAKHAVW: nullen ("000000000002")
+  indicatoren <- tibble(
+    persoonsgebonden_nummer = c("2", "     7", "10"),
+    inschrijvingsjaar = 2020L
+  )
+  vakhawv <- tibble(
+    persoonsgebonden_nummer = c("000000000002", "000000000007", "000000000099"),
+    afkorting_vak = "ne",
+    gemiddeld_cijfer_cijferlijst = c(7.2, 6.5, 8.0),
+    cijfer_eerste_centraal_examen = 7.0,
+    cijfer_schoolexamen = 7.5
+  )
+
+  result <- suppressWarnings(verrijk_met_vakhawv(indicatoren, vakhawv))
+
+  expect_equal(result$vakhawv_gemiddeld_eindcijfer, c(7.2, 6.5, NA))
+  ## De nummers in het analysebestand blijven zoals ze waren
+  expect_equal(result$persoonsgebonden_nummer, c("2", "     7", "10"))
+  expect_equal(attr(result, "koppeling")$gekoppeld, 2L)
+})
+
+test_that("koppelsleutel verwijdert spaties en voorloopnullen, maar laat 0 staan", {
+  expect_equal(koppelsleutel(c("000000000002", "     2", "2", "0", "000")), c("2", "2", "2", "0", "0"))
+})

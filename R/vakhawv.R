@@ -72,8 +72,14 @@ lees_vakhawv <- function(pad) {
 #' - `vakhawv_aantal_vakken`: aantal unieke vakken op de cijferlijst
 #'
 #' Studenten zonder overeenkomst in de VAKHAVW-data krijgen `NA` voor alle
-#' drie de kolommen. De functie meldt het koppelpercentage en waarschuwt
-#' onder de 50% (attribuut `koppeling`). Werkt op zowel student- als inschrijvingsniveau: bij
+#' drie de kolommen. De functie meldt welk deel van de VAKHAVW-studenten is
+#' teruggevonden (attribuut `koppeling`) en waarschuwt onder de 10%. Een
+#' lager aandeel dan 100% is normaal: VAKHAVW bevat ook studenten die voor
+#' het eerste cohort in de data begonnen.
+#'
+#' DUO vult het persoonsgebonden nummer in EV aan met spaties en in VAKHAVW
+#' met nullen; de koppeling negeert voorloopnullen. Werkt op zowel student-
+#' als inschrijvingsniveau: bij
 #' inschrijvingsniveau worden de vooropleidingsgegevens van een student
 #' voor elke opleiding herhaald.
 #'
@@ -114,7 +120,12 @@ verrijk_met_vakhawv <- function(indicatoren, vakhawv) {
     "Gebruik voor het 1CHO- en VAKHAVW-bestand dezelfde 1cijferho-uitvoer."
   )
 
+  ## DUO vult het persoonsgebonden nummer in EV aan met spaties ("     2",
+  ## na 1cijferho "2") en in VAKHAVW met nullen ("000000000002"). Koppel
+  ## daarom op het nummer zonder voorloopnullen; de opgeslagen nummers
+  ## blijven ongewijzigd.
   per_student <- vakhawv |>
+    dplyr::mutate(persoonsgebonden_nummer = koppelsleutel(persoonsgebonden_nummer)) |>
     dplyr::group_by(persoonsgebonden_nummer) |>
     dplyr::summarise(
       vakhawv_gemiddeld_eindcijfer = max(
@@ -134,16 +145,23 @@ verrijk_met_vakhawv <- function(indicatoren, vakhawv) {
       ~ dplyr::if_else(is.infinite(.x) | is.nan(.x), NA_real_, .x)
     ))
 
+  sleutels <- koppelsleutel(indicatoren$persoonsgebonden_nummer)
   resultaat <- dplyr::left_join(
-    dplyr::mutate(indicatoren, persoonsgebonden_nummer = as.character(persoonsgebonden_nummer)),
-    per_student,
-    by = "persoonsgebonden_nummer"
-  )
+    dplyr::mutate(
+      indicatoren,
+      persoonsgebonden_nummer = as.character(persoonsgebonden_nummer),
+      .koppelsleutel = sleutels
+    ),
+    dplyr::rename(per_student, .koppelsleutel = persoonsgebonden_nummer),
+    by = ".koppelsleutel"
+  ) |>
+    dplyr::select(-.koppelsleutel)
   meld_koppeling(
     resultaat,
-    bron_gevonden = per_student$persoonsgebonden_nummer %in% resultaat$persoonsgebonden_nummer,
-    n_verrijkt = sum(resultaat$persoonsgebonden_nummer %in% per_student$persoonsgebonden_nummer),
+    bron_gevonden = per_student$persoonsgebonden_nummer %in% sleutels,
+    n_verrijkt = sum(sleutels %in% per_student$persoonsgebonden_nummer),
     bron = "VAKHAVW",
-    eenheid = "studenten"
+    eenheid = "studenten",
+    drempel = 0.1
   )
 }

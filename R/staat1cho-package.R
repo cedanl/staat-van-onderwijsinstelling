@@ -9,6 +9,7 @@
 "_PACKAGE"
 
 utils::globalVariables(c(
+  ".koppelsleutel",
   "afkorting_vak",
   "begindatum_inschrijving",
   "bekostiging_jaar",

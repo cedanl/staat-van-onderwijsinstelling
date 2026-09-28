@@ -31,6 +31,13 @@
 
 ## Gewijzigd gedrag
 
+* **VAKHAVW-koppeling**: DUO vult het persoonsgebonden nummer in EV aan met
+  spaties en in VAKHAVW met nullen, waardoor de koppeling 0% vond.
+  `verrijk_met_vakhawv()` negeert nu voorloopnullen bij het koppelen en
+  waarschuwt pas onder 10% teruggevonden VAKHAVW-studenten (VAKHAVW bevat
+  ook studenten van voor het eerste cohort in de data).
+* Het dashboard accepteert bestanden tot 10 GB (was 500 MB).
+
 * **Onvolledige cohorten** (#38): rendement, uitval en studiewissel zijn
   `"Nog niet waarneembaar"` voor cohorten waarvan het meetvenster nog niet
   in de data zit. Die rijen tellen niet mee in percentages. Voorheen kregen

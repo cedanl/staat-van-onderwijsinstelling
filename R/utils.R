@@ -44,7 +44,14 @@ zet_om_naar_integer <- function(data, kolommen) {
   data
 }
 
-ONBEKENDE_POSTCODES <- c("0010", "0020", "0030", "0040")
+## Sleutel om persoonsnummers uit verschillende DUO-bestanden te koppelen:
+## zonder spaties en voorloopnullen, omdat DUO het nummer per bestand anders
+## aanvult ("     2" in EV, "000000000002" in VAKHAVW).
+koppelsleutel <- function(x) {
+  sub("^0+(?=.)", "", trimws(as.character(x)), perl = TRUE)
+}
+
+ONBEKENDE_POSTCODES <-c("0010", "0020", "0030", "0040")
 
 ## Hercodeer factorniveaus die daadwerkelijk voorkomen. In tegenstelling tot
 ## forcats::fct_recode() geeft dit geen waarschuwing als een niveau in deze

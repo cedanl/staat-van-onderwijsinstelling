@@ -362,16 +362,21 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
 ## 1CHO-bestand teruggevonden? Vanuit het 1CHO-bestand is een laag percentage
 ## normaal (VLPBEK beslaat maar één jaar, niet iedereen heeft VAKHAVW); vanuit
 ## de bron wijst het op verschillende persoonsnummers.
-meld_koppeling <- function(resultaat, bron_gevonden, n_verrijkt, bron, eenheid) {
+##
+## `drempel` is het aandeel waaronder gewaarschuwd wordt. VAKHAVW bevat ook
+## studenten die voor de eerste cohort in de data begonnen, dus daar is een
+## laag aandeel normaal en wijst pas een heel laag aandeel op een fout.
+meld_koppeling <- function(resultaat, bron_gevonden, n_verrijkt, bron, eenheid, drempel = 0.5) {
   n <- length(bron_gevonden)
   gevonden <- sum(bron_gevonden)
   pct <- if (n > 0) round(100 * gevonden / n) else NA_real_
+  laag <- n > 0 && gevonden / n < drempel
   attr(resultaat, "koppeling") <- list(
     bron = bron, eenheid = eenheid, n = n, gekoppeld = gevonden, pct = pct,
-    n_verrijkt = n_verrijkt, n_rijen = nrow(resultaat)
+    n_verrijkt = n_verrijkt, n_rijen = nrow(resultaat), laag = laag
   )
   tekst <- "{bron}: {gevonden} van {n} {eenheid} teruggevonden in het 1CHO-bestand ({pct}%); {n_verrijkt} van {nrow(resultaat)} rijen verrijkt."
-  if (n > 0 && gevonden / n < 0.5) {
+  if (laag) {
     cli::cli_warn(c(
       tekst,
       "i" = "Controleer of beide bestanden dezelfde persoonsnummers en opleidingscodes gebruiken.",

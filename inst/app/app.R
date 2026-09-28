@@ -1,7 +1,9 @@
 library(shiny)
 library(bslib)
 
-options(shiny.maxRequestSize = 500 * 1024^2) ## 500 MB
+## Een verrijkt EV-bestand van een grote instelling is enkele gigabytes. Het
+## werkgeheugen van de computer is daarbij de echte grens, niet Shiny.
+options(shiny.maxRequestSize = 10 * 1024^3) ## 10 GB
 library(dplyr)
 library(ggplot2)
 library(forcats)
@@ -1350,12 +1352,14 @@ server <- function(input, output, session) {
     if (is.null(k)) {
       return(invisible())
     }
-    laag <- isTRUE(k$pct < 50)
+    laag <- isTRUE(k$laag)
     showNotification(
       paste0(
         k$bron, ": ", k$gekoppeld, " van ", k$n, " ", k$eenheid,
         " teruggevonden in het 1CHO-bestand (", k$pct, "%).",
-        if (laag) {
+        if (laag && k$bron == "VAKHAVW") {
+          " Gebruik voor het 1CHO- en VAKHAVW-bestand de uitvoer van dezelfde 1cijferho-run."
+        } else if (laag) {
           paste(
             " Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het BSN",
             "behouden is (niet gepseudonimiseerd en niet omgezet naar studentnummer)."
