@@ -297,8 +297,25 @@ test_that("waarschuwt bij minder dan 50% gekoppeld en legt koppeling vast", {
     bekostigingsstatus = "bekostigd", code_bekostigingstatus = "pi",
     reden_niet_bekostigd = NA_character_, indicatie_herstelbaar = NA
   )
+  ## Drie VLPBEK-inschrijvingen, waarvan er maar een in 1CHO voorkomt
+  bek <- dplyr::bind_rows(bek, dplyr::mutate(bek, persoonsgebonden_nummer = "8"),
+                          dplyr::mutate(bek, persoonsgebonden_nummer = "9"))
   ind <- tibble::tibble(persoonsgebonden_nummer = c("1", "2", "3"), opleidingscode = "31001")
 
-  expect_warning(result <- verrijk_met_bekostiging(ind, bek), "1 van 3")
+  expect_warning(result <- verrijk_met_bekostiging(ind, bek), "1 van 3 inschrijvingen")
   expect_equal(attr(result, "koppeling")$pct, 33)
+  expect_equal(attr(result, "koppeling")$n_verrijkt, 1L)
+})
+
+test_that("waarschuwt niet als VLPBEK volledig terugkomt, ook al beslaat het weinig cohortrijen", {
+  bek <- tibble::tibble(
+    persoonsgebonden_nummer = "1", opleidingscode = "31001", inschrijvingsjaar = 2023L,
+    indicatie_hoofdinschrijving = TRUE, opleidingsvorm = "voltijd", sector = "economie",
+    bekostigingsstatus = "bekostigd", code_bekostigingstatus = "pi",
+    reden_niet_bekostigd = NA_character_, indicatie_herstelbaar = NA
+  )
+  ## VLPBEK beslaat één jaar: van de tien cohortrijen kan er maar een koppelen
+  ind <- tibble::tibble(persoonsgebonden_nummer = as.character(1:10), opleidingscode = "31001")
+  expect_no_warning(result <- suppressMessages(verrijk_met_bekostiging(ind, bek)))
+  expect_equal(attr(result, "koppeling")$pct, 100)
 })

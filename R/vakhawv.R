@@ -107,6 +107,13 @@ verrijk_met_vakhawv <- function(indicatoren, vakhawv) {
     ))
   }
 
+  controleer_id_soort(
+    indicatoren$persoonsgebonden_nummer,
+    vakhawv$persoonsgebonden_nummer,
+    "VAKHAVW",
+    "Laat 1cijferho het VAKHAVW-bestand pseudonimiseren met dezelfde sleutel als het EV-bestand."
+  )
+
   per_student <- vakhawv |>
     dplyr::group_by(persoonsgebonden_nummer) |>
     dplyr::summarise(
@@ -134,7 +141,9 @@ verrijk_met_vakhawv <- function(indicatoren, vakhawv) {
   )
   meld_koppeling(
     resultaat,
-    resultaat$persoonsgebonden_nummer %in% per_student$persoonsgebonden_nummer,
-    "VAKHAVW"
+    bron_gevonden = per_student$persoonsgebonden_nummer %in% resultaat$persoonsgebonden_nummer,
+    n_verrijkt = sum(resultaat$persoonsgebonden_nummer %in% per_student$persoonsgebonden_nummer),
+    bron = "VAKHAVW",
+    eenheid = "studenten"
   )
 }

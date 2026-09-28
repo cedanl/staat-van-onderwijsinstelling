@@ -35,6 +35,15 @@
   alle redenen herstelbaar zijn, `pd` wordt "deels bekostigd" en er is een
   kolom `bekostiging_jaar`. Beide verrijkingsfuncties melden het
   koppelpercentage.
+* **Gepseudonimiseerde 1CHO-bestanden** (#42): 1cijferho pseudonimiseert
+  EV- en VAKHAVW-bestanden, maar niet VLPBEK. `lees_bekostiging(pseudonimiseer
+  = TRUE)` past dezelfde HMAC-SHA256 toe met de 1cijferho-sleutel (argument,
+  sleutelbestand of `EENCIJFERHO_ENCRYPT_KEY`), zodat VLPBEK weer koppelt.
+  Nieuwe functie `is_gepseudonimiseerd()`. Dashboard en `pipeline.R`
+  herkennen een gepseudonimiseerd 1CHO-bestand automatisch; het dashboard
+  heeft een veld voor de sleutel. Een koppeling tussen een gepseudonimiseerd
+  en een niet-gepseudonimiseerd bestand geeft een duidelijke fout. Het
+  koppelpercentage wordt vanuit het bronbestand berekend.
 * **Studentniveau** (#45): `combineer_indicatoren()` voegt
   `opleidingscode_diploma` en `diploma_in_instroomopleiding` toe; het
   dashboard legt uit dat filters op opleiding/sector de instroomopleiding

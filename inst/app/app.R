@@ -742,7 +742,8 @@ server <- function(input, output, session) {
     list(
       bestand     = paste0("bestand_upload_", gen),
       vakhawv     = paste0("vakhawv_upload_", gen),
-      bekostiging = paste0("bekostiging_upload_", gen)
+      bekostiging = paste0("bekostiging_upload_", gen),
+      sleutel     = paste0("sleutel_", gen)
     )
   }
 
@@ -813,6 +814,17 @@ server <- function(input, output, session) {
               accept = ".csv",
               buttonLabel = "Bladeren...",
               placeholder = "Optioneel"
+            ),
+            ## Alleen nodig als het 1CHO-bestand door 1cijferho is
+            ## gepseudonimiseerd: VLPBEK bevat dan nog echte BSN's.
+            passwordInput(
+              ids$sleutel,
+              "Pseudonimiseringssleutel 1cijferho (alleen bij VLPBEK)",
+              placeholder = if (nzchar(Sys.getenv("EENCIJFERHO_ENCRYPT_KEY"))) {
+                "Ingesteld via EENCIJFERHO_ENCRYPT_KEY"
+              } else {
+                "Optioneel"
+              }
             ),
             uiOutput("btn_verwerk_ui")
           )
@@ -1231,7 +1243,8 @@ server <- function(input, output, session) {
     laag <- isTRUE(k$pct < 50)
     showNotification(
       paste0(
-        k$bron, ": ", k$gekoppeld, " van ", k$n, " rijen gekoppeld (", k$pct, "%).",
+        k$bron, ": ", k$gekoppeld, " van ", k$n, " ", k$eenheid,
+        " teruggevonden in het 1CHO-bestand (", k$pct, "%).",
         if (laag) " Controleer of beide bestanden dezelfde persoonsnummers gebruiken." else ""
       ),
       type = if (laag) "warning" else "message",
@@ -1262,6 +1275,7 @@ server <- function(input, output, session) {
     bestand_upload     <- input[[ids$bestand]]
     vakhawv_upload     <- input[[ids$vakhawv]]
     bekostiging_upload <- input[[ids$bekostiging]]
+    sleutel_invoer     <- input[[ids$sleutel]]
 
     if (is.null(bestand_upload)) {
       toon_fout("Selecteer eerst een CSV-bestand.")
@@ -1374,7 +1388,13 @@ server <- function(input, output, session) {
             setProgress(0.98, detail = "Bekostiging koppelen")
             tryCatch(
               {
-                bekostiging <- lees_bekostiging(bekostiging_upload$datapath)
+                ## Is het 1CHO-bestand gepseudonimiseerd, dan VLPBEK met
+                ## dezelfde sleutel pseudonimiseren (veld of omgevingsvariabele)
+                bekostiging <- lees_bekostiging(
+                  bekostiging_upload$datapath,
+                  pseudonimiseer = is_gepseudonimiseerd(basisbestand$persoonsgebonden_nummer),
+                  sleutel = if (isTRUE(nzchar(sleutel_invoer))) sleutel_invoer
+                )
                 bek_peiljaar(attr(bekostiging, "peiljaar"))
                 bek_jaren(sort(unique(bekostiging$inschrijvingsjaar)))
                 result <- suppressWarnings(verrijk_met_bekostiging(result, bekostiging))

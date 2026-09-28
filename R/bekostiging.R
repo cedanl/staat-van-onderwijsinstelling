@@ -98,7 +98,23 @@ bevat_code <- function(codes, zoek) {
 #' worden verwerkt; de koptekstregel (VLP), totaalregel (BLB) en sluitregel
 #' (SLR) worden genegeerd. Het peiljaar wordt uit de VLP-koptekstregel gelezen.
 #'
+#' ## Gepseudonimiseerde 1CHO-bestanden
+#'
+#' 1cijferho kan BSN en persoonsgebonden nummer in de EV- en VAKHAVW-bestanden
+#' vervangen door een HMAC-SHA256-pseudoniem. VLPBEK-bestanden gaan niet door
+#' die stap en bevatten het echte BSN of onderwijsnummer. Met
+#' `pseudonimiseer = TRUE` past deze functie dezelfde pseudonimisering toe
+#' (zelfde sleutel, zelfde algoritme), zodat de koppeling weer werkt. Het echte
+#' nummer komt niet in de uitvoer terecht. Gebruik [is_gepseudonimiseerd()] op
+#' het basisbestand om te bepalen of dit nodig is.
+#'
 #' @param pad Pad naar het VLPBEK-bestand (latin-1 gecodeerd, pipegescheiden)
+#' @param pseudonimiseer `TRUE` om persoonsnummers te pseudonimiseren zoals
+#'   1cijferho dat doet. Standaard `FALSE`.
+#' @param sleutel,sleutelbestand De pseudonimiseringssleutel van 1cijferho
+#'   (minimaal 64 bytes), of het pad naar een bestand met de sleutel. Zonder
+#'   beide wordt de omgevingsvariabele `EENCIJFERHO_ENCRYPT_KEY` gebruikt,
+#'   net als in 1cijferho.
 #'
 #' @return Een tibble met de kolommen `persoonsgebonden_nummer`,
 #'   `opleidingscode`, `inschrijvingsjaar`, `indicatie_hoofdinschrijving`,
@@ -116,7 +132,16 @@ bevat_code <- function(codes, zoek) {
 #' pad <- system.file("extdata/voorbeeld_vlpbek.csv", package = "staat1cho")
 #' lees_bekostiging(pad)
 #' @export
-lees_bekostiging <- function(pad) {
+lees_bekostiging <- function(
+  pad,
+  pseudonimiseer = FALSE,
+  sleutel = NULL,
+  sleutelbestand = NULL
+) {
+  ## Sleutel eerst ophalen: een ontbrekende sleutel moet falen voordat er
+  ## iets wordt ingelezen.
+  sleutel_raw <- if (pseudonimiseer) laad_sleutel(sleutel, sleutelbestand)
+
   regels <- readLines(pad, encoding = "latin1", warn = FALSE)
 
   ## Peiljaar uit de VLP-koptekstregel (veld 3)
@@ -224,7 +249,12 @@ lees_bekostiging <- function(pad) {
       indicatie_herstelbaar
     )
 
+  if (pseudonimiseer) {
+    result$persoonsgebonden_nummer <- pseudonimiseer_ids(result$persoonsgebonden_nummer, sleutel_raw)
+  }
+
   attr(result, "peiljaar") <- peiljaar
+  attr(result, "gepseudonimiseerd") <- pseudonimiseer
   result
 }
 
@@ -296,6 +326,13 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
     }
   }
 
+  controleer_id_soort(
+    indicatoren$persoonsgebonden_nummer,
+    bekostiging$persoonsgebonden_nummer,
+    "VLPBEK",
+    "Lees het VLPBEK-bestand in met {.code lees_bekostiging(pad, pseudonimiseer = TRUE)} en dezelfde sleutel als in 1cijferho."
+  )
+
   per_inschrijving <- bekostiging |>
     dplyr::group_by(persoonsgebonden_nummer, opleidingscode) |>
     dplyr::summarise(
@@ -327,25 +364,39 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
     per_inschrijving,
     by = c("persoonsgebonden_nummer", "opleidingscode")
   )
-  meld_koppeling(resultaat, !is.na(resultaat$indicatie_bekostigd), "VLPBEK")
+  sleutel_ind <- paste(resultaat$persoonsgebonden_nummer, resultaat$opleidingscode)
+  sleutel_bek <- paste(per_inschrijving$persoonsgebonden_nummer, per_inschrijving$opleidingscode)
+  meld_koppeling(
+    resultaat,
+    bron_gevonden = sleutel_bek %in% sleutel_ind,
+    n_verrijkt = sum(!is.na(resultaat$indicatie_bekostigd)),
+    bron = "VLPBEK",
+    eenheid = "inschrijvingen"
+  )
 }
 
-## Meldt hoeveel rijen van een verrijking gekoppeld zijn, waarschuwt onder de
-## 50% en legt de aantallen vast in het attribuut `koppeling`.
-meld_koppeling <- function(resultaat, gekoppeld, bron) {
-  n <- length(gekoppeld)
-  n_gekoppeld <- sum(gekoppeld)
-  pct <- if (n > 0) round(100 * n_gekoppeld / n) else NA_real_
+## Meldt hoe goed een verrijking koppelt en legt de aantallen vast in het
+## attribuut `koppeling`. Het percentage kijkt vanuit het bronbestand: welk
+## deel van de VLPBEK-inschrijvingen of VAKHAVW-studenten is in het
+## 1CHO-bestand teruggevonden? Vanuit het 1CHO-bestand is een laag percentage
+## normaal (VLPBEK beslaat maar één jaar, niet iedereen heeft VAKHAVW); vanuit
+## de bron wijst het op verschillende persoonsnummers.
+meld_koppeling <- function(resultaat, bron_gevonden, n_verrijkt, bron, eenheid) {
+  n <- length(bron_gevonden)
+  gevonden <- sum(bron_gevonden)
+  pct <- if (n > 0) round(100 * gevonden / n) else NA_real_
   attr(resultaat, "koppeling") <- list(
-    bron = bron, n = n, gekoppeld = n_gekoppeld, pct = pct
+    bron = bron, eenheid = eenheid, n = n, gekoppeld = gevonden, pct = pct,
+    n_verrijkt = n_verrijkt, n_rijen = nrow(resultaat)
   )
-  if (n > 0 && n_gekoppeld / n < 0.5) {
+  tekst <- "{bron}: {gevonden} van {n} {eenheid} teruggevonden in het 1CHO-bestand ({pct}%); {n_verrijkt} van {nrow(resultaat)} rijen verrijkt."
+  if (n > 0 && gevonden / n < 0.5) {
     cli::cli_warn(c(
-      "{bron}: slechts {n_gekoppeld} van {n} rijen gekoppeld ({pct}%).",
-      "i" = "Controleer of beide bestanden dezelfde persoonsnummers gebruiken (niet gepseudonimiseerd tegenover BSN)."
+      tekst,
+      "i" = "Controleer of beide bestanden dezelfde persoonsnummers gebruiken (bijv. gepseudonimiseerd tegenover BSN) en dezelfde opleidingscodes."
     ))
   } else {
-    cli::cli_inform("{bron}: {n_gekoppeld} van {n} rijen gekoppeld ({pct}%).")
+    cli::cli_inform(tekst)
   }
   resultaat
 }

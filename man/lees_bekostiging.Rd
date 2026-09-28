@@ -4,10 +4,23 @@
 \alias{lees_bekostiging}
 \title{Lees een VLPBEK-bestand in}
 \usage{
-lees_bekostiging(pad)
+lees_bekostiging(
+  pad,
+  pseudonimiseer = FALSE,
+  sleutel = NULL,
+  sleutelbestand = NULL
+)
 }
 \arguments{
 \item{pad}{Pad naar het VLPBEK-bestand (latin-1 gecodeerd, pipegescheiden)}
+
+\item{pseudonimiseer}{\code{TRUE} om persoonsnummers te pseudonimiseren zoals
+1cijferho dat doet. Standaard \code{FALSE}.}
+
+\item{sleutel, sleutelbestand}{De pseudonimiseringssleutel van 1cijferho
+(minimaal 64 bytes), of het pad naar een bestand met de sleutel. Zonder
+beide wordt de omgevingsvariabele \code{EENCIJFERHO_ENCRYPT_KEY} gebruikt,
+net als in 1cijferho.}
 }
 \value{
 Een tibble met de kolommen \code{persoonsgebonden_nummer},
@@ -27,6 +40,18 @@ Leest een pipegescheiden VLPBEK-bestand (DUO-formaat, Voorlopige Bekostiging)
 in en extraheert de relevante kolommen per inschrijving. Alleen BRD-regels
 worden verwerkt; de koptekstregel (VLP), totaalregel (BLB) en sluitregel
 (SLR) worden genegeerd. Het peiljaar wordt uit de VLP-koptekstregel gelezen.
+}
+\details{
+\subsection{Gepseudonimiseerde 1CHO-bestanden}{
+
+1cijferho kan BSN en persoonsgebonden nummer in de EV- en VAKHAVW-bestanden
+vervangen door een HMAC-SHA256-pseudoniem. VLPBEK-bestanden gaan niet door
+die stap en bevatten het echte BSN of onderwijsnummer. Met
+\code{pseudonimiseer = TRUE} past deze functie dezelfde pseudonimisering toe
+(zelfde sleutel, zelfde algoritme), zodat de koppeling weer werkt. Het echte
+nummer komt niet in de uitvoer terecht. Gebruik \code{\link[=is_gepseudonimiseerd]{is_gepseudonimiseerd()}} op
+het basisbestand om te bepalen of dit nodig is.
+}
 }
 \examples{
 pad <- system.file("extdata/voorbeeld_vlpbek.csv", package = "staat1cho")
