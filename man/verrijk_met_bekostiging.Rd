@@ -16,8 +16,8 @@ met kolommen \code{persoonsgebonden_nummer} en \code{opleidingscode}}
 De indicatoren-tibble uitgebreid met \code{indicatie_bekostigd}
 (\code{TRUE}/\code{FALSE}/\code{NA}), \code{indicatie_hoofdinschrijving} (\code{TRUE}/\code{FALSE}/\code{NA}),
 \code{reden_niet_bekostigd} (leesbare toelichting(en), \code{NA} als wel bekostigd)
-en \code{indicatie_herstelbaar} (\code{TRUE}/\code{FALSE}/\code{NA}, zie
-\link{BEKOSTIGINGSTATUS_CODES}). Heeft een student meerdere BRD-regels met
+, \code{indicatie_herstelbaar} (\code{TRUE}/\code{FALSE}/\code{NA}, zie
+\link{BEKOSTIGINGSTATUS_CODES}) en \code{bekostiging_jaar}. Heeft een student meerdere BRD-regels met
 verschillende redenen voor dezelfde opleiding, dan worden de unieke
 redenen samengevoegd.
 }
@@ -25,10 +25,20 @@ redenen samengevoegd.
 Koppelt bekostigingsstatus per student per opleiding aan het
 indicatorenbestand via \code{persoonsgebonden_nummer} en \code{opleidingscode}.
 Wanneer een student meerdere BRD-regels heeft voor dezelfde opleiding
-geldt: als ten minste een regel de status \code{"bekostigd"} heeft, is de
-student bekostigd voor die opleiding.
+geldt: als ten minste een regel de status \code{"bekostigd"} of \code{"deels bekostigd"} heeft, is de student bekostigd voor die opleiding.
 }
 \details{
+Een VLPBEK-bestand beschrijft de inschrijvingen van één bekostigingsjaar.
+De koppeling legt dus de huidige bekostigingsstatus naast elk
+instroomcohort; studenten die in dat jaar niet (meer) ingeschreven stonden
+krijgen \code{NA}. De kolom \code{bekostiging_jaar} geeft aan op welk
+inschrijvingsjaar de status betrekking heeft.
+
+De functie meldt hoeveel rijen gekoppeld zijn en waarschuwt als dat minder
+dan de helft is: dan gebruiken de bestanden waarschijnlijk verschillende
+ID's (bijv. gepseudonimiseerd tegenover BSN). Het attribuut \code{koppeling}
+bevat de aantallen.
+
 Studenten zonder overeenkomst in het VLPBEK-bestand krijgen \code{NA} voor
 \code{indicatie_bekostigd} en \code{indicatie_hoofdinschrijving}.
 }

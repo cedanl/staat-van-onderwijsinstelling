@@ -12,12 +12,12 @@ lees_bekostiging(pad)
 \value{
 Een tibble met de kolommen \code{persoonsgebonden_nummer},
 \code{opleidingscode}, \code{inschrijvingsjaar}, \code{indicatie_hoofdinschrijving},
-\code{opleidingsvorm}, \code{sector}, \code{bekostigingsstatus} (\code{"bekostigd"} of
-\code{"niet bekostigd"}), \code{code_bekostigingstatus} (ruwe DUO-redencode(s)),
+\code{opleidingsvorm}, \code{sector}, \code{bekostigingsstatus} (\code{"bekostigd"},
+\code{"deels bekostigd"} (redencode \code{pd}) of \code{"niet bekostigd"}), \code{code_bekostigingstatus} (ruwe DUO-redencode(s)),
 \code{reden_niet_bekostigd} (leesbare toelichting, zie
 \link{BEKOSTIGINGSTATUS_CODES}) en \code{indicatie_herstelbaar} (\code{TRUE} als de
-reden een te late aanlevering door de instelling is en dus hersteld kan
-worden, \code{FALSE} bij een structurele reden, \code{NA} als de inschrijving wel
+redenen allemaal een te late aanlevering door de instelling zijn en dus
+hersteld kunnen worden, \code{FALSE} bij een structurele reden, \code{NA} als de inschrijving wel
 bekostigd is), plus het attribuut \code{peiljaar} (integer) dat aangeeft
 voor welk bekostigingsjaar het bestand geldt. Gereed voor gebruik in
 \code{\link[=verrijk_met_bekostiging]{verrijk_met_bekostiging()}}

@@ -240,7 +240,65 @@ test_that("lees_bekostiging voegt meerdere komma-gescheiden codes samen", {
   expect_equal(result$code_bekostigingstatus, "na,ti")
   expect_match(result$reden_niet_bekostigd, "woonplaatsvereiste")
   expect_match(result$reden_niet_bekostigd, "niet tijdig aangeleverd")
-  expect_true(result$indicatie_herstelbaar)
+  ## na (woonplaatsvereiste) is niet herstelbaar, ook al is ti dat wel
+  expect_false(result$indicatie_herstelbaar)
 
   unlink(pad_dubbel)
+})
+
+## --- robuustheid VLPBEK (#42) ---
+
+schrijf_vlpbek <- function(brd) {
+  pad <- tempfile(fileext = ".csv")
+  writeLines(c("VLP|TEST|2025|20240115|||||||||||||||||||||", brd), pad)
+  pad
+}
+
+test_that("lege BSN valt terug op het onderwijsnummer in plaats van een lege sleutel", {
+  pad <- schrijf_vlpbek(c(
+    "BRD||800000001|TEST|1|J|pi|x|31001|HBO-BA|B|20230901|20240831|x|S|VT|x|x|ECONOMIE|BEKOSTIGD||||x|x",
+    "BRD||800000002|TEST|2|J|pi|x|31001|HBO-BA|B|20230901|20240831|x|S|VT|x|x|ECONOMIE|BEKOSTIGD||||x|x"
+  ))
+  result <- lees_bekostiging(pad)
+  expect_equal(result$persoonsgebonden_nummer, c("800000001", "800000002"))
+})
+
+test_that("geeft fout bij meer dan 25 velden per BRD-regel", {
+  pad <- schrijf_vlpbek(
+    "BRD|1||TEST|1|J|pi|x|31001|HBO-BA|B|20230901|20240831|x|S|VT|x|x|ECONOMIE|BEKOSTIGD||||x|x|extra"
+  )
+  expect_error(lees_bekostiging(pad), "meer dan 25 velden")
+})
+
+test_that("geeft fout als de kolomindeling verschoven is", {
+  pad <- schrijf_vlpbek(
+    "BRD|1||TEST|1|J|pi|x|31001|20230901|20240831|x|S|VT|x|x|ECONOMIE|BEKOSTIGD||||x|x"
+  )
+  expect_error(lees_bekostiging(pad), "begindatum")
+})
+
+test_that("redencode pd geeft status deels bekostigd en telt als bekostigd", {
+  pad <- schrijf_vlpbek(
+    "BRD|1||TEST|1|J|pd|x|31001|HBO-BA|B|20230901|20240831|x|S|VT|x|x|ECONOMIE|||||x|x"
+  )
+  bek <- lees_bekostiging(pad)
+  expect_equal(bek$bekostigingsstatus, "deels bekostigd")
+
+  ind <- tibble::tibble(persoonsgebonden_nummer = "1", opleidingscode = "31001")
+  result <- suppressMessages(verrijk_met_bekostiging(ind, bek))
+  expect_true(result$indicatie_bekostigd)
+  expect_equal(result$bekostiging_jaar, 2023L)
+})
+
+test_that("waarschuwt bij minder dan 50% gekoppeld en legt koppeling vast", {
+  bek <- tibble::tibble(
+    persoonsgebonden_nummer = "1", opleidingscode = "31001", inschrijvingsjaar = 2023L,
+    indicatie_hoofdinschrijving = TRUE, opleidingsvorm = "voltijd", sector = "economie",
+    bekostigingsstatus = "bekostigd", code_bekostigingstatus = "pi",
+    reden_niet_bekostigd = NA_character_, indicatie_herstelbaar = NA
+  )
+  ind <- tibble::tibble(persoonsgebonden_nummer = c("1", "2", "3"), opleidingscode = "31001")
+
+  expect_warning(result <- verrijk_met_bekostiging(ind, bek), "1 van 3")
+  expect_equal(attr(result, "koppeling")$pct, 33)
 })

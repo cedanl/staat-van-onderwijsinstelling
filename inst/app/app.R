@@ -1220,6 +1220,25 @@ server <- function(input, output, session) {
     showNotification(bericht, type = "error", duration = NULL)
   }
 
+  ## Koppelpercentage van VAKHAVW/VLPBEK tonen. Een lage koppeling wijst meestal
+  ## op verschillende persoonsnummers (bijv. gepseudonimiseerd vs. BSN) en is
+  ## anders niet te onderscheiden van "niemand bekostigd".
+  toon_koppeling <- function(resultaat) {
+    k <- attr(resultaat, "koppeling")
+    if (is.null(k)) {
+      return(invisible())
+    }
+    laag <- isTRUE(k$pct < 50)
+    showNotification(
+      paste0(
+        k$bron, ": ", k$gekoppeld, " van ", k$n, " rijen gekoppeld (", k$pct, "%).",
+        if (laag) " Controleer of beide bestanden dezelfde persoonsnummers gebruiken." else ""
+      ),
+      type = if (laag) "warning" else "message",
+      duration = if (laag) NULL else 8
+    )
+  }
+
   output$btn_verwerk_ui <- renderUI({
     btn <- actionButton(
       "btn_verwerk",
@@ -1335,7 +1354,8 @@ server <- function(input, output, session) {
               {
                 vakhawv <- lees_vakhawv(vakhawv_upload$datapath)
                 vakhawv_raw(vakhawv)
-                result <- verrijk_met_vakhawv(result, vakhawv)
+                result <- suppressWarnings(verrijk_met_vakhawv(result, vakhawv))
+                toon_koppeling(result)
                 heeft_vakhawv(TRUE)
               },
               error = function(e) {
@@ -1357,7 +1377,8 @@ server <- function(input, output, session) {
                 bekostiging <- lees_bekostiging(bekostiging_upload$datapath)
                 bek_peiljaar(attr(bekostiging, "peiljaar"))
                 bek_jaren(sort(unique(bekostiging$inschrijvingsjaar)))
-                result <- verrijk_met_bekostiging(result, bekostiging)
+                result <- suppressWarnings(verrijk_met_bekostiging(result, bekostiging))
+                toon_koppeling(result)
                 heeft_bekostiging(TRUE)
               },
               error = function(e) {

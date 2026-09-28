@@ -72,7 +72,8 @@ lees_vakhawv <- function(pad) {
 #' - `vakhawv_aantal_vakken`: aantal unieke vakken op de cijferlijst
 #'
 #' Studenten zonder overeenkomst in de VAKHAVW-data krijgen `NA` voor alle
-#' drie de kolommen. Werkt op zowel student- als inschrijvingsniveau: bij
+#' drie de kolommen. De functie meldt het koppelpercentage en waarschuwt
+#' onder de 50% (attribuut `koppeling`). Werkt op zowel student- als inschrijvingsniveau: bij
 #' inschrijvingsniveau worden de vooropleidingsgegevens van een student
 #' voor elke opleiding herhaald.
 #'
@@ -126,9 +127,14 @@ verrijk_met_vakhawv <- function(indicatoren, vakhawv) {
       ~ dplyr::if_else(is.infinite(.x) | is.nan(.x), NA_real_, .x)
     ))
 
-  dplyr::left_join(
+  resultaat <- dplyr::left_join(
     dplyr::mutate(indicatoren, persoonsgebonden_nummer = as.character(persoonsgebonden_nummer)),
     per_student,
     by = "persoonsgebonden_nummer"
+  )
+  meld_koppeling(
+    resultaat,
+    resultaat$persoonsgebonden_nummer %in% per_student$persoonsgebonden_nummer,
+    "VAKHAVW"
   )
 }

@@ -31,7 +31,8 @@ cijferlijst (max over meerdere opleidingsjaren als die voorkomen)
 }
 
 Studenten zonder overeenkomst in de VAKHAVW-data krijgen \code{NA} voor alle
-drie de kolommen. Werkt op zowel student- als inschrijvingsniveau: bij
+drie de kolommen. De functie meldt het koppelpercentage en waarschuwt
+onder de 50\% (attribuut \code{koppeling}). Werkt op zowel student- als inschrijvingsniveau: bij
 inschrijvingsniveau worden de vooropleidingsgegevens van een student
 voor elke opleiding herhaald.
 }

@@ -68,13 +68,26 @@ decodeer_bekostigingstatus <- function(codes) {
   }, character(1), USE.NAMES = FALSE)
 }
 
+## Herstelbaar alleen als *alle* redenen herstelbaar zijn: bij "na,ti" blijft
+## de woonplaatsvereiste (na) staan, ook als de inschrijving alsnog tijdig
+## wordt aangeleverd. Positieve codes (pi, pd, ...) zijn geen reden en tellen
+## niet mee.
 bekostiging_is_herstelbaar <- function(codes) {
+  positief <- BEKOSTIGINGSTATUS_CODES$code[is.na(BEKOSTIGINGSTATUS_CODES$herstelbaar)]
   vapply(codes, function(code) {
     if (is.na(code)) {
       return(NA)
     }
     delen <- trimws(strsplit(code, ",", fixed = TRUE)[[1]])
-    any(delen %in% c("ti", "tg"))
+    redenen <- setdiff(delen, positief)
+    length(redenen) > 0 && all(redenen %in% c("ti", "tg"))
+  }, logical(1), USE.NAMES = FALSE)
+}
+
+## Bevat de (samengestelde) code een bepaalde deelcode?
+bevat_code <- function(codes, zoek) {
+  vapply(codes, function(code) {
+    !is.na(code) && zoek %in% trimws(strsplit(code, ",", fixed = TRUE)[[1]])
   }, logical(1), USE.NAMES = FALSE)
 }
 
@@ -89,12 +102,12 @@ bekostiging_is_herstelbaar <- function(codes) {
 #'
 #' @return Een tibble met de kolommen `persoonsgebonden_nummer`,
 #'   `opleidingscode`, `inschrijvingsjaar`, `indicatie_hoofdinschrijving`,
-#'   `opleidingsvorm`, `sector`, `bekostigingsstatus` (`"bekostigd"` of
-#'   `"niet bekostigd"`), `code_bekostigingstatus` (ruwe DUO-redencode(s)),
+#'   `opleidingsvorm`, `sector`, `bekostigingsstatus` (`"bekostigd"`,
+#'   `"deels bekostigd"` (redencode `pd`) of `"niet bekostigd"`), `code_bekostigingstatus` (ruwe DUO-redencode(s)),
 #'   `reden_niet_bekostigd` (leesbare toelichting, zie
 #'   [BEKOSTIGINGSTATUS_CODES]) en `indicatie_herstelbaar` (`TRUE` als de
-#'   reden een te late aanlevering door de instelling is en dus hersteld kan
-#'   worden, `FALSE` bij een structurele reden, `NA` als de inschrijving wel
+#'   redenen allemaal een te late aanlevering door de instelling zijn en dus
+#'   hersteld kunnen worden, `FALSE` bij een structurele reden, `NA` als de inschrijving wel
 #'   bekostigd is), plus het attribuut `peiljaar` (integer) dat aangeeft
 #'   voor welk bekostigingsjaar het bestand geldt. Gereed voor gebruik in
 #'   [verrijk_met_bekostiging()]
@@ -141,14 +154,35 @@ lees_bekostiging <- function(pad) {
     "col21", "col22", "col23", "col24", "col25"
   )
 
-  m <- do.call(rbind, lapply(brd, function(r) {
-    p <- strsplit(r, "|", fixed = TRUE)[[1]]
+  ## Kolommen worden op positie gelezen. Controleer dat de layout klopt, zodat
+  ## een ander formaat (bijv. MBO, zie #34) niet stil verkeerde kolommen geeft.
+  ## strsplit laat lege velden aan het eind weg, dus minder dan 25 mag.
+  velden <- strsplit(brd, "|", fixed = TRUE)
+  te_veel <- lengths(velden) > length(kolommen)
+  if (any(te_veel)) {
+    cli::cli_abort(c(
+      "{sum(te_veel)} BRD-regel{?s} {?heeft/hebben} meer dan {length(kolommen)} velden.",
+      "i" = "Dit lijkt geen VLPBEK-bestand in het HO-formaat."
+    ))
+  }
+  m <- do.call(rbind, lapply(velden, function(p) {
     length(p) <- length(kolommen)
     p
   }))
+  begindatum <- m[, match("begindatum_inschrijving", kolommen)]
+  if (mean(grepl("^[0-9]{8}$", begindatum)) < 0.9) {
+    cli::cli_abort(c(
+      "Veld 12 (begindatum inschrijving) bevat geen datums (JJJJMMDD).",
+      "i" = "De kolomindeling van dit bestand wijkt af van het verwachte VLPBEK-formaat."
+    ))
+  }
 
   result <- tibble::as_tibble(m, .name_repair = "minimal") |>
     rlang::set_names(kolommen) |>
+    ## Een leeg veld is "" en geen NA; zonder deze stap kiest coalesce() een
+    ## lege BSN boven het onderwijsnummer en krijgen alle studenten zonder
+    ## BSN dezelfde sleutel "".
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~ dplyr::na_if(trimws(.x), ""))) |>
     dplyr::mutate(
       persoonsgebonden_nummer    = as.character(dplyr::coalesce(burgerservicenummer, onderwijsnummer)),
       opleidingscode             = as.character(opleidingscode),
@@ -160,10 +194,12 @@ lees_bekostiging <- function(pad) {
         "dt" = "deeltijd"
       ),
       sector             = tolower(gsub("_", " ", sector)),
-      bekostigingsstatus = dplyr::if_else(
-        bekostigingsstatus == "BEKOSTIGD", "bekostigd", "niet bekostigd"
+      code_bekostigingstatus = tolower(code_bekostigingstatus),
+      bekostigingsstatus = dplyr::case_when(
+        bekostigingsstatus %in% "BEKOSTIGD" ~ "bekostigd",
+        bevat_code(code_bekostigingstatus, "pd") ~ "deels bekostigd",
+        TRUE ~ "niet bekostigd"
       ),
-      code_bekostigingstatus = dplyr::na_if(tolower(code_bekostigingstatus), ""),
       reden_niet_bekostigd = dplyr::if_else(
         bekostigingsstatus == "niet bekostigd",
         decodeer_bekostigingstatus(code_bekostigingstatus),
@@ -204,8 +240,19 @@ samenvoegen_redenen <- function(redenen) {
 #' Koppelt bekostigingsstatus per student per opleiding aan het
 #' indicatorenbestand via `persoonsgebonden_nummer` en `opleidingscode`.
 #' Wanneer een student meerdere BRD-regels heeft voor dezelfde opleiding
-#' geldt: als ten minste een regel de status `"bekostigd"` heeft, is de
-#' student bekostigd voor die opleiding.
+#' geldt: als ten minste een regel de status `"bekostigd"` of `"deels
+#' bekostigd"` heeft, is de student bekostigd voor die opleiding.
+#'
+#' Een VLPBEK-bestand beschrijft de inschrijvingen van één bekostigingsjaar.
+#' De koppeling legt dus de huidige bekostigingsstatus naast elk
+#' instroomcohort; studenten die in dat jaar niet (meer) ingeschreven stonden
+#' krijgen `NA`. De kolom `bekostiging_jaar` geeft aan op welk
+#' inschrijvingsjaar de status betrekking heeft.
+#'
+#' De functie meldt hoeveel rijen gekoppeld zijn en waarschuwt als dat minder
+#' dan de helft is: dan gebruiken de bestanden waarschijnlijk verschillende
+#' ID's (bijv. gepseudonimiseerd tegenover BSN). Het attribuut `koppeling`
+#' bevat de aantallen.
 #'
 #' Studenten zonder overeenkomst in het VLPBEK-bestand krijgen `NA` voor
 #' `indicatie_bekostigd` en `indicatie_hoofdinschrijving`.
@@ -217,8 +264,8 @@ samenvoegen_redenen <- function(redenen) {
 #' @return De indicatoren-tibble uitgebreid met `indicatie_bekostigd`
 #'   (`TRUE`/`FALSE`/`NA`), `indicatie_hoofdinschrijving` (`TRUE`/`FALSE`/`NA`),
 #'   `reden_niet_bekostigd` (leesbare toelichting(en), `NA` als wel bekostigd)
-#'   en `indicatie_herstelbaar` (`TRUE`/`FALSE`/`NA`, zie
-#'   [BEKOSTIGINGSTATUS_CODES]). Heeft een student meerdere BRD-regels met
+#'   , `indicatie_herstelbaar` (`TRUE`/`FALSE`/`NA`, zie
+#'   [BEKOSTIGINGSTATUS_CODES]) en `bekostiging_jaar`. Heeft een student meerdere BRD-regels met
 #'   verschillende redenen voor dezelfde opleiding, dan worden de unieke
 #'   redenen samengevoegd.
 #'
@@ -252,7 +299,7 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
   per_inschrijving <- bekostiging |>
     dplyr::group_by(persoonsgebonden_nummer, opleidingscode) |>
     dplyr::summarise(
-      indicatie_bekostigd         = any(bekostigingsstatus == "bekostigd", na.rm = TRUE),
+      indicatie_bekostigd         = any(bekostigingsstatus %in% c("bekostigd", "deels bekostigd")),
       indicatie_hoofdinschrijving = any(indicatie_hoofdinschrijving, na.rm = TRUE),
       reden_niet_bekostigd = dplyr::if_else(
         indicatie_bekostigd,
@@ -262,12 +309,16 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
       indicatie_herstelbaar = dplyr::if_else(
         indicatie_bekostigd,
         NA,
-        any(indicatie_herstelbaar, na.rm = TRUE)
+        all(indicatie_herstelbaar, na.rm = TRUE) && any(!is.na(indicatie_herstelbaar))
       ),
+      bekostiging_jaar = suppressWarnings(max(inschrijvingsjaar, na.rm = TRUE)),
       .groups = "drop"
-    )
+    ) |>
+    dplyr::mutate(bekostiging_jaar = dplyr::if_else(
+      is.finite(bekostiging_jaar), as.integer(bekostiging_jaar), NA_integer_
+    ))
 
-  dplyr::left_join(
+  resultaat <- dplyr::left_join(
     indicatoren |>
       dplyr::mutate(
         persoonsgebonden_nummer = as.character(persoonsgebonden_nummer),
@@ -276,4 +327,25 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
     per_inschrijving,
     by = c("persoonsgebonden_nummer", "opleidingscode")
   )
+  meld_koppeling(resultaat, !is.na(resultaat$indicatie_bekostigd), "VLPBEK")
+}
+
+## Meldt hoeveel rijen van een verrijking gekoppeld zijn, waarschuwt onder de
+## 50% en legt de aantallen vast in het attribuut `koppeling`.
+meld_koppeling <- function(resultaat, gekoppeld, bron) {
+  n <- length(gekoppeld)
+  n_gekoppeld <- sum(gekoppeld)
+  pct <- if (n > 0) round(100 * n_gekoppeld / n) else NA_real_
+  attr(resultaat, "koppeling") <- list(
+    bron = bron, n = n, gekoppeld = n_gekoppeld, pct = pct
+  )
+  if (n > 0 && n_gekoppeld / n < 0.5) {
+    cli::cli_warn(c(
+      "{bron}: slechts {n_gekoppeld} van {n} rijen gekoppeld ({pct}%).",
+      "i" = "Controleer of beide bestanden dezelfde persoonsnummers gebruiken (niet gepseudonimiseerd tegenover BSN)."
+    ))
+  } else {
+    cli::cli_inform("{bron}: {n_gekoppeld} van {n} rijen gekoppeld ({pct}%).")
+  }
+  resultaat
 }
