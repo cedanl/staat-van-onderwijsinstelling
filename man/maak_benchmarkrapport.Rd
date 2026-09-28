@@ -4,7 +4,12 @@
 \alias{maak_benchmarkrapport}
 \title{Maak een geaggregeerd benchmarkrapport}
 \usage{
-maak_benchmarkrapport(indicatoren, drempel = 30L)
+maak_benchmarkrapport(
+  indicatoren,
+  drempel = 30L,
+  min_cel = 0L,
+  niveau = attr(indicatoren, "niveau")
+)
 }
 \arguments{
 \item{indicatoren}{Tibble zoals gemaakt door \code{\link[=combineer_indicatoren]{combineer_indicatoren()}},
@@ -13,6 +18,14 @@ eventueel aangevuld via \code{\link[=verrijk_met_vakhawv]{verrijk_met_vakhawv()}
 
 \item{drempel}{Minimale groepsgrootte. Groepen kleiner dan deze waarde
 krijgen NA voor alle kolommen inclusief \code{n}. Standaard 30.}
+
+\item{min_cel}{Minimale celgrootte voor percentages (zie hierboven).
+Standaard 0 (uit).}
+
+\item{niveau}{Analyseniveau waarop \code{indicatoren} is gemaakt (\code{"student"}
+of \code{"inschrijving"}). Standaard het attribuut \code{niveau} dat
+\code{\link[=combineer_indicatoren]{combineer_indicatoren()}} zet. Wordt vastgelegd in de metadata, zodat
+rapporten van verschillende instellingen vergelijkbaar blijven.}
 }
 \value{
 Een tibble met kolommen \code{sector}, \code{opleidingsvorm},
@@ -24,8 +37,9 @@ plus optioneel \code{gem_eindcijfer}, \code{gem_wiskundecijfer},
 \code{gem_aantal_vakken}, \code{pct_bekostigd}, \code{pct_hoofdinschrijving} en
 \code{pct_herstelbaar} (van de niet-bekostigde rijen: percentage waarvan de
 reden een te late aanlevering is en dus hersteld kan worden, zie
-\link{BEKOSTIGINGSTATUS_CODES}). Het attribuut \code{gegenereerd_op} (POSIXct)
-registreert het tijdstip.
+\link{BEKOSTIGINGSTATUS_CODES}). Attributen: \code{gegenereerd_op} (POSIXct) en
+\code{metadata} (lijst met niveau, drempel, min_cel, laatste
+inschrijvingsjaar, packageversie en tijdstip).
 }
 \description{
 Aggregeert het indicatorenbestand per sector, opleidingsvorm,
@@ -33,16 +47,36 @@ opleidingsniveau en instroomjaar. Berekent percentages voor de
 kernuitkomsten en voegt een totaalrij per jaar toe.
 }
 \details{
+\subsection{Onvolledige cohorten}{
+
+Percentages worden berekend over de waarneembare rijen: studenten met
+\code{"Nog niet waarneembaar"} (cohort te recent voor het meetvenster) tellen
+niet mee in teller of noemer. Is niemand in een groep waarneembaar, dan is
+het percentage \code{NA}.
+}
+
 \subsection{Privacyonderdrukking}{
+\itemize{
+\item \strong{Primair:} groepen met minder dan \code{drempel} studenten (standaard 30)
+krijgen \code{NA} voor alle uitkomsten, inclusief \code{n}.
+\item \strong{Secundair:} is in een instroomjaar precies één groep primair
+onderdrukt, dan is die groep terug te rekenen uit de totaalrij min de
+zichtbare groepen. Daarom wordt dan ook de kleinste zichtbare groep in
+dat jaar onderdrukt.
+\item \strong{Cellen (optioneel):} met \code{min_cel > 0} wordt een percentage \code{NA} als
+de teller of het complement (noemer - teller) kleiner is dan \code{min_cel},
+zodat bijvoorbeeld "0\% uitval" in een groep niets over iedereen in die
+groep verraadt.
+\item Percentages worden afgerond op hele procenten, gemiddelden op één
+decimaal.
+}
 
-Groepen met minder dan \code{drempel} studenten (standaard 30) krijgen NA voor
-alle uitkomsten, inclusief \code{n}. Dit volgt de DUO-richtlijn dat ook de
-groepsgrootte zelf herleidbaar is en dus niet getoond mag worden. De kolom
-\code{onderdrukt} (TRUE/FALSE) maakt zichtbaar welke rijen zijn onderdrukt
-zonder iets te onthullen over de werkelijke omvang.
+De drempel van 30 is een eigen keuze van het project, geen voorgeschreven
+norm. Laat een privacy officer of FG van de deelnemende instellingen
+\code{drempel} en \code{min_cel} toetsen voordat rapporten gedeeld worden.
 
-Totaalrijen per instroomjaar vallen doorgaans buiten de drempel en worden
-niet onderdrukt; ze zijn bedoeld als validatiereferentie (zie hieronder).
+De kolom \code{onderdrukt} maakt zichtbaar welke rijen zijn onderdrukt
+(primair of secundair) zonder iets te onthullen over de werkelijke omvang.
 }
 
 \subsection{Gebruik als validatiemiddel}{
@@ -55,8 +89,7 @@ en dat jaar publiceert. Een grote afwijking wijst op een verwerkingsfout.
 \item \strong{Plausibele marges}: uitvalpercentages buiten circa 5-40 \% of
 rendement van 0 \% zijn een signaal om de pipelinestap te controleren.
 \item \strong{Reproduceerbaarheid}: hetzelfde invoerbestand moet op elk moment
-identieke cijfers opleveren. Het attribuut \code{gegenereerd_op} registreert
-het tijdstip zodat runs vergeleken kunnen worden.
+identieke cijfers opleveren.
 \item \strong{Optionele bestanden}: als VLPBEK of VAKHAVW is geladen, moeten de
 bijbehorende kolommen (\code{pct_bekostigd}, \code{gem_eindcijfer}) voor de meeste
 rijen gevuld zijn. Kolommen die volledig leeg zijn duiden op een
@@ -78,5 +111,9 @@ df <- tibble::tibble(
   int_student     = "geen internationale student",
   leeftijd_bij_instroom = 19L
 )
-maak_benchmarkrapport(df, drempel = 1L)
+maak_benchmarkrapport(df, drempel = 1L, niveau = "student")
+}
+\seealso{
+\code{\link[=schrijf_benchmarkrapport]{schrijf_benchmarkrapport()}} om het rapport met toelichting als
+Excel-bestand op te slaan.
 }

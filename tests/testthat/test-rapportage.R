@@ -116,12 +116,33 @@ test_that("groepen met n >= drempel krijgen geen NA door onderdrukking", {
 test_that("onderdrukt is TRUE voor kleine groepen en FALSE voor grote", {
   df <- dplyr::bind_rows(
     dplyr::mutate(basis_df(5L),  sector = "klein"),
+    dplyr::mutate(basis_df(6L),  sector = "ook klein"),
     dplyr::mutate(basis_df(50L), sector = "groot")
   )
   result <- maak_benchmarkrapport(df, drempel = 30L)
 
   expect_true(result$onderdrukt[result$sector == "klein"])
+  expect_true(result$onderdrukt[result$sector == "ook klein"])
   expect_false(result$onderdrukt[result$sector == "groot"])
+})
+
+test_that("secundaire onderdrukking voorkomt terugrekenen via de totaalrij", {
+  ## Zonder secundaire onderdrukking: totaal (95) - groot (40) - groter (50) = klein (5)
+  df <- dplyr::bind_rows(
+    dplyr::mutate(basis_df(5L),  sector = "klein"),
+    dplyr::mutate(basis_df(40L), sector = "groot"),
+    dplyr::mutate(basis_df(50L), sector = "groter")
+  )
+  result <- maak_benchmarkrapport(df, drempel = 30L)
+  groepen <- result[result$sector != "totaal", ]
+
+  expect_equal(sum(groepen$onderdrukt), 2L)
+  ## De kleinste zichtbare groep wordt meegenomen
+  expect_true(result$onderdrukt[result$sector == "groot"])
+  expect_false(result$onderdrukt[result$sector == "groter"])
+  totaal <- result$n[result$sector == "totaal"]
+  ## Terugrekenen levert nu alleen de som van twee groepen op
+  expect_equal(totaal - sum(groepen$n, na.rm = TRUE), 45)
 })
 
 test_that("totaalrij wordt ook onderdrukt als n < drempel", {
@@ -271,4 +292,70 @@ test_that("percentage is NA als niemand in de groep waarneembaar is", {
   df$rendement_8jr <- factor(rep("Nog niet waarneembaar", 40))
   result <- maak_benchmarkrapport(df, drempel = 1L)
   expect_true(all(is.na(result$pct_rendement_8jr)))
+})
+
+
+## Celonderdrukking, afronding en metadata ----
+
+test_that("min_cel onderdrukt percentages met een te kleine teller of complement", {
+  df <- basis_df(40L)
+  df$uitval_1jr <- factor(c(
+    rep("Uitgevallen binnen 1 jaar", 2),
+    rep("Na 1 jaar nog ingeschreven of diploma behaald", 38)
+  ))
+  df$uitval_3jr <- factor(c(
+    rep("Uitgevallen binnen 3 jaar", 10),
+    rep("Na 3 jaar nog ingeschreven of diploma behaald", 30)
+  ))
+
+  zonder <- maak_benchmarkrapport(df, drempel = 1L)
+  met <- maak_benchmarkrapport(df, drempel = 1L, min_cel = 5L)
+  rij <- function(r) r[r$sector != "totaal", ]
+
+  expect_equal(rij(zonder)$pct_uitval_1jr, 5)
+  expect_true(is.na(rij(met)$pct_uitval_1jr))
+  expect_equal(rij(met)$pct_uitval_3jr, 25)
+  ## rendement_5jr is 100%: complement 0 < 5
+  expect_true(is.na(rij(met)$pct_rendement_5jr))
+})
+
+test_that("percentages worden afgerond op hele procenten", {
+  df <- basis_df(3L)
+  df$uitval_1jr <- factor(c("Uitgevallen binnen 1 jaar", "x", "x"))
+  result <- maak_benchmarkrapport(df, drempel = 1L)
+  expect_equal(result$pct_uitval_1jr[1], 33)
+})
+
+test_that("metadata legt niveau, drempel en versie vast", {
+  df <- basis_df()
+  attr(df, "niveau") <- "inschrijving"
+  result <- maak_benchmarkrapport(df, drempel = 1L)
+  meta <- attr(result, "metadata")
+
+  expect_equal(meta$niveau, "inschrijving")
+  expect_equal(meta$drempel, 1L)
+  expect_equal(meta$laatste_inschrijvingsjaar, 2022L)
+  expect_equal(meta$packageversie, as.character(utils::packageVersion("staat1cho")))
+  expect_equal(attr(maak_benchmarkrapport(basis_df()), "metadata")$niveau, "onbekend")
+})
+
+test_that("toelichting volgt niveau, drempel en aanwezige kolommen", {
+  rapport <- maak_benchmarkrapport(basis_df(), drempel = 25L, niveau = "inschrijving")
+  toel <- benchmark_toelichting(rapport)
+
+  expect_true(all(toel$Kolom %in% names(rapport)))
+  expect_false("pct_studiewissel_1jr" %in% toel$Kolom)
+  expect_match(toel$Omschrijving[toel$Kolom == "onderdrukt"], "n < 25")
+  expect_match(toel$Omschrijving[toel$Kolom == "pct_uitval_1jr"], "inschrijvingen")
+  expect_false(any(grepl("studiewisselbestand", toel$Omschrijving)))
+})
+
+test_that("schrijf_benchmarkrapport schrijft vier tabbladen", {
+  skip_if_not_installed("writexl")
+  skip_if_not_installed("readxl")
+  pad <- tempfile(fileext = ".xlsx")
+  schrijf_benchmarkrapport(maak_benchmarkrapport(basis_df(), niveau = "student"), pad)
+  expect_equal(readxl::excel_sheets(pad), c("Rapport", "Toelichting", "Validatie", "Metadata"))
+  meta <- readxl::read_excel(pad, sheet = "Metadata")
+  expect_equal(meta$Waarde[meta$Kenmerk == "Analyseniveau"], "student")
 })

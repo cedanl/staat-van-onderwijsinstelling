@@ -31,6 +31,7 @@ Suggests:
     ggplot2,
     knitr,
     plotly,
+    readxl,
     rmarkdown,
     scales,
     testthat (>= 3.0.0),

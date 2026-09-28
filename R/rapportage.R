@@ -4,16 +4,34 @@
 #' opleidingsniveau en instroomjaar. Berekent percentages voor de
 #' kernuitkomsten en voegt een totaalrij per jaar toe.
 #'
+#' ## Onvolledige cohorten
+#'
+#' Percentages worden berekend over de waarneembare rijen: studenten met
+#' `"Nog niet waarneembaar"` (cohort te recent voor het meetvenster) tellen
+#' niet mee in teller of noemer. Is niemand in een groep waarneembaar, dan is
+#' het percentage `NA`.
+#'
 #' ## Privacyonderdrukking
 #'
-#' Groepen met minder dan `drempel` studenten (standaard 30) krijgen NA voor
-#' alle uitkomsten, inclusief `n`. Dit volgt de DUO-richtlijn dat ook de
-#' groepsgrootte zelf herleidbaar is en dus niet getoond mag worden. De kolom
-#' `onderdrukt` (TRUE/FALSE) maakt zichtbaar welke rijen zijn onderdrukt
-#' zonder iets te onthullen over de werkelijke omvang.
+#' - **Primair:** groepen met minder dan `drempel` studenten (standaard 30)
+#'   krijgen `NA` voor alle uitkomsten, inclusief `n`.
+#' - **Secundair:** is in een instroomjaar precies één groep primair
+#'   onderdrukt, dan is die groep terug te rekenen uit de totaalrij min de
+#'   zichtbare groepen. Daarom wordt dan ook de kleinste zichtbare groep in
+#'   dat jaar onderdrukt.
+#' - **Cellen (optioneel):** met `min_cel > 0` wordt een percentage `NA` als
+#'   de teller of het complement (noemer - teller) kleiner is dan `min_cel`,
+#'   zodat bijvoorbeeld "0% uitval" in een groep niets over iedereen in die
+#'   groep verraadt.
+#' - Percentages worden afgerond op hele procenten, gemiddelden op één
+#'   decimaal.
 #'
-#' Totaalrijen per instroomjaar vallen doorgaans buiten de drempel en worden
-#' niet onderdrukt; ze zijn bedoeld als validatiereferentie (zie hieronder).
+#' De drempel van 30 is een eigen keuze van het project, geen voorgeschreven
+#' norm. Laat een privacy officer of FG van de deelnemende instellingen
+#' `drempel` en `min_cel` toetsen voordat rapporten gedeeld worden.
+#'
+#' De kolom `onderdrukt` maakt zichtbaar welke rijen zijn onderdrukt
+#' (primair of secundair) zonder iets te onthullen over de werkelijke omvang.
 #'
 #' ## Gebruik als validatiemiddel
 #'
@@ -25,8 +43,7 @@
 #' - **Plausibele marges**: uitvalpercentages buiten circa 5-40 % of
 #'   rendement van 0 % zijn een signaal om de pipelinestap te controleren.
 #' - **Reproduceerbaarheid**: hetzelfde invoerbestand moet op elk moment
-#'   identieke cijfers opleveren. Het attribuut `gegenereerd_op` registreert
-#'   het tijdstip zodat runs vergeleken kunnen worden.
+#'   identieke cijfers opleveren.
 #' - **Optionele bestanden**: als VLPBEK of VAKHAVW is geladen, moeten de
 #'   bijbehorende kolommen (`pct_bekostigd`, `gem_eindcijfer`) voor de meeste
 #'   rijen gevuld zijn. Kolommen die volledig leeg zijn duiden op een
@@ -37,6 +54,12 @@
 #'   [verrijk_met_bekostiging()].
 #' @param drempel Minimale groepsgrootte. Groepen kleiner dan deze waarde
 #'   krijgen NA voor alle kolommen inclusief `n`. Standaard 30.
+#' @param min_cel Minimale celgrootte voor percentages (zie hierboven).
+#'   Standaard 0 (uit).
+#' @param niveau Analyseniveau waarop `indicatoren` is gemaakt (`"student"`
+#'   of `"inschrijving"`). Standaard het attribuut `niveau` dat
+#'   [combineer_indicatoren()] zet. Wordt vastgelegd in de metadata, zodat
+#'   rapporten van verschillende instellingen vergelijkbaar blijven.
 #'
 #' @return Een tibble met kolommen `sector`, `opleidingsvorm`,
 #'   `opleidingsniveau`, `inschrijvingsjaar`, `onderdrukt`, `n`,
@@ -47,8 +70,12 @@
 #'   `gem_aantal_vakken`, `pct_bekostigd`, `pct_hoofdinschrijving` en
 #'   `pct_herstelbaar` (van de niet-bekostigde rijen: percentage waarvan de
 #'   reden een te late aanlevering is en dus hersteld kan worden, zie
-#'   [BEKOSTIGINGSTATUS_CODES]). Het attribuut `gegenereerd_op` (POSIXct)
-#'   registreert het tijdstip.
+#'   [BEKOSTIGINGSTATUS_CODES]). Attributen: `gegenereerd_op` (POSIXct) en
+#'   `metadata` (lijst met niveau, drempel, min_cel, laatste
+#'   inschrijvingsjaar, packageversie en tijdstip).
+#'
+#' @seealso [schrijf_benchmarkrapport()] om het rapport met toelichting als
+#'   Excel-bestand op te slaan.
 #'
 #' @examples
 #' df <- tibble::tibble(
@@ -64,9 +91,17 @@
 #'   int_student     = "geen internationale student",
 #'   leeftijd_bij_instroom = 19L
 #' )
-#' maak_benchmarkrapport(df, drempel = 1L)
+#' maak_benchmarkrapport(df, drempel = 1L, niveau = "student")
 #' @export
-maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
+maak_benchmarkrapport <- function(
+  indicatoren,
+  drempel = 30L,
+  min_cel = 0L,
+  niveau = attr(indicatoren, "niveau")
+) {
+  if (is.null(niveau)) {
+    niveau <- "onbekend"
+  }
   heeft_studiewissel  <- "studiewissel_1jr"             %in% names(indicatoren)
   heeft_vakhawv       <- "vakhawv_gemiddeld_eindcijfer"  %in% names(indicatoren)
   heeft_wiskunde      <- "vakhawv_wiskundecijfer"        %in% names(indicatoren)
@@ -75,16 +110,27 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
   heeft_hoofdinschr   <- "indicatie_hoofdinschrijving"   %in% names(indicatoren)
   heeft_herstelbaar   <- "indicatie_herstelbaar"         %in% names(indicatoren)
 
-  ## Percentage over de waarneembare rijen: studenten in cohorten waarvan het
-  ## meetvenster nog niet in de data zit tellen niet mee in de noemer. Is
-  ## niemand in de groep waarneembaar, dan is het percentage NA.
-  .pct <- function(x, label) {
-    x <- as.character(x)
-    waarneembaar <- !is.na(x) & x != NIET_WAARNEEMBAAR
-    if (!any(waarneembaar)) {
+  ## Aandeel TRUE over de niet-NA waarden. NA betekent "telt niet mee in de
+  ## noemer" (niet waarneembaar, niet gekoppeld of niet van toepassing).
+  ## Met min_cel > 0 wordt een aandeel NA als teller of complement te klein
+  ## is om nog iets over individuele studenten te zeggen.
+  .aandeel <- function(treffer) {
+    noemer <- sum(!is.na(treffer))
+    if (noemer == 0) {
       return(NA_real_)
     }
-    mean(x[waarneembaar] == label) * 100
+    teller <- sum(treffer, na.rm = TRUE)
+    if (min_cel > 0 && (teller < min_cel || noemer - teller < min_cel)) {
+      return(NA_real_)
+    }
+    teller / noemer * 100
+  }
+
+  ## Percentage over de waarneembare rijen: studenten in cohorten waarvan het
+  ## meetvenster nog niet in de data zit tellen niet mee in de noemer.
+  .pct <- function(x, label) {
+    x <- as.character(x)
+    .aandeel(dplyr::if_else(x == NIET_WAARNEEMBAAR, NA, x == label))
   }
 
   .groepeer <- function(data) {
@@ -103,11 +149,11 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
         gem_eindcijfer        = if (heeft_vakhawv)      mean(vakhawv_gemiddeld_eindcijfer, na.rm = TRUE) else NA_real_,
         gem_wiskundecijfer    = if (heeft_wiskunde)      mean(vakhawv_wiskundecijfer,       na.rm = TRUE) else NA_real_,
         gem_aantal_vakken     = if (heeft_aantal_vakken) mean(vakhawv_aantal_vakken,        na.rm = TRUE) else NA_real_,
-        pct_bekostigd         = if (heeft_bekostiging)   mean(indicatie_bekostigd,          na.rm = TRUE) * 100 else NA_real_,
-        pct_hoofdinschrijving = if (heeft_hoofdinschr)   mean(indicatie_hoofdinschrijving,  na.rm = TRUE) * 100 else NA_real_,
-        ## indicatie_herstelbaar is NA voor bekostigde rijen, dus na.rm=TRUE
-        ## beperkt dit al automatisch tot de niet-bekostigde rijen.
-        pct_herstelbaar       = if (heeft_herstelbaar)   mean(indicatie_herstelbaar,        na.rm = TRUE) * 100 else NA_real_,
+        pct_bekostigd         = if (heeft_bekostiging)   .aandeel(indicatie_bekostigd)         else NA_real_,
+        pct_hoofdinschrijving = if (heeft_hoofdinschr)   .aandeel(indicatie_hoofdinschrijving) else NA_real_,
+        ## indicatie_herstelbaar is NA voor bekostigde rijen, dus dit beperkt
+        ## zich automatisch tot de niet-bekostigde rijen.
+        pct_herstelbaar       = if (heeft_herstelbaar)   .aandeel(indicatie_herstelbaar)       else NA_real_,
         .groups = "drop"
       )
   }
@@ -134,7 +180,23 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
   ## Privacyonderdrukking: groepen kleiner dan drempel krijgen nergens een
   ## waarde, ook niet voor n. De kolom `onderdrukt` laat zien welke rijen
   ## zijn weggelaten zonder iets over de werkelijke omvang te onthullen.
-  te_klein <- resultaat$n < drempel
+  primair <- resultaat$n < drempel
+
+  ## Secundair: met precies één onderdrukte groep in een jaar is die groep
+  ## terug te rekenen als totaalrij min zichtbare groepen. Onderdruk dan ook
+  ## de kleinste zichtbare groep in dat jaar.
+  secundair <- rep(FALSE, nrow(resultaat))
+  is_groep <- resultaat$sector != "totaal"
+  for (j in unique(resultaat$inschrijvingsjaar)) {
+    in_jaar <- resultaat$inschrijvingsjaar %in% j
+    groepen <- which(is_groep & in_jaar)
+    totaal_zichtbaar <- any(!primair[!is_groep & in_jaar])
+    if (totaal_zichtbaar && length(groepen) > 1 && sum(primair[groepen]) == 1) {
+      zichtbaar <- groepen[!primair[groepen]]
+      secundair[zichtbaar[which.min(resultaat$n[zichtbaar])]] <- TRUE
+    }
+  }
+  te_klein <- primair | secundair
 
   uitkomstkolommen <- c(
     "n",
@@ -169,6 +231,173 @@ maak_benchmarkrapport <- function(indicatoren, drempel = 30L) {
     resultaat, -dplyr::all_of(Filter(altijd_na, optioneel))
   )
 
-  attr(resultaat, "gegenereerd_op") <- Sys.time()
+  ## Afronden: hele procenten en gemiddelden op één decimaal. Meer precisie
+  ## voegt bij groepen van 30+ niets toe en maakt terugrekenen makkelijker.
+  resultaat <- resultaat |>
+    dplyr::mutate(
+      dplyr::across(dplyr::starts_with("pct_"), ~ round(.x)),
+      dplyr::across(dplyr::starts_with("gem_"), ~ round(.x, 1))
+    )
+
+  gegenereerd_op <- Sys.time()
+  attr(resultaat, "gegenereerd_op") <- gegenereerd_op
+  attr(resultaat, "metadata") <- list(
+    niveau = niveau,
+    drempel = drempel,
+    min_cel = min_cel,
+    laatste_inschrijvingsjaar = suppressWarnings(
+      max(indicatoren$inschrijvingsjaar, na.rm = TRUE)
+    ),
+    packageversie = as.character(utils::packageVersion("staat1cho")),
+    gegenereerd_op = gegenereerd_op
+  )
   resultaat
+}
+
+#' Sla een benchmarkrapport op als Excel-bestand
+#'
+#' Schrijft het rapport uit [maak_benchmarkrapport()] naar een `.xlsx` met
+#' vier tabbladen: `Rapport`, `Toelichting` (per kolom, afgestemd op
+#' analyseniveau en drempel), `Validatie` (controlepunten voor CEDA) en
+#' `Metadata` (niveau, drempel, packageversie, laatste inschrijvingsjaar).
+#' Vereist het package `writexl`.
+#'
+#' @param rapport Tibble zoals gemaakt door [maak_benchmarkrapport()]
+#' @param pad Pad van het uitvoerbestand (`.xlsx`)
+#'
+#' @return `pad`, onzichtbaar
+#'
+#' @examples
+#' df <- tibble::tibble(
+#'   sector = "gezondheidszorg", opleidingsvorm = "voltijd",
+#'   opleidingsniveau = "bachelor", inschrijvingsjaar = 2022L,
+#'   uitval_1jr = factor("Uitgevallen binnen 1 jaar"),
+#'   uitval_3jr = factor("Uitgevallen binnen 3 jaar"),
+#'   rendement_3jr = factor("Geen diploma"),
+#'   rendement_5jr = factor("Geen diploma"),
+#'   rendement_8jr = factor("Geen diploma"),
+#'   int_student = "geen internationale student",
+#'   leeftijd_bij_instroom = 19L
+#' )
+#' if (requireNamespace("writexl", quietly = TRUE)) {
+#'   rapport <- maak_benchmarkrapport(df, drempel = 1L, niveau = "student")
+#'   schrijf_benchmarkrapport(rapport, tempfile(fileext = ".xlsx"))
+#' }
+#' @export
+schrijf_benchmarkrapport <- function(rapport, pad) {
+  rlang::check_installed("writexl", reason = "om het benchmarkrapport als Excel op te slaan.")
+  writexl::write_xlsx(
+    list(
+      Rapport = rapport,
+      Toelichting = benchmark_toelichting(rapport),
+      Validatie = benchmark_validatie(rapport),
+      Metadata = benchmark_metadata(rapport)
+    ),
+    pad
+  )
+  invisible(pad)
+}
+
+## Eenheid in teksten: op inschrijvingsniveau gaat het om inschrijvingen
+benchmark_eenheid <- function(rapport) {
+  niveau <- attr(rapport, "metadata")$niveau
+  if (identical(niveau, "inschrijving")) "inschrijvingen" else "studenten"
+}
+
+benchmark_toelichting <- function(rapport) {
+  meta <- attr(rapport, "metadata")
+  eenheid <- benchmark_eenheid(rapport)
+  drempel <- if (is.null(meta$drempel)) 30L else meta$drempel
+  waarneembaar <- paste0(
+    "Berekend over ", eenheid, " in cohorten waarvan het meetvenster al in ",
+    "de data zit; recentere cohorten tellen niet mee"
+  )
+
+  toelichting <- tibble::tribble(
+    ~Kolom, ~Omschrijving, ~Opmerking,
+    "sector", "Onderwijs-CROHO-sector (bijv. gezondheidszorg, techniek)",
+    "Rij met sector = 'totaal' is het totaal over alle groepen voor dat instroomjaar",
+    "opleidingsvorm", "Voltijd, deeltijd of duaal", "",
+    "opleidingsniveau", "Associate degree, bachelor of master", "",
+    "inschrijvingsjaar", "Instroomjaar (cohort)", "",
+    "onderdrukt",
+    paste0("TRUE = rij is onderdrukt wegens een te kleine groep (n < ", drempel,
+           ") of om terugrekenen via de totaalrij te voorkomen; alle uitkomsten zijn leeg"),
+    "",
+    "n", paste("Aantal", eenheid, "in de groep; leeg bij onderdrukking"), "",
+    "pct_uitval_1jr", paste("%", eenheid, "uitgevallen binnen 1 jaar na instroom"), waarneembaar,
+    "pct_uitval_3jr", paste("%", eenheid, "uitgevallen binnen 3 jaar na instroom"), waarneembaar,
+    "pct_rendement_3jr", paste("%", eenheid, "met diploma binnen 3 jaar"), waarneembaar,
+    "pct_rendement_5jr", paste("%", eenheid, "met diploma binnen 5 jaar"), waarneembaar,
+    "pct_rendement_8jr", paste("%", eenheid, "met diploma binnen 8 jaar"), waarneembaar,
+    "pct_studiewissel_1jr", "% studenten gewisseld van opleiding binnen 1 jaar",
+    paste0("Alleen op studentniveau. ", waarneembaar),
+    "pct_studiewissel_3jr", "% studenten gewisseld van opleiding binnen 3 jaar",
+    paste0("Alleen op studentniveau. ", waarneembaar),
+    "pct_int_student", paste("% internationale", eenheid, "in de groep"), "",
+    "gem_leeftijd_instroom", "Gemiddelde leeftijd bij instroom", "",
+    "gem_eindcijfer", "Gemiddeld eindcijfer vooropleiding",
+    "Alleen als een VAKHAVW-bestand is geladen; gemiddelde over het hoogste eindcijfer per student",
+    "gem_wiskundecijfer", "Gemiddeld centraal examencijfer wiskunde",
+    "Alleen als een VAKHAVW-bestand is geladen",
+    "gem_aantal_vakken", "Gemiddeld aantal vakken op de eindlijst",
+    "Alleen als een VAKHAVW-bestand is geladen",
+    "pct_bekostigd", paste("% gekoppelde", eenheid, "met bekostigingsstatus 'bekostigd' of 'deels bekostigd'"),
+    "Alleen als een VLPBEK-bestand is geladen; berekend over de gekoppelde rijen",
+    "pct_hoofdinschrijving", paste("% gekoppelde", eenheid, "met DUO-bekostigingsindicatie 'J'"),
+    "Alleen als een VLPBEK-bestand is geladen",
+    "pct_herstelbaar", "% van de niet-bekostigde inschrijvingen waarvan alle redenen herstelbaar zijn (te late aanlevering)",
+    "Alleen als een VLPBEK-bestand is geladen. Zie BEKOSTIGINGSTATUS_CODES in het R-pakket"
+  )
+  toelichting[toelichting$Kolom %in% names(rapport), ]
+}
+
+benchmark_validatie <- function(rapport) {
+  eenheid <- benchmark_eenheid(rapport)
+  meta <- attr(rapport, "metadata")
+  tijdstip <- if (is.null(meta$gegenereerd_op)) attr(rapport, "gegenereerd_op") else meta$gegenereerd_op
+  tibble::tibble(
+    Controlepunt = c(
+      "Totaal n per instroomjaar",
+      "Uitvalpercentages",
+      "Rendementpercentages",
+      "Recente cohorten",
+      "Optionele kolommen",
+      "Reproduceerbaarheid"
+    ),
+    Toelichting = c(
+      paste0(
+        "De rij met sector = 'totaal' geeft het totaal aantal ", eenheid,
+        " per instroomjaar. Vergelijk dit met de DUO-open-data voor dezelfde instelling ",
+        "en hetzelfde jaar. Een afwijking van meer dan 1% wijst op een verwerkingsfout."
+      ),
+      "Uitval binnen 1 jaar ligt voor de meeste hbo-instellingen tussen 5% en 30%. Waarden buiten dit bereik rechtvaardigen een controle van de uitvalstap in de pipeline.",
+      "Rendement binnen 5 jaar ligt doorgaans tussen 40% en 80% voor bachelor. Waarden van 0% of 100% zijn verdacht.",
+      "Lege percentages bij de laatste cohorten zijn verwacht: die cohorten zitten nog niet lang genoeg in de data voor het meetvenster.",
+      "Als VLPBEK of VAKHAVW is geladen, moeten pct_bekostigd resp. gem_eindcijfer aanwezig en voor de meeste rijen gevuld zijn. Kolommen die volledig leeg zijn duiden op een koppelfout (bijv. andere ID's of onjuiste opleidingscode).",
+      paste0(
+        "Gegenereerd op: ", format(tijdstip, "%Y-%m-%d %H:%M:%S"),
+        ". Hetzelfde invoerbestand moet altijd dezelfde uitkomsten geven."
+      )
+    )
+  )
+}
+
+benchmark_metadata <- function(rapport) {
+  meta <- attr(rapport, "metadata")
+  if (is.null(meta)) {
+    meta <- list()
+  }
+  waarde <- function(x) if (is.null(x)) "onbekend" else as.character(x)
+  tibble::tibble(
+    Kenmerk = c(
+      "Analyseniveau", "Drempel groepsgrootte", "Minimale celgrootte",
+      "Laatste inschrijvingsjaar in de data", "Versie staat1cho", "Gegenereerd op"
+    ),
+    Waarde = c(
+      waarde(meta$niveau), waarde(meta$drempel), waarde(meta$min_cel),
+      waarde(meta$laatste_inschrijvingsjaar), waarde(meta$packageversie),
+      if (is.null(meta$gegenereerd_op)) "onbekend" else format(meta$gegenereerd_op, "%Y-%m-%d %H:%M:%S")
+    )
+  )
 }
