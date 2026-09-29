@@ -9,3 +9,5 @@
 ^doc$
 ^Meta$
 ^CRAN-SUBMISSION$
+^tools$
+^man/figures/demo\.gif$

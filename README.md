@@ -10,6 +10,10 @@ Met staat1cho maak je van de 1cijferHO-levering van DUO een overzicht van studie
 
 staat1cho is oorspronkelijk ontwikkeld voor Avans Hogeschool door Veerle van Son en Damiëtte Bakx-van den Brink en wordt doorontwikkeld door CEDA/Npuls.
 
+<p align="center">
+  <img src="man/figures/demo.gif" alt="Demo: een 1CHO- en VAKHAVW-bestand uploaden, verwerken en langs de tabbladen Overzicht, Instroom, Rendement, Uitval, Studiewissel, Vooropleiding en Data gaan, filteren op sector en het benchmarkrapport downloaden" width="800">
+</p>
+
 ## De route in het kort
 
 | Stap | Wat je doet | Hoe vaak |
