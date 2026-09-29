@@ -35,11 +35,9 @@ krijgen \code{NA}. De kolom \code{bekostiging_jaar} geeft aan op welk
 inschrijvingsjaar de status betrekking heeft.
 
 De functie meldt hoeveel rijen gekoppeld zijn en waarschuwt als dat minder
-dan de helft is: dan gebruiken de bestanden waarschijnlijk verschillende
-ID's. Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het
-BSN behouden is (niet gepseudonimiseerd en niet omgezet naar
-studentnummer). Het attribuut \code{koppeling}
-bevat de aantallen.
+dan de helft is: dan gebruiken de bestanden verschillende persoonsnummers.
+Dat is bij echte leveringen nu altijd zo, zie \code{\link[=lees_bekostiging]{lees_bekostiging()}}. Het
+attribuut \code{koppeling} bevat de aantallen.
 
 Studenten zonder overeenkomst in het VLPBEK-bestand krijgen \code{NA} voor
 \code{indicatie_bekostigd} en \code{indicatie_hoofdinschrijving}.

@@ -16,25 +16,25 @@ test_that("is_gepseudonimiseerd herkent 1cijferho-pseudoniemen", {
   expect_false(is_gepseudonimiseerd(character(0)))
 })
 
-test_that("gepseudonimiseerd 1CHO met VLPBEK geeft de instructie om BSN-uitvoer te gebruiken", {
+test_that("gepseudonimiseerd 1CHO met VLPBEK geeft een fout met uitleg", {
   pad <- tempfile(fileext = ".csv")
   writeLines(vlpbek_regels, pad)
   indicatoren <- tibble::tibble(persoonsgebonden_nummer = PSEUDONIEM, opleidingscode = "31001")
 
   expect_error(
     verrijk_met_bekostiging(indicatoren, lees_bekostiging(pad)),
-    "BSN.*behouden"
+    "VLPBEK koppelt nog niet"
   )
 })
 
-test_that("1CHO met studentnummers koppelt niet en waarschuwt met de instructie", {
+test_that("1CHO met ander persoonsnummer koppelt niet en waarschuwt met uitleg", {
   pad <- tempfile(fileext = ".csv")
   writeLines(vlpbek_regels, pad)
   indicatoren <- tibble::tibble(persoonsgebonden_nummer = "S2023001", opleidingscode = "31001")
 
   expect_warning(
     result <- verrijk_met_bekostiging(indicatoren, lees_bekostiging(pad)),
-    "BSN"
+    "VLPBEK koppelt nog niet"
   )
   expect_equal(attr(result, "koppeling")$pct, 0)
 })

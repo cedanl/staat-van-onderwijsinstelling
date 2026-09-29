@@ -3,22 +3,22 @@
 ## 1cijferho kan de persoonsnummers in de EV- en VAKHAVW-bestanden op drie
 ## manieren uitleveren: met het BSN behouden, omgezet naar studentnummer, of
 ## gepseudonimiseerd. Het VLPBEK-bestand komt rechtstreeks van DUO en bevat
-## altijd het echte BSN of onderwijsnummer. Koppelen met VLPBEK kan dus alleen
-## als de 1cijferho-uitvoer het BSN behoudt. staat1cho pseudonimiseert of
-## vertaalt zelf niets: de gebruiker kiest de juiste uitvoer in 1cijferho.
+## het BSN of onderwijsnummer. Het persoonsgebonden nummer in het EV-bestand
+## is een eigen DUO-nummer en geen BSN, dus VLPBEK koppelt nog niet aan het
+## 1CHO-bestand. staat1cho pseudonimiseert of vertaalt zelf niets.
 
-## Instructie die in foutmeldingen, het dashboard en de documentatie terugkomt
-INSTRUCTIE_BSN <- paste(
-  "Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het BSN",
-  "behouden is (niet gepseudonimiseerd en niet omgezet naar studentnummer)."
+## Melding die in foutmeldingen, het dashboard en de documentatie terugkomt
+HINT_VLPBEK <- paste(
+  "VLPBEK koppelt nog niet: het VLPBEK-bestand gebruikt het BSN of",
+  "onderwijsnummer, het 1CHO-bestand het eigen persoonsgebonden nummer van DUO.",
+  "Laat VLPBEK voorlopig weg; de rest van staat1cho werkt zonder."
 )
 
 #' Is een ID-kolom gepseudonimiseerd door 1cijferho?
 #'
 #' Herkent de pseudoniemen die 1cijferho kan maken: 64 hexadecimale tekens.
 #' Een gepseudonimiseerd 1CHO-bestand kan niet gekoppeld worden aan een
-#' VLPBEK-bestand, dat altijd echte BSN's bevat. Gebruik daarvoor de
-#' 1cijferho-uitvoer waarin het BSN behouden is.
+#' niet-gepseudonimiseerd VAKHAVW- of VLPBEK-bestand.
 #'
 #' @param x Vector met persoonsnummers, bijv. `basis$persoonsgebonden_nummer`
 #'

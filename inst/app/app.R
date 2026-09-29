@@ -855,14 +855,12 @@ server <- function(input, output, session) {
               buttonLabel = "Bladeren...",
               placeholder = "Optioneel"
             ),
-            ## VLPBEK bevat echte BSN's; koppelen kan alleen als het
-            ## 1CHO-bestand die ook heeft.
+            ## VLPBEK gebruikt het BSN, het EV-bestand een eigen DUO-nummer
             tags$p(
               class = "upload-hint",
-              tags$strong("Bekostiging koppelen? "),
-              "Gebruik dan de 1cijferho-uitvoer waarin het BSN behouden is,",
-              "niet gepseudonimiseerd en niet omgezet naar studentnummer.",
-              "Het VLPBEK-bestand bevat altijd het echte BSN."
+              tags$strong("VLPBEK nog niet gebruiken. "),
+              "Het VLPBEK-bestand gebruikt het BSN, het 1CHO-bestand een eigen",
+              "persoonsnummer van DUO, dus de koppeling vindt nog niets terug."
             ),
             uiOutput("btn_verwerk_ui")
           )
@@ -1345,7 +1343,7 @@ server <- function(input, output, session) {
   }
 
   ## Koppelpercentage van VAKHAVW/VLPBEK tonen. Een lage koppeling wijst meestal
-  ## op verschillende persoonsnummers (bijv. studentnummer vs. BSN) en is
+  ## op verschillende persoonsnummers (bijv. DUO-nummer vs. BSN) en is
   ## anders niet te onderscheiden van "niemand bekostigd".
   toon_koppeling <- function(resultaat) {
     k <- attr(resultaat, "koppeling")
@@ -1361,8 +1359,8 @@ server <- function(input, output, session) {
           " Gebruik voor het 1CHO- en VAKHAVW-bestand de uitvoer van dezelfde 1cijferho-run."
         } else if (laag) {
           paste(
-            " Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het BSN",
-            "behouden is (niet gepseudonimiseerd en niet omgezet naar studentnummer)."
+            " VLPBEK koppelt nog niet: het VLPBEK-bestand gebruikt het BSN,",
+            "het 1CHO-bestand een eigen persoonsnummer van DUO."
           )
         } else {
           ""

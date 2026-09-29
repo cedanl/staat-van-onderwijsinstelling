@@ -98,14 +98,12 @@ bevat_code <- function(codes, zoek) {
 #' worden verwerkt; de koptekstregel (VLP), totaalregel (BLB) en sluitregel
 #' (SLR) worden genegeerd. Het peiljaar wordt uit de VLP-koptekstregel gelezen.
 #'
-#' ## Welke 1cijferho-uitvoer?
+#' ## Koppelt nog niet aan het EV-bestand
 #'
-#' Het VLPBEK-bestand bevat het echte BSN of onderwijsnummer. Koppelen aan het
-#' 1CHO-bestand kan daarom alleen als de 1cijferho-uitvoer het BSN behoudt:
-#' niet gepseudonimiseerd en niet omgezet naar studentnummer. Bij een
-#' gepseudonimiseerd 1CHO-bestand geeft [verrijk_met_bekostiging()] een fout;
-#' bij studentnummers blijft het koppelpercentage vrijwel 0 en volgt een
-#' waarschuwing.
+#' Het VLPBEK-bestand bevat het BSN of onderwijsnummer. Het persoonsgebonden
+#' nummer in het 1CHO-bestand (EV) is een eigen DUO-nummer en geen BSN, dus
+#' [verrijk_met_bekostiging()] vindt bij echte leveringen (vrijwel) geen
+#' inschrijvingen terug en waarschuwt. De koppeling wordt nog aangepast.
 #'
 #' @param pad Pad naar het VLPBEK-bestand (latin-1 gecodeerd, pipegescheiden)
 #'
@@ -259,11 +257,9 @@ samenvoegen_redenen <- function(redenen) {
 #' inschrijvingsjaar de status betrekking heeft.
 #'
 #' De functie meldt hoeveel rijen gekoppeld zijn en waarschuwt als dat minder
-#' dan de helft is: dan gebruiken de bestanden waarschijnlijk verschillende
-#' ID's. Gebruik voor koppeling met VLPBEK de 1cijferho-uitvoer waarin het
-#' BSN behouden is (niet gepseudonimiseerd en niet omgezet naar
-#' studentnummer). Het attribuut `koppeling`
-#' bevat de aantallen.
+#' dan de helft is: dan gebruiken de bestanden verschillende persoonsnummers.
+#' Dat is bij echte leveringen nu altijd zo, zie [lees_bekostiging()]. Het
+#' attribuut `koppeling` bevat de aantallen.
 #'
 #' Studenten zonder overeenkomst in het VLPBEK-bestand krijgen `NA` voor
 #' `indicatie_bekostigd` en `indicatie_hoofdinschrijving`.
@@ -311,7 +307,7 @@ verrijk_met_bekostiging <- function(indicatoren, bekostiging) {
     indicatoren$persoonsgebonden_nummer,
     bekostiging$persoonsgebonden_nummer,
     "VLPBEK",
-    INSTRUCTIE_BSN
+    HINT_VLPBEK
   )
 
   per_inschrijving <- bekostiging |>
@@ -380,7 +376,7 @@ meld_koppeling <- function(resultaat, bron_gevonden, n_verrijkt, bron, eenheid, 
     cli::cli_warn(c(
       tekst,
       "i" = "Controleer of beide bestanden dezelfde persoonsnummers en opleidingscodes gebruiken.",
-      "i" = if (bron == "VLPBEK") INSTRUCTIE_BSN else "Gebruik voor het 1CHO- en VAKHAVW-bestand dezelfde 1cijferho-uitvoer."
+      "i" = if (bron == "VLPBEK") HINT_VLPBEK else "Gebruik voor het 1CHO- en VAKHAVW-bestand dezelfde 1cijferho-uitvoer."
     ))
   } else {
     cli::cli_inform(tekst)

@@ -29,14 +29,12 @@ worden verwerkt; de koptekstregel (VLP), totaalregel (BLB) en sluitregel
 (SLR) worden genegeerd. Het peiljaar wordt uit de VLP-koptekstregel gelezen.
 }
 \details{
-\subsection{Welke 1cijferho-uitvoer?}{
+\subsection{Koppelt nog niet aan het EV-bestand}{
 
-Het VLPBEK-bestand bevat het echte BSN of onderwijsnummer. Koppelen aan het
-1CHO-bestand kan daarom alleen als de 1cijferho-uitvoer het BSN behoudt:
-niet gepseudonimiseerd en niet omgezet naar studentnummer. Bij een
-gepseudonimiseerd 1CHO-bestand geeft \code{\link[=verrijk_met_bekostiging]{verrijk_met_bekostiging()}} een fout;
-bij studentnummers blijft het koppelpercentage vrijwel 0 en volgt een
-waarschuwing.
+Het VLPBEK-bestand bevat het BSN of onderwijsnummer. Het persoonsgebonden
+nummer in het 1CHO-bestand (EV) is een eigen DUO-nummer en geen BSN, dus
+\code{\link[=verrijk_met_bekostiging]{verrijk_met_bekostiging()}} vindt bij echte leveringen (vrijwel) geen
+inschrijvingen terug en waarschuwt. De koppeling wordt nog aangepast.
 }
 }
 \examples{

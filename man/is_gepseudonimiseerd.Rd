@@ -15,8 +15,7 @@ is_gepseudonimiseerd(x)
 \description{
 Herkent de pseudoniemen die 1cijferho kan maken: 64 hexadecimale tekens.
 Een gepseudonimiseerd 1CHO-bestand kan niet gekoppeld worden aan een
-VLPBEK-bestand, dat altijd echte BSN's bevat. Gebruik daarvoor de
-1cijferho-uitvoer waarin het BSN behouden is.
+niet-gepseudonimiseerd VAKHAVW- of VLPBEK-bestand.
 }
 \examples{
 is_gepseudonimiseerd(c("123456789", "987654321"))

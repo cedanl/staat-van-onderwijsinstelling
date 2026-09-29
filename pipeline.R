@@ -11,11 +11,11 @@ niveau <- "student"
 
 ## Optionele bestanden. Laat leeg ("") om de stap over te slaan.
 vakhawv_pad <- ""
-vlpbek_pad <- ""
+vlpbek_pad <- ""  # nog leeg laten
 
-## LET OP bij VLPBEK: het VLPBEK-bestand bevat het echte BSN. Koppelen kan
-## alleen als pad_1cho (en vakhawv_pad) de 1cijferho-uitvoer is waarin het
-## BSN behouden is: niet gepseudonimiseerd en niet omgezet naar studentnummer.
+## LET OP bij VLPBEK: het VLPBEK-bestand gebruikt het BSN, het 1CHO-bestand
+## een eigen persoonsnummer van DUO. De koppeling vindt daardoor nog (vrijwel)
+## niets terug.
 
 
 ## Invoer ----

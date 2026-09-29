@@ -58,10 +58,10 @@
   alle redenen herstelbaar zijn, `pd` wordt "deels bekostigd" en er is een
   kolom `bekostiging_jaar`. Beide verrijkingsfuncties melden het
   koppelpercentage.
-* **Welke 1cijferho-uitvoer** (#42): VLPBEK bevat altijd het echte BSN, dus
-  koppelen vereist 1cijferho-uitvoer met het BSN behouden (niet
-  gepseudonimiseerd, niet omgezet naar studentnummer). README, dashboard en
-  `pipeline.R` zeggen dit expliciet. Nieuwe functie `is_gepseudonimiseerd()`;
+* **VLPBEK koppelt nog niet** (#42): VLPBEK gebruikt het BSN of
+  onderwijsnummer, het EV-bestand een eigen persoonsnummer van DUO, dus de
+  koppeling vindt bij echte leveringen (vrijwel) niets terug. README,
+  dashboard, `pipeline.R` en de meldingen zeggen dit expliciet. Nieuwe functie `is_gepseudonimiseerd()`;
   een koppeling tussen een gepseudonimiseerd en een niet-gepseudonimiseerd
   bestand (VLPBEK of VAKHAVW) geeft een foutmelding met deze instructie. Het
   koppelpercentage wordt vanuit het bronbestand berekend.

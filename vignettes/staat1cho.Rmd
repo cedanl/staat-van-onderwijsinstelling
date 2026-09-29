@@ -126,3 +126,29 @@ Voor interactieve verkenning kun je het dashboard starten en het CSV-bestand upl
 ```{r dashboard, eval = FALSE}
 start_dashboard()
 ```
+
+## Overzicht van de functies
+
+| Functie | Wat het doet |
+|---|---|
+| `start_dashboard()` | Start het interactieve Shiny-dashboard |
+| `maak_basisbestand()` | Laadt het 1CHO-bestand en voegt labelkolommen toe |
+| `maak_instroom_cohort()` | Maakt het cohortbestand aan (nieuwe instromers) |
+| `maak_diploma_behaald()` | Bepaalt diplomaresultaten per student |
+| `bereken_rendement()` | Rendement binnen 3, 5 en 8 jaar |
+| `bereken_uitval()` | Uitvalstatus binnen 1 en 3 jaar |
+| `bereken_studiewissel()` | Studiewissel binnen 1 en 3 jaar |
+| `combineer_indicatoren()` | Voegt alle indicatoren samen, met vooropleiding, eerstejaars HO en het attribuut `peildatum` |
+| `lees_vakhawv()` / `verrijk_met_vakhawv()` | Leest VAKHAVW-vakcijfers en koppelt ze per student |
+| `lees_bekostiging()` / `verrijk_met_bekostiging()` | Leest een VLPBEK-bestand en koppelt de bekostigingsstatus (koppelt nog niet aan echte EV-bestanden, zie `?lees_bekostiging`) |
+| `is_gepseudonimiseerd()` | Herkent gepseudonimiseerde persoonsnummers |
+| `maak_benchmarkrapport()` | Geaggregeerd rapport met peildatum en privacyonderdrukking (groepen < 30, cellen < 5) |
+| `schrijf_benchmarkrapport()` | Slaat het benchmarkrapport op als Excel met toelichting, validatie en metadata |
+| `maak_synthetische_1cho()` | Synthetisch 1CHO-bestand met bekende uitkomsten voor demo en validatie |
+| `DEFINITIES`, `BEKOSTIGINGSTATUS_CODES` | Definities van de indicatoren en de DUO-redencodes |
+
+## Invoer
+
+staat1cho verwacht de `_enriched.csv` van 1cijferho: puntkomma-gescheiden, UTF-8, kolomnamen in snake_case. Het dashboard controleert na het uploaden of de verplichte kolommen aanwezig zijn. De kolommen `hoogste_vooropleiding_voor_het_ho_omschrijving_vooropleiding` en `eerste_jaar_in_het_hoger_onderwijs` zijn optioneel; zonder die kolommen worden vooropleiding en eerstejaars HO "onbekend".
+
+Het package vraagt R 4.1.0 of nieuwer. Voor het dashboard zijn daarnaast `bslib`, `DT`, `ggplot2`, `plotly`, `scales`, `tidyr` en `writexl` nodig.
