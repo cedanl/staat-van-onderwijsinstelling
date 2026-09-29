@@ -47,7 +47,8 @@ plus optioneel \code{pct_eerstejaars_ho}, \code{pct_vooropl_havo},
 reden een te late aanlevering is en dus hersteld kan worden, zie
 \link{BEKOSTIGINGSTATUS_CODES}). Attributen: \code{gegenereerd_op} (POSIXct) en
 \code{metadata} (lijst met peildatum, niveau, drempel, min_cel, laatste
-inschrijvingsjaar, packageversie en tijdstip).
+inschrijvingsjaar, geladen optionele bestanden, packageversie en
+tijdstip).
 }
 \description{
 Aggregeert het indicatorenbestand per sector, opleidingsvorm,
@@ -75,6 +76,10 @@ dat jaar onderdrukt.
 (noemer - teller) kleiner is dan \code{min_cel} (standaard 5), zodat
 bijvoorbeeld "0\% uitval" in een groep niets over iedereen in die groep
 verraadt. Zet \code{min_cel = 0} om dit uit te zetten.
+\item \strong{Secundair per cel:} is in een instroomjaar precies één groep leeg
+voor een percentage, dan is dat percentage terug te rekenen uit de
+totaalrij. Dan wordt hetzelfde percentage ook leeggemaakt in de kleinste
+groep in dat jaar waar het nog zichtbaar is.
 \item Percentages worden afgerond op hele procenten, gemiddelden op één
 decimaal.
 }

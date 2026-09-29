@@ -52,7 +52,11 @@
 * **Benchmarkrapport** (#41): secundaire onderdrukking, celonderdrukking
   (`min_cel`, standaard 5: een percentage is leeg als teller of complement
   kleiner dan 5 is), afronding op hele procenten en een
-  `metadata`-attribuut met niveau, drempel en packageversie.
+  `metadata`-attribuut met niveau, drempel en packageversie. Secundaire
+  onderdrukking werkt ook per percentage: is in een jaar precies één groep
+  leeg voor een percentage, dan wordt het ook in de kleinste zichtbare groep
+  leeggemaakt. Het tabblad Metadata vermeldt de geladen optionele bestanden
+  en de onderdrukkingsregels; de Toelichting noemt de celonderdrukking.
 * **VLPBEK** (#42): studenten zonder BSN krijgen hun onderwijsnummer als
   sleutel, de kolomindeling wordt gecontroleerd, "herstelbaar" vereist dat
   alle redenen herstelbaar zijn, `pd` wordt "deels bekostigd" en er is een

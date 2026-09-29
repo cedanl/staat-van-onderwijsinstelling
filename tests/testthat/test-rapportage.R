@@ -330,6 +330,44 @@ test_that("min_cel staat standaard op 5", {
   expect_equal(attr(result, "metadata")$min_cel, 5L)
 })
 
+test_that("secundaire celonderdrukking voorkomt terugrekenen van een leeg percentage", {
+  ## Zonder: uitval totaal (12 van 80) - groot (10 van 40) = klein (2 van 40)
+  klein <- dplyr::mutate(basis_df(40L), sector = "klein")
+  groot <- dplyr::mutate(basis_df(40L), sector = "groot")
+  klein$uitval_1jr <- factor(c(
+    rep("Uitgevallen binnen 1 jaar", 2),
+    rep("Na 1 jaar nog ingeschreven of diploma behaald", 38)
+  ))
+  groot$uitval_1jr <- factor(c(
+    rep("Uitgevallen binnen 1 jaar", 10),
+    rep("Na 1 jaar nog ingeschreven of diploma behaald", 30)
+  ))
+  result <- maak_benchmarkrapport(dplyr::bind_rows(klein, groot), drempel = 30L)
+
+  expect_true(is.na(result$pct_uitval_1jr[result$sector == "klein"]))
+  expect_true(is.na(result$pct_uitval_1jr[result$sector == "groot"]))
+  expect_equal(result$pct_uitval_1jr[result$sector == "totaal"], 15)
+  ## Alleen die ene cel, niet de hele rij
+  expect_false(result$onderdrukt[result$sector == "groot"])
+  expect_equal(result$n[result$sector == "groot"], 40)
+})
+
+test_that("secundaire celonderdrukking laat jaren met twee lege cellen ongemoeid", {
+  groepen <- lapply(c("a", "b", "c"), function(s) dplyr::mutate(basis_df(40L), sector = s))
+  for (i in 1:2) {
+    groepen[[i]]$uitval_1jr <- factor(c(
+      rep("Uitgevallen binnen 1 jaar", 2),
+      rep("Na 1 jaar nog ingeschreven of diploma behaald", 38)
+    ))
+  }
+  groepen[[3]]$uitval_1jr <- factor(c(
+    rep("Uitgevallen binnen 1 jaar", 10),
+    rep("Na 1 jaar nog ingeschreven of diploma behaald", 30)
+  ))
+  result <- maak_benchmarkrapport(dplyr::bind_rows(groepen), drempel = 30L)
+  expect_equal(result$pct_uitval_1jr[result$sector == "c"], 25)
+})
+
 ## Peildatum ----
 
 test_that("peildatum volgt het attribuut van het analysebestand", {
@@ -392,6 +430,23 @@ test_that("metadata legt niveau, drempel en versie vast", {
   expect_equal(meta$laatste_inschrijvingsjaar, 2022L)
   expect_equal(meta$packageversie, as.character(utils::packageVersion("staat1cho")))
   expect_equal(attr(maak_benchmarkrapport(basis_df()), "metadata")$niveau, "onbekend")
+  expect_length(meta$optionele_bestanden, 0)
+})
+
+test_that("metadata vermeldt de geladen optionele bestanden", {
+  df <- basis_df()
+  df$vakhawv_gemiddeld_eindcijfer <- 7
+  meta <- attr(maak_benchmarkrapport(df, drempel = 1L), "metadata")
+  expect_equal(meta$optionele_bestanden, "VAKHAVW")
+  tabel <- benchmark_metadata(maak_benchmarkrapport(df, drempel = 1L))
+  expect_equal(tabel$Waarde[tabel$Kenmerk == "Optionele bestanden"], "VAKHAVW")
+})
+
+test_that("toelichting noemt de celonderdrukking bij percentages", {
+  toel <- benchmark_toelichting(maak_benchmarkrapport(basis_df(), drempel = 1L))
+  expect_match(toel$Opmerking[toel$Kolom == "pct_int_student"], "minder dan 5 studenten")
+  toel0 <- benchmark_toelichting(maak_benchmarkrapport(basis_df(), drempel = 1L, min_cel = 0L))
+  expect_false(any(grepl("minder dan", toel0$Opmerking)))
 })
 
 test_that("toelichting volgt niveau, drempel en aanwezige kolommen", {

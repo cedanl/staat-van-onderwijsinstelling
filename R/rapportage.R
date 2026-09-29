@@ -23,6 +23,10 @@
 #'   (noemer - teller) kleiner is dan `min_cel` (standaard 5), zodat
 #'   bijvoorbeeld "0% uitval" in een groep niets over iedereen in die groep
 #'   verraadt. Zet `min_cel = 0` om dit uit te zetten.
+#' - **Secundair per cel:** is in een instroomjaar precies één groep leeg
+#'   voor een percentage, dan is dat percentage terug te rekenen uit de
+#'   totaalrij. Dan wordt hetzelfde percentage ook leeggemaakt in de kleinste
+#'   groep in dat jaar waar het nog zichtbaar is.
 #' - Percentages worden afgerond op hele procenten, gemiddelden op één
 #'   decimaal.
 #'
@@ -96,7 +100,8 @@
 #'   reden een te late aanlevering is en dus hersteld kan worden, zie
 #'   [BEKOSTIGINGSTATUS_CODES]). Attributen: `gegenereerd_op` (POSIXct) en
 #'   `metadata` (lijst met peildatum, niveau, drempel, min_cel, laatste
-#'   inschrijvingsjaar, packageversie en tijdstip).
+#'   inschrijvingsjaar, geladen optionele bestanden, packageversie en
+#'   tijdstip).
 #'
 #' @seealso [schrijf_benchmarkrapport()] om het rapport met toelichting als
 #'   Excel-bestand op te slaan.
@@ -261,6 +266,28 @@ maak_benchmarkrapport <- function(
       .before = "n"
     )
 
+  ## Secundair per cel: hetzelfde terugrekenen werkt per percentage. Een
+  ## percentage dat door min_cel (of rijonderdrukking) leeg is in precies één
+  ## groep, volgt uit totaalrij min zichtbare groepen. Maak dan ook de
+  ## kleinste groep met een zichtbare waarde leeg.
+  pct_kolommen <- grep("^pct_", aanwezige_uitkomsten, value = TRUE)
+  for (j in unique(resultaat$inschrijvingsjaar)) {
+    in_jaar <- resultaat$inschrijvingsjaar %in% j
+    totaal <- which(!is_groep & in_jaar)
+    groepen <- which(is_groep & in_jaar)
+    for (kol in pct_kolommen) {
+      waarden <- resultaat[[kol]]
+      if (length(totaal) == 0 || all(is.na(waarden[totaal]))) {
+        next
+      }
+      leeg <- groepen[is.na(waarden[groepen])]
+      gevuld <- groepen[!is.na(waarden[groepen])]
+      if (length(leeg) == 1 && length(gevuld) > 0) {
+        resultaat[[kol]][gevuld[which.min(resultaat$n[gevuld])]] <- NA_real_
+      }
+    }
+  }
+
   ## Verwijder optionele kolommen die volledig leeg zijn (optioneel bestand
   ## was niet geladen of koppeling leverde geen matches op)
   altijd_na  <- function(col) all(is.na(resultaat[[col]]))
@@ -286,6 +313,10 @@ maak_benchmarkrapport <- function(
   ## verschillende instellingen worden samengevoegd
   resultaat <- dplyr::mutate(resultaat, peildatum = peildatum, .before = 1)
 
+  optionele_bestanden <- c(
+    VAKHAVW = heeft_vakhawv,
+    VLPBEK = heeft_bekostiging
+  )
   gegenereerd_op <- Sys.time()
   attr(resultaat, "gegenereerd_op") <- gegenereerd_op
   attr(resultaat, "metadata") <- list(
@@ -296,6 +327,7 @@ maak_benchmarkrapport <- function(
     laatste_inschrijvingsjaar = suppressWarnings(
       max(indicatoren$inschrijvingsjaar, na.rm = TRUE)
     ),
+    optionele_bestanden = names(optionele_bestanden)[optionele_bestanden],
     packageversie = as.character(utils::packageVersion("staat1cho")),
     gegenereerd_op = gegenereerd_op
   )
@@ -408,6 +440,20 @@ benchmark_toelichting <- function(rapport) {
     "pct_herstelbaar", "% van de niet-bekostigde inschrijvingen waarvan alle redenen herstelbaar zijn (te late aanlevering)",
     "Alleen als een VLPBEK-bestand is geladen. Zie BEKOSTIGINGSTATUS_CODES in het R-pakket"
   )
+  ## Celonderdrukking geldt voor alle percentages
+  min_cel <- if (is.null(meta$min_cel)) 0L else meta$min_cel
+  if (min_cel > 0) {
+    cel <- paste0(
+      "Leeg als minder dan ", min_cel, " ", eenheid, " het wel of juist niet betreft, ",
+      "of om terugrekenen via de totaalrij te voorkomen"
+    )
+    is_pct <- startsWith(toelichting$Kolom, "pct_")
+    toelichting$Opmerking[is_pct] <- ifelse(
+      toelichting$Opmerking[is_pct] == "",
+      cel,
+      paste0(toelichting$Opmerking[is_pct], ". ", cel)
+    )
+  }
   toelichting[toelichting$Kolom %in% names(rapport), ]
 }
 
@@ -457,13 +503,22 @@ benchmark_metadata <- function(rapport) {
   tibble::tibble(
     Kenmerk = c(
       "Peildatum", "Analyseniveau", "Drempel groepsgrootte", "Minimale celgrootte",
-      "Laatste inschrijvingsjaar in de data", "Versie staat1cho", "Gegenereerd op"
+      "Laatste inschrijvingsjaar in de data", "Optionele bestanden", "Versie staat1cho",
+      "Gegenereerd op", "Onderdrukkingsregels"
     ),
     Waarde = c(
       if (is.null(meta$peildatum)) "onbekend" else format(meta$peildatum, "%Y-%m-%d"),
       waarde(meta$niveau), waarde(meta$drempel), waarde(meta$min_cel),
-      waarde(meta$laatste_inschrijvingsjaar), waarde(meta$packageversie),
-      if (is.null(meta$gegenereerd_op)) "onbekend" else format(meta$gegenereerd_op, "%Y-%m-%d %H:%M:%S")
+      waarde(meta$laatste_inschrijvingsjaar),
+      if (length(meta$optionele_bestanden) == 0) "geen" else paste(meta$optionele_bestanden, collapse = ", "),
+      waarde(meta$packageversie),
+      if (is.null(meta$gegenereerd_op)) "onbekend" else format(meta$gegenereerd_op, "%Y-%m-%d %H:%M:%S"),
+      paste(
+        "Drempel en minimale celgrootte zijn een eigen keuze van het project, geen",
+        "voorgeschreven norm. Groepen onder de drempel en percentages onder de",
+        "celgrootte zijn leeg; is daardoor in een jaar precies één groep of cel leeg,",
+        "dan wordt ook de kleinste zichtbare groep of cel leeggemaakt."
+      )
     )
   )
 }
