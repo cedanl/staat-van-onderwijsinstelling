@@ -25,6 +25,7 @@ utils::globalVariables(c(
   "diploma_na",
   "diplomajaar",
   "duur",
+  "eerder_in_ho",
   "eerstejaar_instelling",
   "eerstejaars_ho",
   "gemiddeld_cijfer_cijferlijst",

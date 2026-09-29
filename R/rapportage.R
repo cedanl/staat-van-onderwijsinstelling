@@ -516,7 +516,7 @@ benchmark_metadata <- function(rapport) {
       paste(
         "Drempel en minimale celgrootte zijn een eigen keuze van het project, geen",
         "voorgeschreven norm. Groepen onder de drempel en percentages onder de",
-        "celgrootte zijn leeg; is daardoor in een jaar precies één groep of cel leeg,",
+        "celgrootte zijn leeg; blijft daardoor in een jaar maar 1 groep of cel leeg,",
         "dan wordt ook de kleinste zichtbare groep of cel leeggemaakt."
       )
     )
