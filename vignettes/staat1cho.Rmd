@@ -127,6 +127,19 @@ Voor interactieve verkenning kun je het dashboard starten en het CSV-bestand upl
 start_dashboard()
 ```
 
+## Een vast script: pipeline.R
+
+Wil je het rapport elk jaar op precies dezelfde manier maken, zonder door het dashboard te klikken? Download [staat1cho als ZIP](https://github.com/cedanl/staat-van-onderwijsinstelling/archive/refs/heads/main.zip) en open `pipeline.R` in RStudio. Vul bovenin het pad naar je `_enriched.csv` in (met `/`, ook op Windows):
+
+```{r pipeline, eval = FALSE}
+pad_1cho    <- "C:/Tools/1cijferho/data/02-output/EV21PL24_enriched.csv"
+niveau      <- "student"    # of "inschrijving"
+vakhawv_pad <- ""           # pad naar VAKHAVW..._decoded.csv, of leeg
+vlpbek_pad  <- ""           # nog leeg laten
+```
+
+Kies *Session* > *Set Working Directory* > *To Source File Location* en klik op **Source**. De pipeline zet het benchmarkrapport en de tussenbestanden in de map `Output/<jaar>` naast `pipeline.R`.
+
 ## Overzicht van de functies
 
 | Functie | Wat het doet |

@@ -121,8 +121,6 @@ Controleer daarna of de **peildatum** bovenin past bij je levering, en of het aa
 
 **Werkgeheugen.** Het dashboard accepteert bestanden tot 10 GB, maar je hebt vrij werkgeheugen nodig van ongeveer **drie keer de bestandsgrootte** (een EV-bestand van 2 GB vraagt zo'n 6 GB). Sluit andere zware programma's of gebruik een computer of virtuele werkplek met meer geheugen.
 
-**Liever een vast script?** Download [staat1cho als ZIP](https://github.com/cedanl/staat-van-onderwijsinstelling/archive/refs/heads/main.zip), open `pipeline.R` in RStudio, vul bovenin het pad naar je `_enriched.csv` in (met `/`, ook op Windows), kies *Session* > *Set Working Directory* > *To Source File Location* en klik op **Source**. Het benchmarkrapport komt in de map `Output/<jaar>` naast `pipeline.R`.
-
 ---
 
 ## Stap 5: De cijfers lezen en delen
@@ -185,16 +183,4 @@ getwd()  # de map waarin het bestand staat
 
 ## Voor R-gebruikers
 
-Alle stappen van het dashboard zijn ook losse functies. Zie `vignette("staat1cho")` voor een uitgewerkt voorbeeld en een overzicht van de functies.
-
-```r
-library(staat1cho)
-basis     <- maak_basisbestand("pad/naar/EV..._enriched.csv")
-cohort    <- maak_instroom_cohort(basis, unique(basis$soort_hoger_onderwijs))
-diploma   <- maak_diploma_behaald(basis)
-rendement <- bereken_rendement(cohort, diploma)
-uitval    <- bereken_uitval(basis, diploma, cohort)
-wissel    <- bereken_studiewissel(basis, cohort, diploma, uitval)
-resultaat <- combineer_indicatoren(cohort, rendement, uitval, wissel)
-schrijf_benchmarkrapport(maak_benchmarkrapport(resultaat), "benchmark.xlsx")
-```
+Wil je zonder dashboard werken, met een vast script (`pipeline.R`) of met de losse functies? Zie `vignette("staat1cho")`.
