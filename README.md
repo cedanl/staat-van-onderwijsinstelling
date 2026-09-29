@@ -143,6 +143,8 @@ Onderaan de linkerkolom staan twee downloads:
 | **Download benchmarkrapport** | Excel met percentages per sector, opleidingsvorm, niveau en instroomjaar, met toelichting en peildatum. Geen persoonsnummers. Groepen van minder dan 30 studenten blijven leeg, net als percentages over minder dan 5 studenten of waarbij op minder dan 5 na iedereen het betreft. | Ja, met andere instellingen. |
 | **Download als CSV** | Het volledige analysebestand, één regel per student, met persoonsnummers. | **Nee**, alleen binnen de instelling. |
 
+De grenzen van 30 studenten per groep en 5 per percentage zijn een eigen keuze van het project, nog niet getoetst door een privacy officer of FG. Leg het benchmarkrapport daarom voor aan de privacy officer of FG van je instelling voordat je het deelt. Het tabblad *Metadata* in het rapport legt de onderdrukkingsregels kort uit.
+
 ---
 
 ## Optionele bestanden
