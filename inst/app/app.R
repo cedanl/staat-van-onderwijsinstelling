@@ -15,6 +15,14 @@ library(readr)
 
 library(staat1cho)
 
+## Optionele voorstap (bijv. mbo: bronbestanden samenvoegen tot 1CHO-vorm) en
+## diplomasoorten, meegegeven via start_dashboard().
+VOORSTAP <- shiny::getShinyOption("staat1cho.voorstap")
+DIPLOMASOORTEN <- shiny::getShinyOption(
+  "staat1cho.diplomasoorten",
+  DIPLOMASOORTEN_HO
+)
+
 ## Fonts ----
 
 if (
@@ -763,7 +771,8 @@ ui <- page_fluid(
 ## Server ----
 
 server <- function(input, output, session) {
-  fase <- reactiveVal("upload")
+  fase <- reactiveVal(if (is.null(VOORSTAP)) "upload" else "voorstap")
+  voorstap_resultaat <- reactiveVal(NULL)
   df_data <- reactiveVal(NULL)
   analyse_niveau <- reactiveVal("student")
   peildatum <- reactiveVal(NULL)
@@ -789,7 +798,95 @@ server <- function(input, output, session) {
 
   ## Scherm switch ----
 
+  ## Voorstap: bronbestanden uploaden en samenvoegen tot één 1CHO-bestand.
+  voorstap_scherm <- function() {
+    tags$div(
+      class = "upload-achtergrond",
+      card(
+        class = "upload-card",
+        card_header(
+          tags$div(
+            tags$div(
+              VOORSTAP$titel,
+              style = "font-size:1.1rem;font-weight:600;color:#F4D74B;"
+            ),
+            tags$span("Onderwijs in beweging.", class = "npuls-payoff")
+          )
+        ),
+        card_body(
+          tags$p(class = "upload-hint", VOORSTAP$uitleg),
+          fileInput(
+            "bron_upload",
+            "Bestanden",
+            multiple = TRUE,
+            buttonLabel = "Bladeren...",
+            placeholder = "Geen bestanden geselecteerd"
+          ),
+          radioButtons(
+            "analyse_niveau",
+            "Analyseniveau",
+            choices = c(
+              "Studentniveau" = "student",
+              "Inschrijvingsniveau" = "inschrijving"
+            ),
+            selected = "student",
+            inline = TRUE
+          ),
+          actionButton(
+            "btn_samenvoegen",
+            "Samenvoegen",
+            class = "upload-verwerk-btn"
+          ),
+          uiOutput("voorstap_resultaat_ui")
+        )
+      )
+    )
+  }
+
+  observeEvent(input$btn_samenvoegen, {
+    req(input$bron_upload)
+    voorstap_resultaat(NULL)
+    withProgress(message = "Bestanden samenvoegen...", value = 0.5, {
+      resultaat <- tryCatch(
+        VOORSTAP$samenvoegen(input$bron_upload),
+        error = function(e) {
+          list(ok = FALSE, pad = NA_character_, meldingen = c("Niet gelukt.", conditionMessage(e)))
+        }
+      )
+    })
+    voorstap_resultaat(resultaat)
+  })
+
+  output$voorstap_resultaat_ui <- renderUI({
+    res <- voorstap_resultaat()
+    req(res)
+    kleur <- if (isTRUE(res$ok)) "#1B7F3B" else "#B42318"
+    tagList(
+      tags$div(
+        style = paste0("margin-top:1rem;border-left:4px solid ", kleur, ";padding-left:0.75rem;"),
+        tags$p(tags$strong(res$meldingen[1]), style = paste0("color:", kleur, ";margin-bottom:0.25rem;")),
+        tags$ul(lapply(res$meldingen[-1], tags$li))
+      ),
+      if (isTRUE(res$ok)) {
+        actionButton(
+          "btn_verder",
+          "Verder naar het dashboard",
+          class = "upload-verwerk-btn"
+        )
+      }
+    )
+  })
+
+  observeEvent(input$btn_verder, {
+    res <- voorstap_resultaat()
+    req(isTRUE(res$ok))
+    verwerk_bestand(res$pad)
+  })
+
   output$scherm <- renderUI({
+    if (fase() == "voorstap") {
+      return(voorstap_scherm())
+    }
     if (fase() == "upload") {
       ids <- upload_ids()
       tags$div(
@@ -1400,8 +1497,14 @@ server <- function(input, output, session) {
       return()
     }
 
+    verwerk_bestand(bestand_upload$datapath, vakhawv_upload, bekostiging_upload)
+  })
+
+  ## Eén 1CHO-bestand verwerken tot indicatoren en door naar het dashboard.
+  ## Gebruikt door de upload-knop en door de voorstap.
+  verwerk_bestand <- function(pad, vakhawv_upload = NULL, bekostiging_upload = NULL) {
     kolomnamen <- names(readr::read_csv2(
-      bestand_upload$datapath,
+      pad,
       n_max = 0,
       show_col_types = FALSE
     ))
@@ -1419,19 +1522,23 @@ server <- function(input, output, session) {
       tryCatch(
         {
           setProgress(0.10, detail = "Basisbestand inlezen")
-          basisbestand <- maak_basisbestand(bestand_upload$datapath)
+          basisbestand <- maak_basisbestand(pad)
           jaar <- max(basisbestand$inschrijvingsjaar, na.rm = TRUE) + 1L
 
           soort_ho <- unique(basisbestand$soort_hoger_onderwijs)
 
-          niv <- input$analyse_niveau
+          niv <- if (is.null(input$analyse_niveau)) "student" else input$analyse_niveau
           analyse_niveau(niv)
 
           setProgress(0.25, detail = "Instroomcohort aanmaken")
           cohorten <- maak_instroom_cohort(basisbestand, soort_ho, niveau = niv)
 
           setProgress(0.40, detail = "Diploma bepalen")
-          diploma <- maak_diploma_behaald(basisbestand, niveau = niv)
+          diploma <- maak_diploma_behaald(
+            basisbestand,
+            niveau = niv,
+            diplomasoorten = DIPLOMASOORTEN
+          )
 
           setProgress(0.55, detail = "Rendement berekenen")
           rendement <- bereken_rendement(
@@ -1532,14 +1639,15 @@ server <- function(input, output, session) {
         }
       )
     })
-  })
+  }
 
   ## Terug naar upload ----
 
   observeEvent(input$btn_opnieuw, {
     df_data(NULL)
     vakhawv_raw(NULL)
-    fase("upload")
+    voorstap_resultaat(NULL)
+    fase(if (is.null(VOORSTAP)) "upload" else "voorstap")
     heeft_vakhawv(FALSE)
     heeft_bekostiging(FALSE)
     bek_peiljaar(NULL)

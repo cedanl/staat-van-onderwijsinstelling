@@ -4,7 +4,18 @@
 \alias{start_dashboard}
 \title{Start het Staat van Onderwijsinstelling dashboard}
 \usage{
-start_dashboard()
+start_dashboard(voorstap = NULL, diplomasoorten = DIPLOMASOORTEN_HO)
+}
+\arguments{
+\item{voorstap}{Optioneel: een stap vóór het dashboard, waarin de gebruiker
+bronbestanden uploadt die worden samengevoegd tot één 1CHO-bestand. Een
+\code{list(titel, uitleg, samenvoegen)}; \code{samenvoegen(bestanden)} krijgt de
+data.frame van \code{fileInput()} (kolommen \code{name} en \code{datapath}) en geeft
+\code{list(ok, pad, meldingen)} terug. Gebruikt door
+staat-van-onderwijsinstelling-mbo. Zonder voorstap opent de gewone
+upload van een 1CHO-bestand.}
+
+\item{diplomasoorten}{Zie \code{\link[=maak_diploma_behaald]{maak_diploma_behaald()}}.}
 }
 \value{
 No return value, called for side effects.

@@ -1,3 +1,15 @@
+# staat1cho 0.3.0
+
+## Nieuwe functies
+
+* **Voorstap in het dashboard**: `start_dashboard(voorstap = )` zet een stap
+  vóór het dashboard waarin de gebruiker bronbestanden uploadt, laat
+  samenvoegen tot één 1CHO-bestand en het resultaat ziet. Gebruikt door
+  staat-van-onderwijsinstelling-mbo. Zonder voorstap verandert er niets.
+* **Instelbare diplomasoorten**: `maak_diploma_behaald(diplomasoorten = )` en
+  `start_dashboard(diplomasoorten = )`. Standaard `DIPLOMASOORTEN_HO`, de
+  bestaande hbo/wo-lijst.
+
 # staat1cho 0.2.0
 
 ## Nieuwe functies
