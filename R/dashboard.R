@@ -35,7 +35,8 @@ start_dashboard <- function(voorstap = NULL, diplomasoorten = DIPLOMASOORTEN_HO)
     staat1cho.voorstap = voorstap,
     staat1cho.diplomasoorten = diplomasoorten
   )
-  shiny::runApp(app_pad, launch.browser = TRUE)
+  ## Rscript is niet interactief; open de browser tenzij anders ingesteld.
+  shiny::runApp(app_pad, launch.browser = getOption("shiny.launch.browser", TRUE))
 }
 
 DASHBOARD_PACKAGES <- c("bslib", "DT", "ggplot2", "plotly", "scales", "tidyr", "writexl")
