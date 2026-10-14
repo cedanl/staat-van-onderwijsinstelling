@@ -1,3 +1,24 @@
+#' Diplomasoorten die in het HO als afgeronde opleiding tellen
+#'
+#' Standaardwaarde van `diplomasoorten` in [maak_diploma_behaald()]: de
+#' hbo- en wo-diploma's uit 1CHO (zonder propedeuse).
+#'
+#' @export
+DIPLOMASOORTEN_HO <- c(
+  "Hoofd-bachelor-diploma binnen de actuele instelling",
+  "Neven-bachelor-diploma binnen de actuele instelling",
+  "Hoofd-master-diploma binnen de actuele instelling",
+  "Neven-master-diploma binnen de actuele instelling",
+  "Hoofd-doctoraal-diploma binnen de actuele instelling",
+  "Neven-doctoraal-diploma binnen de actuele instelling",
+  "Hoofddiploma beroepsfase/voortgezet binnen de actuele instelling",
+  "Nevendiploma beroepsfase/voortgezet binnen de actuele instelling",
+  "Hoofddiploma associate degree binnen de actuele instelling",
+  "Nevendiploma associate degree binnen de actuele instelling",
+  "Hoofddiploma postinitiele master binnen de actuele instelling",
+  "Nevendiploma postinitiele master binnen de actuele instelling"
+)
+
 #' Maak een bestand met het vroegst behaalde diploma per student (of inschrijving)
 #'
 #' Filtert het basisbestand op diplomasoorten die gelden als afgeronde opleiding
@@ -6,6 +27,9 @@
 #' @param basisbestand Tibble zoals gemaakt door [maak_basisbestand()]
 #' @param niveau Analyseniveau: `"student"` (standaard) of `"inschrijving"`.
 #'   Bepaalt de sleutel waarop gededupliceerd wordt.
+#' @param diplomasoorten Waarden van `soort_diploma_instelling` die als
+#'   diploma tellen. Standaard [DIPLOMASOORTEN_HO]; staat-van-onderwijsinstelling-mbo
+#'   geeft hier het mbo-diploma mee.
 #'
 #' @return Een tibble met één rij per student (bij `niveau = "student"`) of per
 #'   student-opleidingcombinatie (bij `niveau = "inschrijving"`), met kolommen
@@ -26,21 +50,8 @@
 #' )
 #' maak_diploma_behaald(basis)
 #' @export
-maak_diploma_behaald <- function(basisbestand, niveau = "student") {
-  diplomas <- c(
-    "Hoofd-bachelor-diploma binnen de actuele instelling",
-    "Neven-bachelor-diploma binnen de actuele instelling",
-    "Hoofd-master-diploma binnen de actuele instelling",
-    "Neven-master-diploma binnen de actuele instelling",
-    "Hoofd-doctoraal-diploma binnen de actuele instelling",
-    "Neven-doctoraal-diploma binnen de actuele instelling",
-    "Hoofddiploma beroepsfase/voortgezet binnen de actuele instelling",
-    "Nevendiploma beroepsfase/voortgezet binnen de actuele instelling",
-    "Hoofddiploma associate degree binnen de actuele instelling",
-    "Nevendiploma associate degree binnen de actuele instelling",
-    "Hoofddiploma postinitiele master binnen de actuele instelling",
-    "Nevendiploma postinitiele master binnen de actuele instelling"
-  )
+maak_diploma_behaald <- function(basisbestand, niveau = "student",
+                                 diplomasoorten = DIPLOMASOORTEN_HO) {
 
   sleutels <- niveau_sleutels(niveau)
   ## Op inschrijvingsniveau telt het verblijfsjaar in de opleiding, niet aan
@@ -52,7 +63,7 @@ maak_diploma_behaald <- function(basisbestand, niveau = "student") {
   }
 
   diploma_behaald <- basisbestand |>
-    dplyr::filter(soort_diploma_instelling %in% diplomas) |>
+    dplyr::filter(soort_diploma_instelling %in% diplomasoorten) |>
     ## diplomajaar == 0 betekent geen jaar geregistreerd in de 1CHO-data
     dplyr::mutate(diplomajaar = dplyr::na_if(diplomajaar, 0)) |>
     dplyr::group_by(dplyr::across(dplyr::all_of(sleutels))) |>

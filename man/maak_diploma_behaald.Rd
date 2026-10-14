@@ -4,13 +4,21 @@
 \alias{maak_diploma_behaald}
 \title{Maak een bestand met het vroegst behaalde diploma per student (of inschrijving)}
 \usage{
-maak_diploma_behaald(basisbestand, niveau = "student")
+maak_diploma_behaald(
+  basisbestand,
+  niveau = "student",
+  diplomasoorten = DIPLOMASOORTEN_HO
+)
 }
 \arguments{
 \item{basisbestand}{Tibble zoals gemaakt door \code{\link[=maak_basisbestand]{maak_basisbestand()}}}
 
 \item{niveau}{Analyseniveau: \code{"student"} (standaard) of \code{"inschrijving"}.
 Bepaalt de sleutel waarop gededupliceerd wordt.}
+
+\item{diplomasoorten}{Waarden van \code{soort_diploma_instelling} die als
+diploma tellen. Standaard \link{DIPLOMASOORTEN_HO}; staat-van-onderwijsinstelling-mbo
+geeft hier het mbo-diploma mee.}
 }
 \value{
 Een tibble met één rij per student (bij \code{niveau = "student"}) of per

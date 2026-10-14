@@ -2,6 +2,7 @@
 
 export(BEKOSTIGINGSTATUS_CODES)
 export(DEFINITIES)
+export(DIPLOMASOORTEN_HO)
 export(bereken_rendement)
 export(bereken_studiewissel)
 export(bereken_uitval)

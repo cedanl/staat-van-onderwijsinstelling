@@ -333,3 +333,19 @@ test_that("leidt laatste_jaar standaard af uit het laatste instroomcohort", {
 
   expect_equal(as.character(result$rendement_8jr), c("Geen diploma", "Nog niet waarneembaar"))
 })
+
+test_that("maak_diploma_behaald telt opgegeven diplomasoorten", {
+  basis <- tibble::tibble(
+    persoonsgebonden_nummer = c("S1", "S2"),
+    soort_diploma_instelling = c("Diploma mbo binnen de actuele instelling", NA),
+    diplomajaar = c(2022L, NA),
+    verblijfsjaar_actuele_instelling = c(2L, 1L)
+  )
+  expect_equal(nrow(maak_diploma_behaald(basis)), 0)
+  d <- maak_diploma_behaald(
+    basis,
+    diplomasoorten = "Diploma mbo binnen de actuele instelling"
+  )
+  expect_equal(d$persoonsgebonden_nummer, "S1")
+  expect_equal(d$jaar_eerste_diploma, 2022L)
+})
