@@ -1,5 +1,14 @@
 # staat1cho (ontwikkelversie)
 
+* Nieuw: `maak_analysebestand()` maakt in één stap het analysebestand uit een
+  1CHO-bestand of data frame, met dezelfde berekening als het dashboard, plus
+  kolom `opleidingsnaam`. Bedoeld om staat1cho in een eigen pipeline op te
+  nemen. Het dashboard en `pipeline.R` gebruiken deze functie.
+* Nieuw: `schrijf_analysebestand()` slaat het analysebestand op als CSV met
+  puntkomma en BOM, zodat een Nederlandse Excel het direct in kolommen opent.
+  De CSV-download van het dashboard gebruikt dit formaat; `pipeline.R` schrijft
+  de CSV ook weg.
+* `maak_basisbestand()` accepteert naast een pad ook een data frame.
 * `maak_instroom_cohort()` stopt niet meer bij studenten die DUO dubbel als
   eerstejaars levert. Deze studenten worden weggelaten met een waarschuwing;
   hun persoonsgebonden nummers staan in attribuut `dubbel`. Het dashboard

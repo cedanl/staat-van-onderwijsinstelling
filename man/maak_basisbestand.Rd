@@ -7,7 +7,9 @@
 maak_basisbestand(pad_invoer)
 }
 \arguments{
-\item{pad_invoer}{Pad naar het semicolongescheiden CSV-bestand (UTF-8)}
+\item{pad_invoer}{Pad naar het semicolongescheiden CSV-bestand (UTF-8), of
+een data frame met dezelfde kolommen (bijvoorbeeld al ingelezen uit
+parquet of een database).}
 }
 \value{
 Een tibble met alle 1CHO-regels plus extra \verb{_label}-kolommen die de

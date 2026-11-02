@@ -145,9 +145,45 @@ Onderaan de linkerkolom staan twee downloads:
 | Knop | Wat je krijgt | Delen? |
 |---|---|---|
 | **Download benchmarkrapport** | Excel met percentages per sector, opleidingsvorm, niveau en instroomjaar, met toelichting en peildatum. Geen persoonsnummers. Groepen van minder dan 30 studenten blijven leeg, net als percentages over minder dan 5 studenten of waarbij op minder dan 5 na iedereen het betreft. | Ja, met andere instellingen. |
-| **Download als CSV** | Het volledige analysebestand, één regel per student, met persoonsnummers. | **Nee**, alleen binnen de instelling. |
+| **Download als CSV** | Het volledige analysebestand, één regel per student, met persoonsnummers. Opent direct in Excel, [zie De data zelf gebruiken](#de-data-zelf-gebruiken). | **Nee**, alleen binnen de instelling. |
 
 De grenzen van 30 studenten per groep en 5 per percentage zijn een eigen keuze van het project, nog niet getoetst door een privacy officer of FG. Leg het benchmarkrapport daarom voor aan de privacy officer of FG van je instelling voordat je het deelt. Het tabblad *Metadata* in het rapport legt de onderdrukkingsregels kort uit.
+
+---
+
+## De data zelf gebruiken
+
+Het dashboard is één manier om naar de cijfers te kijken. Wil je ze koppelen aan eigen gegevens, zoals een indeling van opleidingen in domeinen of academies, of verder werken in Excel, Power BI, SPSS of Python, gebruik dan het **analysebestand**: één regel per student met alle indicatoren.
+
+- **Zonder programmeren**: klik in het dashboard op **Download als CSV**. Het bestand opent direct in Excel (puntkomma als scheidingsteken). In Python: `pd.read_csv(pad, sep=";", decimal=",")`.
+- **In je eigen R-pipeline**: één functie doet de hele berekening, dezelfde als het dashboard:
+
+  ```r
+  library(staat1cho)
+  analyse <- maak_analysebestand("C:/pad/naar/EV..._enriched.csv", niveau = "student")
+  schrijf_analysebestand(analyse, "analysebestand.csv")
+  ```
+
+  `maak_analysebestand()` accepteert ook een data frame, bijvoorbeeld al ingelezen uit parquet of een database. Een eigen indeling koppel je daarna op `opleidingscode`:
+
+  ```r
+  domeinen <- readr::read_csv2("mijn_domeinen.csv")  # kolommen opleidingscode en domein
+  analyse <- dplyr::left_join(analyse, domeinen, by = "opleidingscode")
+  ```
+
+De belangrijkste kolommen:
+
+| Kolom | Betekenis |
+|---|---|
+| `inschrijvingsjaar` | Instroomjaar (cohort) |
+| `opleidingscode`, `opleidingsnaam`, `sector`, `opleidingsvorm`, `opleidingsniveau` | Opleiding van instroom; `sector` is het CROHO-onderdeel |
+| `vooropleiding`, `eerstejaars_ho` | Vooropleiding en of de student nieuw is in het HO |
+| `status` | Diploma behaald, zittend of uitgevallen op de peildatum |
+| `rendement_3jr`, `rendement_5jr`, `rendement_8jr` | Diploma binnen x jaar, of *Nog niet waarneembaar* |
+| `uitval_1jr`, `uitval_3jr` | Uitval binnen 1 of 3 jaar |
+| `studiewissel_1jr`, `studiewissel_3jr` | Wissel van opleiding (alleen studentniveau) |
+
+Alle kolommen staan in `?maak_analysebestand`, de definities in `DEFINITIES`. Het analysebestand bevat persoonsnummers: alleen voor gebruik binnen de instelling.
 
 ---
 
@@ -189,4 +225,4 @@ getwd()  # de map waarin het bestand staat
 
 ## Voor R-gebruikers
 
-Wil je zonder dashboard werken, met een vast script (`pipeline.R`) of met de losse functies? Zie `vignette("staat1cho")`.
+Een vast script dat elk jaar het analysebestand en het benchmarkrapport maakt (`pipeline.R`), en de losse functies om tussenstappen in te zien: zie `vignette("staat1cho")`.

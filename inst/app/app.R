@@ -1418,20 +1418,16 @@ server <- function(input, output, session) {
     withProgress(message = "Data wordt verwerkt...", value = 0, {
       tryCatch(
         {
-          setProgress(0.10, detail = "Basisbestand inlezen")
-          basisbestand <- maak_basisbestand(bestand_upload$datapath)
-          jaar <- max(basisbestand$inschrijvingsjaar, na.rm = TRUE) + 1L
-
-          soort_ho <- unique(basisbestand$soort_hoger_onderwijs)
-
           niv <- input$analyse_niveau
           analyse_niveau(niv)
 
-          setProgress(0.25, detail = "Instroomcohort aanmaken")
-          cohorten <- suppressWarnings(
-            maak_instroom_cohort(basisbestand, soort_ho, niveau = niv)
+          setProgress(0.20, detail = "Indicatoren berekenen")
+          result <- suppressWarnings(
+            maak_analysebestand(bestand_upload$datapath, niveau = niv)
           )
-          dubbel <- attr(cohorten, "dubbel")
+          peildatum(attr(result, "peildatum"))
+
+          dubbel <- attr(result, "dubbel")
           if (length(dubbel) > 0) {
             showNotification(
               paste0(
@@ -1445,55 +1441,6 @@ server <- function(input, output, session) {
               duration = NULL
             )
           }
-
-          setProgress(0.40, detail = "Diploma bepalen")
-          diploma <- maak_diploma_behaald(basisbestand, niveau = niv)
-
-          setProgress(0.55, detail = "Rendement berekenen")
-          rendement <- bereken_rendement(
-            cohorten, diploma, niveau = niv, laatste_jaar = jaar - 1L
-          )
-
-          setProgress(0.70, detail = "Uitval berekenen")
-          uitval <- bereken_uitval(
-            basisbestand,
-            diploma,
-            cohorten,
-            jaar,
-            niveau = niv
-          )
-
-          wissel <- NULL
-          if (niv == "student") {
-            setProgress(0.85, detail = "Studiewissel berekenen")
-            wissel <- bereken_studiewissel(
-              basisbestand,
-              cohorten,
-              diploma,
-              uitval
-            )
-          }
-
-          setProgress(0.95, detail = "Combineren")
-          result <- combineer_indicatoren(
-            cohorten,
-            rendement,
-            uitval,
-            wissel,
-            niveau = niv
-          )
-          peildatum(attr(result, "peildatum"))
-
-          naam_tabel <- dplyr::distinct(
-            basisbestand,
-            opleidingscode = as.character(opleiding_actueel_equivalent),
-            opleidingsnaam = opleidingscode_naam_opleiding
-          )
-          result <- dplyr::left_join(
-            result,
-            naam_tabel,
-            by = c("opleidingscode" = "opleidingscode")
-          )
 
           ## VAKHAVW (optioneel) ----
           heeft_vakhawv(FALSE)
@@ -2376,7 +2323,7 @@ server <- function(input, output, session) {
       paste0("Indicatoren_1cHO_", Sys.Date(), ".csv")
     },
     content = function(file) {
-      write_csv(df_data(), file)
+      schrijf_analysebestand(df_data(), file)
     }
   )
 

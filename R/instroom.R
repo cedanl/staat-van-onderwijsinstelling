@@ -5,7 +5,9 @@
 #' bevat een klein synthetisch voorbeeldbestand zonder echte persoonsgegevens
 #' (`inst/extdata/voorbeeld_1cho.csv`).
 #'
-#' @param pad_invoer Pad naar het semicolongescheiden CSV-bestand (UTF-8)
+#' @param pad_invoer Pad naar het semicolongescheiden CSV-bestand (UTF-8), of
+#'   een data frame met dezelfde kolommen (bijvoorbeeld al ingelezen uit
+#'   parquet of een database).
 #'
 #' @return Een tibble met alle 1CHO-regels plus extra `_label`-kolommen die de
 #'   originele categorische waarden bewaren voor gebruik in rapportages
@@ -20,13 +22,18 @@ maak_basisbestand <- function(pad_invoer) {
   ## voorloopnullen in ID's en postcodes ("0010") weggooit en leeftijd ("021")
   ## soms als tekst en soms als getal oplevert. De numerieke kolommen worden
   ## hieronder expliciet omgezet.
-  invoer <- readr::read_delim(
-    pad_invoer,
-    delim = ";",
-    show_col_types = FALSE,
-    col_types = readr::cols(.default = readr::col_character()),
-    locale = readr::locale(encoding = "UTF-8")
-  )
+  invoer <- if (is.data.frame(pad_invoer)) {
+    ## Zelfde uitgangspunt als bij het inlezen van een CSV: alles als tekst
+    dplyr::as_tibble(lapply(pad_invoer, as.character))
+  } else {
+    readr::read_delim(
+      pad_invoer,
+      delim = ";",
+      show_col_types = FALSE,
+      col_types = readr::cols(.default = readr::col_character()),
+      locale = readr::locale(encoding = "UTF-8")
+    )
+  }
 
   if (!"vestigingsnummer_gemeentenaam_volgens_rio" %in% names(invoer)) {
     cli::cli_abort(
