@@ -67,8 +67,9 @@ maak_basisbestand <- function(pad_invoer) {
 #'
 #' @return Een tibble met een rij per student (bij `niveau = "student"`) of per
 #'   student-opleidingcombinatie (bij `niveau = "inschrijving"`), aangevuld met
-#'   kolom `eerstejaar_instelling` (= inschrijvingsjaar). Gooit een fout als er
-#'   dubbele sleutelcombinaties zijn.
+#'   kolom `eerstejaar_instelling` (= inschrijvingsjaar). Studenten die DUO
+#'   dubbel als eerstejaars levert, worden weggelaten met een waarschuwing;
+#'   hun persoonsgebonden nummers staan dan in attribuut `dubbel`.
 #'
 #' @examples
 #' basis <- tibble::tibble(
@@ -103,11 +104,26 @@ maak_instroom_cohort <- function(basisbestand, soort_ho, niveau = "student") {
     ) |>
     dplyr::mutate(eerstejaar_instelling = inschrijvingsjaar)
 
+  ## Dubbele eerstejaarsregels komen voor als DUO een student twee keer
+  ## levert. Welke regel klopt is niet te bepalen, dus deze studenten gaan
+  ## eruit, met een waarschuwing zodat de gebruiker ze bij DUO kan melden.
   sleutels <- niveau_sleutels(niveau)
-  if (anyDuplicated(cohort[sleutels]) > 0) {
-    rlang::abort(
-      "Dubbele sleutelcombinaties in het instroomcohortbestand gevonden!"
+  dubbel <- duplicated(cohort[sleutels]) |
+    duplicated(cohort[sleutels], fromLast = TRUE)
+  if (any(dubbel)) {
+    nummers <- unique(cohort$persoonsgebonden_nummer[dubbel])
+    n <- length(nummers)
+    voorbeeld <- paste0(
+      paste(utils::head(nummers, 10), collapse = ", "),
+      if (n > 10) " en meer" else ""
     )
+    cohort <- cohort[!dubbel, , drop = FALSE]
+    cli::cli_warn(c(
+      "{n} student{?en} {?staat/staan} dubbel als eerstejaars in het 1CHO-bestand en {?is/zijn} weggelaten.",
+      "i" = "Persoonsgebonden nummers: {voorbeeld}",
+      "i" = "Meld de dubbelingen bij DUO; alle nummers staan in {.code attr(x, \"dubbel\")}."
+    ))
+    attr(cohort, "dubbel") <- nummers
   }
 
   cohort

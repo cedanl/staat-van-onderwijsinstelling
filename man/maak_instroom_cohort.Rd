@@ -23,8 +23,9 @@ wisselaars als eerstejaars in hun nieuwe opleiding worden meegenomen.}
 \value{
 Een tibble met een rij per student (bij \code{niveau = "student"}) of per
 student-opleidingcombinatie (bij \code{niveau = "inschrijving"}), aangevuld met
-kolom \code{eerstejaar_instelling} (= inschrijvingsjaar). Gooit een fout als er
-dubbele sleutelcombinaties zijn.
+kolom \code{eerstejaar_instelling} (= inschrijvingsjaar). Studenten die DUO
+dubbel als eerstejaars levert, worden weggelaten met een waarschuwing;
+hun persoonsgebonden nummers staan dan in attribuut \code{dubbel}.
 }
 \description{
 Filtert het basisbestand op het opgegeven soort hoger onderwijs,

@@ -1428,7 +1428,23 @@ server <- function(input, output, session) {
           analyse_niveau(niv)
 
           setProgress(0.25, detail = "Instroomcohort aanmaken")
-          cohorten <- maak_instroom_cohort(basisbestand, soort_ho, niveau = niv)
+          cohorten <- suppressWarnings(
+            maak_instroom_cohort(basisbestand, soort_ho, niveau = niv)
+          )
+          dubbel <- attr(cohorten, "dubbel")
+          if (length(dubbel) > 0) {
+            showNotification(
+              paste0(
+                length(dubbel), " student(en) staan dubbel als eerstejaars ",
+                "in het 1CHO-bestand en zijn weggelaten. Meld dit bij DUO. ",
+                "Persoonsgebonden nummer(s): ",
+                paste(utils::head(dubbel, 10), collapse = ", "),
+                if (length(dubbel) > 10) " en meer" else ""
+              ),
+              type = "warning",
+              duration = NULL
+            )
+          }
 
           setProgress(0.40, detail = "Diploma bepalen")
           diploma <- maak_diploma_behaald(basisbestand, niveau = niv)
