@@ -9,10 +9,6 @@
   De CSV-download van het dashboard gebruikt dit formaat; `pipeline.R` schrijft
   de CSV ook weg.
 * `maak_basisbestand()` accepteert naast een pad ook een data frame.
-* `maak_instroom_cohort()` stopt niet meer bij studenten die DUO dubbel als
-  eerstejaars levert. Deze studenten worden weggelaten met een waarschuwing;
-  hun persoonsgebonden nummers staan in attribuut `dubbel`. Het dashboard
-  toont ze in een melding, zodat ze bij DUO gemeld kunnen worden.
 
 # staat1cho 0.2.0
 

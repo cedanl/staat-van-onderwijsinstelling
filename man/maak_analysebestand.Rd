@@ -17,8 +17,7 @@ begon. Op inschrijvingsniveau is elke opleiding een eigen cohort.}
 }
 \value{
 Een tibble met één rij per student (of per student-opleiding bij
-\code{niveau = "inschrijving"}), met attributen \code{niveau}, \code{peildatum} en, als
-DUO studenten dubbel leverde, \code{dubbel} (hun persoonsgebonden nummers).
+\code{niveau = "inschrijving"}), met attributen \code{niveau} en \code{peildatum}.
 Kolommen:
 \describe{
 \item{persoonsgebonden_nummer}{Persoonsnummer uit het 1CHO-bestand.}

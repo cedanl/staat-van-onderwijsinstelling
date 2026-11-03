@@ -16,8 +16,7 @@
 #'   begon. Op inschrijvingsniveau is elke opleiding een eigen cohort.
 #'
 #' @return Een tibble met één rij per student (of per student-opleiding bij
-#'   `niveau = "inschrijving"`), met attributen `niveau`, `peildatum` en, als
-#'   DUO studenten dubbel leverde, `dubbel` (hun persoonsgebonden nummers).
+#'   `niveau = "inschrijving"`), met attributen `niveau` en `peildatum`.
 #'   Kolommen:
 #'   \describe{
 #'     \item{persoonsgebonden_nummer}{Persoonsnummer uit het 1CHO-bestand.}
@@ -90,7 +89,6 @@ maak_analysebestand <- function(invoer, niveau = c("student", "inschrijving")) {
     attributes(result)[names(attrs)] <- attrs
   }
 
-  attr(result, "dubbel") <- attr(cohort, "dubbel")
   result
 }
 

@@ -36,12 +36,6 @@ test_that("voegt de opleidingsnaam toe naast de code", {
   expect_false(anyNA(res$opleidingsnaam))
 })
 
-test_that("geeft dubbele studenten door in attribuut dubbel", {
-  eerste <- synth[synth$verblijfsjaar_actuele_instelling == 1, ][1, ]
-  expect_warning(res <- maak_analysebestand(rbind(synth, eerste)), "dubbel")
-  expect_equal(attr(res, "dubbel"), eerste$persoonsgebonden_nummer)
-})
-
 test_that("schrijft een CSV die Nederlandse Excel in kolommen opent", {
   res <- maak_analysebestand(pad)
   uit <- tempfile(fileext = ".csv")

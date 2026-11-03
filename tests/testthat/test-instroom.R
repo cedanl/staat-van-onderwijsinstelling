@@ -79,21 +79,16 @@ test_that("zet eerstejaar_instelling gelijk aan inschrijvingsjaar", {
   expect_equal(result$eerstejaar_instelling, 2021)
 })
 
-test_that("laat dubbele studenten weg met een waarschuwing", {
+test_that("geeft fout bij dubbele persoonsgebonden_nummers", {
   basisbestand <- tibble(
-    persoonsgebonden_nummer = c("A", "A", "B"),
+    persoonsgebonden_nummer = c("A", "A"),
     soort_hoger_onderwijs = "hbo",
     soort_inschrijving_actuele_instelling_label = HOOFD_INSCHRIJVING,
     verblijfsjaar_actuele_instelling = 1L,
     inschrijvingsjaar = 2020
   )
 
-  expect_warning(
-    result <- maak_instroom_cohort(basisbestand, "hbo"),
-    "dubbel"
-  )
-  expect_equal(result$persoonsgebonden_nummer, "B")
-  expect_equal(attr(result, "dubbel"), "A")
+  expect_error(maak_instroom_cohort(basisbestand, "hbo"))
 })
 
 test_that("geeft lege tibble terug bij geen matches", {

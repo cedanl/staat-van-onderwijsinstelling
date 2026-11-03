@@ -1422,25 +1422,8 @@ server <- function(input, output, session) {
           analyse_niveau(niv)
 
           setProgress(0.20, detail = "Indicatoren berekenen")
-          result <- suppressWarnings(
-            maak_analysebestand(bestand_upload$datapath, niveau = niv)
-          )
+          result <- maak_analysebestand(bestand_upload$datapath, niveau = niv)
           peildatum(attr(result, "peildatum"))
-
-          dubbel <- attr(result, "dubbel")
-          if (length(dubbel) > 0) {
-            showNotification(
-              paste0(
-                length(dubbel), " student(en) staan dubbel als eerstejaars ",
-                "in het 1CHO-bestand en zijn weggelaten. Meld dit bij DUO. ",
-                "Persoonsgebonden nummer(s): ",
-                paste(utils::head(dubbel, 10), collapse = ", "),
-                if (length(dubbel) > 10) " en meer" else ""
-              ),
-              type = "warning",
-              duration = NULL
-            )
-          }
 
           ## VAKHAVW (optioneel) ----
           heeft_vakhawv(FALSE)
