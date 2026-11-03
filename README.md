@@ -134,7 +134,7 @@ Controleer daarna of de **peildatum** bovenin past bij je levering, en of het aa
 Houd je muis boven het **?**-icoon bij een getal voor de precieze definitie. De belangrijkste keuzes:
 
 - **Instroom**: eerste jaar aan de instelling (studentniveau) of in de opleiding (inschrijvingsniveau). Alleen hoofdinschrijvingen.
-- **Rendement**: diploma binnen 3, 5 of 8 jaar aan de instelling. Propedeuses tellen niet mee.
+- **Rendement**: diploma binnen 3, 5 of 8 jaar aan de instelling. Elk diploma telt: associate degree, bachelor, master (ook een master na een gestopte bachelor), doctoraal en postinitiële master. Propedeuses tellen niet mee. Masterstudenten die van buiten de instelling instromen, vormen een eigen cohort; splits met het filter **Opleidingsniveau**.
 - **Uitval**: niet meer ingeschreven en geen diploma. Een overstap naar een andere instelling telt ook als uitval.
 - **Studiewissel**: overstap naar een andere opleiding binnen de instelling. Alleen op studentniveau.
 - **Nog niet waarneembaar**: recente cohorten zijn bijvoorbeeld nog geen 5 jaar te volgen en tellen dan niet mee. Lege waarden bij recente jaren zijn dus normaal.
