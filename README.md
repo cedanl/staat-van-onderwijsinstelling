@@ -6,7 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->
 
-Met staat1cho maak je van de 1cijferHO-levering van DUO een overzicht van studiesucces aan je eigen instelling: instroom, rendement (diploma binnen 3, 5 en 8 jaar), uitval (binnen 1 en 3 jaar) en studiewissel. Je bekijkt de cijfers in een dashboard in je browser en downloadt een benchmarkrapport in Excel dat je met andere instellingen kunt delen.
+Met staat1cho maak je van de 1cijferHO-levering van DUO een **analysebestand** over studiesucces aan je eigen instelling: één regel per student met instroom, rendement (diploma binnen 3, 5 en 8 jaar), uitval (binnen 1 en 3 jaar) en studiewissel, volgens vaste, gedocumenteerde definities. Dat bestand is de kern. Je opent het in Excel, Power BI, SPSS of Python, koppelt het aan je eigen gegevens (zoals een indeling in domeinen of academies) of neemt de berekening op in je eigen R-pipeline, [zie De data zelf gebruiken](#de-data-zelf-gebruiken).
+
+Het dashboard laat dezelfde cijfers direct in je browser zien en maakt een benchmarkrapport in Excel dat je met andere instellingen kunt delen.
 
 staat1cho is oorspronkelijk ontwikkeld voor Avans Hogeschool door Veerle van Son en Damiëtte Bakx-van den Brink en wordt doorontwikkeld door CEDA/Npuls.
 
@@ -22,7 +24,7 @@ staat1cho is oorspronkelijk ontwikkeld voor Avans Hogeschool door Veerle van Son
 | 2 | De bestanden omzetten met 1cijferho | Elke levering |
 | 3 | R, RStudio en staat1cho installeren | Eenmalig |
 | 4 | Het dashboard starten en je bestand laden | Elke keer |
-| 5 | De cijfers lezen en het rapport delen | Elke levering |
+| 5 | De cijfers lezen, de data downloaden en het rapport delen | Elke levering |
 
 Reken de eerste keer op een ochtend, vooral voor het installeren. Daarna kost een nieuwe levering een half uur tot een uur.
 
@@ -153,7 +155,7 @@ De grenzen van 30 studenten per groep en 5 per percentage zijn een eigen keuze v
 
 ## De data zelf gebruiken
 
-Het dashboard is één manier om naar de cijfers te kijken. Wil je ze koppelen aan eigen gegevens, zoals een indeling van opleidingen in domeinen of academies, of verder werken in Excel, Power BI, SPSS of Python, gebruik dan het **analysebestand**: één regel per student met alle indicatoren.
+Het analysebestand is wat staat1cho eigenlijk maakt; het dashboard is één manier om ernaar te kijken. Wil je de cijfers koppelen aan eigen gegevens, zoals een indeling van opleidingen in domeinen of academies, of verder werken in Excel, Power BI, SPSS of Python, gebruik dan het **analysebestand**: één regel per student met alle indicatoren.
 
 - **Zonder programmeren**: klik in het dashboard op **Download als CSV**. Het bestand opent direct in Excel (puntkomma als scheidingsteken). In Python: `pd.read_csv(pad, sep=";", decimal=",")`.
 - **In je eigen R-pipeline**: één functie doet de hele berekening, dezelfde als het dashboard:
