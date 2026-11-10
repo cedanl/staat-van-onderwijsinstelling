@@ -190,3 +190,18 @@ test_that("maak_basisbestand ziet 1cijferho-labels voor code 0 als leeg", {
   expect_no_warning(basis <- maak_basisbestand(pad))
   expect_true(is.na(basis$diplomajaar))
 })
+
+test_that("maak_basisbestand ziet opgeschoonde 1cijferho-labels (zonder >-noot) als leeg", {
+  ## Sinds cedanl/1cijferho#221 staat DUO's ">"-noot in de variabelebeschrijving
+  ## en niet meer in het waardelabel.
+  pad <- tempfile(fileext = ".csv")
+  writeLines(c(
+    "persoonsgebonden_nummer;inschrijvingsjaar;verblijfsjaar_actuele_instelling;verblijfsjaar_actuele_opleiding_instelling;diplomajaar;soort_inschrijving_actuele_instelling;geslacht;opleidingsvorm;indicatie_internationale_student;indicatie_eer_actueel;croho_onderdeel_actuele_opleiding;soort_diploma_instelling;vestigingsnummer_gemeentenaam_volgens_rio",
+    "1;2020;inschrijving heeft soort inschrijving actuele instellinging van 3 of 5 (of 8 of C);inschrijving heeft soort inschrijving actuele opleiding-instelling van 3 of 5 (of 8 of C);geen examen geregistreerd;hoofd;vrouw;voltijd;N;N;techniek;;Breda"
+  ), pad)
+
+  expect_no_warning(basis <- maak_basisbestand(pad))
+  expect_true(is.na(basis$diplomajaar))
+  expect_true(is.na(basis$verblijfsjaar_actuele_instelling))
+  expect_true(is.na(basis$verblijfsjaar_actuele_opleiding_instelling))
+})
