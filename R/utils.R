@@ -18,6 +18,14 @@ INTEGER_KOLOMMEN_1CHO <- c(
   "eerste_jaar_in_het_hoger_onderwijs"
 )
 
+## DUO-labels voor code 0/00/0000 in de integer-kolommen, zoals 1cijferho ze
+## schrijft zonder ">"-noot (bestandsbeschrijving 1CijferHO 2023 en 2024).
+LABELS_GEEN_WAARDE <- paste0(
+  "^(geen examen geregistreerd",
+  "|vooropleiding onbekend of geregistreerd diplomajaar is ongeldig",
+  "|inschrijving heeft soort inschrijving .* van 3 of 5)"
+)
+
 ## Zet de opgegeven (aanwezige) kolommen om naar integer en waarschuwt als
 ## daarbij waarden verloren gaan, zodat een afwijkende aanlevering niet stil
 ## tot NA's leidt.
@@ -25,10 +33,11 @@ zet_om_naar_integer <- function(data, kolommen) {
   for (kol in intersect(kolommen, names(data))) {
     ruw <- trimws(as.character(data[[kol]]))
     ruw[ruw == ""] <- NA_character_
-    ## 1cijferho zet "niet van toepassing" (code 0/00/0000) om naar een label
-    ## als "geen examen geregistreerd > 0000 voor overige inschrijvingen".
-    ## Dat is een lege waarde, geen fout.
-    ruw[grepl(">\\s*0+\\b", ruw)] <- NA_character_
+    ## 1cijferho zet "niet van toepassing" (code 0/00/0000) om naar een label.
+    ## Dat is een lege waarde, geen fout. Oudere 1cijferho-versies plakken DUO's
+    ## ">"-noot aan het label ("geen examen geregistreerd > 0000 voor overige
+    ## inschrijvingen"); sinds cedanl/1cijferho#221 staat alleen het label er.
+    ruw[grepl(">\\s*0+\\b", ruw) | grepl(LABELS_GEEN_WAARDE, ruw)] <- NA_character_
     omgezet <- suppressWarnings(as.integer(ruw))
     verloren <- sum(!is.na(ruw) & is.na(omgezet))
     if (verloren > 0) {
