@@ -4,7 +4,11 @@
 \alias{maak_analysebestand}
 \title{Maak in één stap het analysebestand uit een 1CHO-bestand}
 \usage{
-maak_analysebestand(invoer, niveau = c("student", "inschrijving"))
+maak_analysebestand(
+  invoer,
+  niveau = c("student", "inschrijving"),
+  domeinen = NULL
+)
 }
 \arguments{
 \item{invoer}{Pad naar de \verb{_enriched.csv} van 1cijferho, of een data frame
@@ -14,6 +18,11 @@ database).}
 \item{niveau}{Analyseniveau: \code{"student"} (standaard) of \code{"inschrijving"}.
 Op studentniveau telt elke student één keer, bij de opleiding waarin die
 begon. Op inschrijvingsniveau is elke opleiding een eigen cohort.}
+
+\item{domeinen}{Optioneel: de eigen domeinindeling van de instelling, als
+data frame of als pad naar een CSV, met de kolommen \code{opleidingscode} en
+\code{domein}. Zie \code{\link[=koppel_domeinen]{koppel_domeinen()}}. Bij \code{NULL} (standaard) ontbreekt de
+kolom \code{domein}; het pakket kent geen vaste domeinindeling.}
 }
 \value{
 Een tibble met één rij per student (of per student-opleiding bij
@@ -44,6 +53,8 @@ en uitval binnen 1 en 3 jaar.}
 ..._na_switch3jr}{Alleen op studentniveau: wissel van opleiding en de
 nieuwe opleiding.}
 \item{rendement, uitval, studiewissel}{Samenvattingen in één kolom.}
+\item{domein}{Alleen bij \code{domeinen}: de eigen domeinindeling, direct na
+\code{sector}. Zie \code{\link[=koppel_domeinen]{koppel_domeinen()}}.}
 }
 De precieze definities staan in \link{DEFINITIES}.
 }

@@ -14,6 +14,10 @@
 #' @param niveau Analyseniveau: `"student"` (standaard) of `"inschrijving"`.
 #'   Op studentniveau telt elke student één keer, bij de opleiding waarin die
 #'   begon. Op inschrijvingsniveau is elke opleiding een eigen cohort.
+#' @param domeinen Optioneel: de eigen domeinindeling van de instelling, als
+#'   data frame of als pad naar een CSV, met de kolommen `opleidingscode` en
+#'   `domein`. Zie [koppel_domeinen()]. Bij `NULL` (standaard) ontbreekt de
+#'   kolom `domein`; het pakket kent geen vaste domeinindeling.
 #'
 #' @return Een tibble met één rij per student (of per student-opleiding bij
 #'   `niveau = "inschrijving"`), met attributen `niveau` en `peildatum`.
@@ -43,6 +47,8 @@
 #'       ..._na_switch3jr}{Alleen op studentniveau: wissel van opleiding en de
 #'       nieuwe opleiding.}
 #'     \item{rendement, uitval, studiewissel}{Samenvattingen in één kolom.}
+#'     \item{domein}{Alleen bij `domeinen`: de eigen domeinindeling, direct na
+#'       `sector`. Zie [koppel_domeinen()].}
 #'   }
 #'   De precieze definities staan in [DEFINITIES].
 #'
@@ -51,7 +57,8 @@
 #' analyse <- maak_analysebestand(synth)
 #' table(analyse$inschrijvingsjaar, analyse$rendement_3jr)
 #' @export
-maak_analysebestand <- function(invoer, niveau = c("student", "inschrijving")) {
+maak_analysebestand <- function(invoer, niveau = c("student", "inschrijving"),
+                                domeinen = NULL) {
   niveau <- match.arg(niveau)
   basis <- maak_basisbestand(invoer)
   soort_ho <- unique(basis$soort_hoger_onderwijs)
@@ -89,6 +96,9 @@ maak_analysebestand <- function(invoer, niveau = c("student", "inschrijving")) {
     attributes(result)[names(attrs)] <- attrs
   }
 
+  if (!is.null(domeinen)) {
+    result <- koppel_domeinen(result, domeinen)
+  }
   result
 }
 
