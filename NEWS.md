@@ -1,5 +1,10 @@
 # staat1cho (ontwikkelversie)
 
+* Nieuw: `koppel_domeinen()` koppelt een eigen domeinindeling (CSV met
+  `opleidingscode` en `domein`) aan het analysebestand. `maak_analysebestand()`
+  heeft een argument `domeinen`, en het dashboard heeft een optionele upload
+  "Domeinindeling" met filter en uitsplitsing per domein. De indeling geldt voor
+  alle jaren.
 * Nieuw: `maak_analysebestand()` maakt in één stap het analysebestand uit een
   1CHO-bestand of data frame, met dezelfde berekening als het dashboard, plus
   kolom `opleidingsnaam`. Bedoeld om staat1cho in een eigen pipeline op te

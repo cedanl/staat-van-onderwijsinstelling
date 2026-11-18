@@ -46,3 +46,33 @@ test_that("schrijft een CSV die Nederlandse Excel in kolommen opent", {
   terug <- readr::read_delim(uit, delim = ";", show_col_types = FALSE, col_types = readr::cols(.default = "c"))
   expect_equal(nrow(terug), nrow(res))
 })
+
+test_that("domeinen voegt de kolom domein toe na sector", {
+  basis <- maak_analysebestand(pad)
+  koppel <- data.frame(
+    opleidingscode = unique(as.character(basis$opleidingscode)),
+    domein = "Testdomein"
+  )
+  res <- maak_analysebestand(pad, domeinen = koppel)
+  expect_true("domein" %in% names(res))
+  expect_equal(which(names(res) == "domein"), which(names(res) == "sector") + 1L)
+  expect_equal(unique(res$domein), "Testdomein")
+  expect_equal(attr(res, "niveau"), "student")
+})
+
+test_that("domeinen = NULL geeft dezelfde uitkomst als zonder argument", {
+  res <- maak_analysebestand(pad, domeinen = NULL)
+  expect_false("domein" %in% names(res))
+  expect_identical(res, maak_analysebestand(pad))
+})
+
+test_that("domeinen geeft hetzelfde als koppel_domeinen op het gewone bestand", {
+  koppel <- data.frame(
+    opleidingscode = unique(as.character(maak_analysebestand(pad)$opleidingscode)),
+    domein = "Testdomein"
+  )
+  expect_equal(
+    maak_analysebestand(pad, niveau = "inschrijving", domeinen = koppel),
+    koppel_domeinen(maak_analysebestand(pad, niveau = "inschrijving"), koppel)
+  )
+})

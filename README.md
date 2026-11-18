@@ -166,12 +166,7 @@ Het analysebestand is wat staat1cho eigenlijk maakt; het dashboard is één mani
   schrijf_analysebestand(analyse, "analysebestand.csv")
   ```
 
-  `maak_analysebestand()` accepteert ook een data frame, bijvoorbeeld al ingelezen uit parquet of een database. Een eigen indeling koppel je daarna op `opleidingscode`:
-
-  ```r
-  domeinen <- readr::read_csv2("mijn_domeinen.csv")  # kolommen opleidingscode en domein
-  analyse <- dplyr::left_join(analyse, domeinen, by = "opleidingscode")
-  ```
+  `maak_analysebestand()` accepteert ook een data frame, bijvoorbeeld al ingelezen uit parquet of een database. Een eigen indeling in domeinen koppel je met het argument `domeinen`, [zie Domeinen](#domeinen).
 
 De belangrijkste kolommen:
 
@@ -188,6 +183,30 @@ De belangrijkste kolommen:
 Alle kolommen staan in `?maak_analysebestand`, de definities in `DEFINITIES`. Het analysebestand bevat persoonsnummers: alleen voor gebruik binnen de instelling.
 
 ---
+
+## Domeinen
+
+Wil je de opleidingen indelen in eigen domeinen of academies? Maak dan een CSV met puntkomma's en de kolommen `opleidingscode` en `domein`, zoals `inst/extdata/voorbeeld_domeinen.csv` in het package:
+
+```
+opleidingscode;domein
+34401;Techniek
+34405;Economie
+56952;Gedrag en maatschappij
+```
+
+Geef die koppeltabel mee aan `maak_analysebestand()`, of pas `koppel_domeinen()` toe op een bestaand analysebestand. In het dashboard kun je hetzelfde bestand optioneel uploaden bij **Domeinindeling**; daarna kun je filteren en uitsplitsen op domein.
+
+```r
+analyse <- maak_analysebestand("C:/pad/naar/EV..._enriched.csv", niveau = "student",
+                               domeinen = "mijn_domeinen.csv")
+```
+
+Opleidingscodes die niet in de koppeltabel staan, krijgen het domein `Onbekend`, met een waarschuwing. Een opleidingscode mag maar één domein hebben.
+
+> **Let op:** de domeinindeling geldt nu voor alle jaren; een indeling die per jaar verschilt (bijvoorbeeld van vier naar vijf domeinen) wordt nog niet ondersteund — oudere jaren worden ingedeeld volgens de huidige indeling.
+
+De kolom `croho_onderdeel` (in het analysebestand `sector`) is geen domein. Dat is het CROHO-onderdeel van de opleiding; gebruik je eigen indeling voor domeinen.
 
 ## Optionele bestanden
 

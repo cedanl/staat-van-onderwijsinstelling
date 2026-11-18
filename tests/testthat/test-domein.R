@@ -1,0 +1,108 @@
+analyse_demo <- function() {
+  tibble(
+    persoonsgebonden_nummer = 1:4,
+    opleidingscode = c(34001, 34001, 56000, 35000),
+    sector = c("ECONOMIE", "ECONOMIE", "ONDERWIJS", "ZORG")
+  )
+}
+
+test_that("koppel_domeinen koppelt codes en zet domein na sector", {
+  koppel <- data.frame(opleidingscode = c("34001", "56000", "35000"),
+                       domein = c("Bedrijf", "Mens", "Mens"))
+  uit <- koppel_domeinen(analyse_demo(), koppel)
+  expect_equal(uit$domein, c("Bedrijf", "Bedrijf", "Mens", "Mens"))
+  expect_equal(names(uit)[match("domein", names(uit)) - 1], "sector")
+  expect_equal(nrow(uit), 4)
+})
+
+test_that("ontbrekende code geeft Onbekend en een waarschuwing", {
+  koppel <- data.frame(opleidingscode = c("34001", "56000"),
+                       domein = c("Bedrijf", "Mens"))
+  expect_warning(uit <- koppel_domeinen(analyse_demo(), koppel), "1 rij")
+  expect_equal(uit$domein[4], "Onbekend")
+})
+
+test_that("dubbele code met ander domein geeft een fout", {
+  koppel <- data.frame(opleidingscode = c("34001", "34001"),
+                       domein = c("Bedrijf", "Mens"))
+  expect_error(koppel_domeinen(analyse_demo(), koppel), "dubbel")
+})
+
+test_that("dubbele identieke regels zijn geen probleem", {
+  koppel <- data.frame(opleidingscode = c("34001", "34001", "56000", "35000"),
+                       domein = c("Bedrijf", "Bedrijf", "Mens", "Mens"))
+  uit <- koppel_domeinen(analyse_demo(), koppel)
+  expect_equal(nrow(uit), 4)
+})
+
+test_that("numerieke en tekstcodes koppelen", {
+  koppel <- data.frame(opleidingscode = c(34001, 56000, 35000),
+                       domein = c("Bedrijf", "Mens", "Mens"))
+  expect_equal(koppel_domeinen(analyse_demo(), koppel)$domein[1], "Bedrijf")
+  analyse <- analyse_demo()
+  analyse$opleidingscode <- as.character(analyse$opleidingscode)
+  expect_equal(koppel_domeinen(analyse, koppel)$domein[3], "Mens")
+})
+
+test_that("verkeerde kolomnamen geven een fout", {
+  koppel <- data.frame(code = "34001", domein = "Bedrijf")
+  expect_error(koppel_domeinen(analyse_demo(), koppel), "opleidingscode")
+})
+
+test_that("een CSV-pad met ; en BOM werkt", {
+  pad <- tempfile(fileext = ".csv")
+  on.exit(unlink(pad))
+  writeBin(c(as.raw(c(0xEF, 0xBB, 0xBF)),
+             charToRaw("opleidingscode;domein\n34001;Bedrijf\n56000;Mens\n35000;Mens\n")),
+           pad)
+  uit <- koppel_domeinen(analyse_demo(), pad)
+  expect_equal(uit$domein, c("Bedrijf", "Bedrijf", "Mens", "Mens"))
+})
+
+test_that("voorbeeld_domeinen.csv dekt alle opleidingen in voorbeeld_1cho.csv", {
+  uit <- maak_analysebestand(
+    system.file("extdata", "voorbeeld_1cho.csv", package = "staat1cho"),
+    domeinen = system.file("extdata", "voorbeeld_domeinen.csv", package = "staat1cho")
+  )
+  expect_true("domein" %in% names(uit))
+  expect_false(anyNA(uit$domein))
+  expect_false("Onbekend" %in% uit$domein)
+  expect_gte(length(unique(uit$domein)), 2)
+})
+
+test_that("een CSV in Windows-1252 zonder BOM wordt niet afgekapt", {
+  pad <- tempfile(fileext = ".csv")
+  on.exit(unlink(pad))
+  writeBin(c(charToRaw("opleidingscode;domein\n34001;Cr"), as.raw(0xE9),
+             charToRaw("atief\n56000;Mens\n35000;Mens\n")), pad)
+  uit <- koppel_domeinen(analyse_demo(), pad)
+  expect_equal(uit$domein, c("Cr\u00e9atief", "Cr\u00e9atief", "Mens", "Mens"))
+})
+
+test_that("een lege domeincel of opleidingscode telt als ontbrekend", {
+  koppel <- data.frame(opleidingscode = c("34001", "56000", "35000", ""),
+                       domein = c("Bedrijf", "  ", NA, "Mens"))
+  expect_warning(uit <- koppel_domeinen(analyse_demo(), koppel), "zonder domein")
+  expect_equal(uit$domein, c("Bedrijf", "Bedrijf", "Onbekend", "Onbekend"))
+  expect_false("" %in% uit$domein)
+})
+
+test_that("de waarschuwing heeft een eigen class", {
+  koppel <- data.frame(opleidingscode = "34001", domein = "Bedrijf")
+  expect_warning(koppel_domeinen(analyse_demo(), koppel),
+                 class = "staat1cho_domein_onbekend")
+})
+
+test_that("kolomnamen zijn niet hoofdlettergevoelig", {
+  koppel <- data.frame(Opleidingscode = c("34001", "56000", "35000"),
+                       Domein = c("Bedrijf", "Mens", "Mens"))
+  expect_equal(koppel_domeinen(analyse_demo(), koppel)$domein[1], "Bedrijf")
+})
+
+test_that("zonder sector komt domein na opleidingscode", {
+  analyse <- analyse_demo()[, c("persoonsgebonden_nummer", "opleidingscode")]
+  koppel <- data.frame(opleidingscode = c("34001", "56000", "35000"),
+                       domein = c("Bedrijf", "Mens", "Mens"))
+  uit <- koppel_domeinen(analyse, koppel)
+  expect_equal(names(uit), c("persoonsgebonden_nummer", "opleidingscode", "domein"))
+})
