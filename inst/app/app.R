@@ -783,7 +783,8 @@ server <- function(input, output, session) {
     list(
       bestand     = paste0("bestand_upload_", gen),
       vakhawv     = paste0("vakhawv_upload_", gen),
-      bekostiging = paste0("bekostiging_upload_", gen)
+      bekostiging = paste0("bekostiging_upload_", gen),
+      domeinen    = paste0("domeinen_upload_", gen)
     )
   }
 
@@ -855,6 +856,13 @@ server <- function(input, output, session) {
               buttonLabel = "Bladeren...",
               placeholder = "Optioneel"
             ),
+            fileInput(
+              ids$domeinen,
+              "Domeinindeling (optioneel, CSV: opleidingscode;domein)",
+              accept = ".csv",
+              buttonLabel = "Bladeren...",
+              placeholder = "Optioneel"
+            ),
             ## VLPBEK gebruikt het BSN, het EV-bestand een eigen DUO-nummer
             tags$p(
               class = "upload-hint",
@@ -895,6 +903,10 @@ server <- function(input, output, session) {
       sectoren_d <- sort(na.omit(unique(as.character(d$sector))))
       niveaus_d <- sort(na.omit(unique(as.character(d$opleidingsniveau))))
       vormen_d <- sort(na.omit(unique(as.character(d$opleidingsvorm))))
+      heeft_domein <- "domein" %in% names(d)
+      domeinen_d <- if (heeft_domein) {
+        sort(na.omit(unique(as.character(d$domein))))
+      }
       opleidingen_d <- sort(na.omit(unique(as.character(d$opleidingsnaam))))
       ## Vaste volgorde (havo, vwo, mbo, ...) in plaats van alfabetisch
       vooropleidingen_d <- as.character(unique(sort(d$vooropleiding)))
@@ -973,6 +985,14 @@ server <- function(input, output, session) {
               choices = c("Alle sectoren" = "", sectoren_d),
               selected = ""
             ),
+            if (heeft_domein) {
+              selectInput(
+                "domein_filter",
+                filter_label("Domein", analyse_niveau()),
+                choices = c("Alle domeinen" = "", domeinen_d),
+                selected = ""
+              )
+            },
             selectInput(
               "opleiding_filter",
               filter_label("Opleiding", analyse_niveau()),
@@ -1105,6 +1125,12 @@ server <- function(input, output, session) {
                   plotlyOutput("plot_instroom_eerstejaars_ho", height = "280px")
                 )
               ),
+              if (heeft_domein) {
+                card(
+                  card_header("Instroom per domein"),
+                  plotlyOutput("plot_instroom_domein", height = "280px")
+                )
+              },
               card(
                 card_header("Leeftijdsverdeling bij instroom"),
                 plotlyOutput("plot_instroom_leeftijd", height = "260px")
@@ -1150,7 +1176,13 @@ server <- function(input, output, session) {
                   card_header("Diploma binnen 5 jaar: eerstejaars HO of eerder in HO"),
                   plotlyOutput("plot_rend5_eerstejaars_ho", height = "280px")
                 )
-              )
+              ),
+              if (heeft_domein) {
+                card(
+                  card_header("Rendement per domein (diploma binnen 5 jaar)"),
+                  plotlyOutput("plot_rend5_domein", height = "280px")
+                )
+              }
             ),
 
             ## Uitval ----
@@ -1188,7 +1220,13 @@ server <- function(input, output, session) {
                   card_header("Uitval binnen 1 jaar: eerstejaars HO of eerder in HO"),
                   plotlyOutput("plot_uitval1_eerstejaars_ho", height = "280px")
                 )
-              )
+              ),
+              if (heeft_domein) {
+                card(
+                  card_header("Uitval per domein (binnen 1 jaar)"),
+                  plotlyOutput("plot_uitval1_domein", height = "280px")
+                )
+              }
             ),
 
             ## Studiewissel (alleen bij studentniveau) ----
@@ -1394,6 +1432,7 @@ server <- function(input, output, session) {
     bestand_upload     <- input[[ids$bestand]]
     vakhawv_upload     <- input[[ids$vakhawv]]
     bekostiging_upload <- input[[ids$bekostiging]]
+    domeinen_upload    <- input[[ids$domeinen]]
 
     if (is.null(bestand_upload)) {
       toon_fout("Selecteer eerst een CSV-bestand.")
@@ -1422,7 +1461,28 @@ server <- function(input, output, session) {
           analyse_niveau(niv)
 
           setProgress(0.20, detail = "Indicatoren berekenen")
-          result <- maak_analysebestand(bestand_upload$datapath, niveau = niv)
+          ## Domeinindeling (optioneel): koppel_domeinen() draait binnen
+          ## maak_analysebestand(); de waarschuwing (onbekende codes) tonen we
+          ## als melding in plaats van die te laten verdwijnen.
+          domeinen_pad <- if (!is.null(domeinen_upload)) domeinen_upload$datapath
+          result <- withCallingHandlers(
+            maak_analysebestand(
+              bestand_upload$datapath,
+              niveau = niv,
+              domeinen = domeinen_pad
+            ),
+            warning = function(w) {
+              if (!is.null(domeinen_pad) &&
+                  grepl("domein|Onbekend", conditionMessage(w), ignore.case = TRUE)) {
+                showNotification(
+                  paste("Domeinindeling:", conditionMessage(w)),
+                  type = "warning",
+                  duration = NULL
+                )
+                invokeRestart("muffleWarning")
+              }
+            }
+          )
           peildatum(attr(result, "peildatum"))
 
           ## VAKHAVW (optioneel) ----
@@ -1511,6 +1571,10 @@ server <- function(input, output, session) {
     if (!is.null(input$sector_filter) && nchar(input$sector_filter) > 0) {
       d <- filter(d, as.character(sector) == input$sector_filter)
     }
+    if (!is.null(input$domein_filter) && nchar(input$domein_filter) > 0 &&
+        "domein" %in% names(d)) {
+      d <- filter(d, as.character(domein) == input$domein_filter)
+    }
     if (!is.null(input$opleiding_filter) && nchar(input$opleiding_filter) > 0) {
       d <- filter(d, as.character(opleidingsnaam) == input$opleiding_filter)
     }
@@ -1537,7 +1601,7 @@ server <- function(input, output, session) {
   output$filter_uitleg <- renderUI({
     req(analyse_niveau() == "student")
     actief <- vapply(
-      c("opleiding_filter", "sector_filter", "locatie_filter"),
+      c("opleiding_filter", "sector_filter", "locatie_filter", "domein_filter"),
       function(id) !is.null(input[[id]]) && nchar(input[[id]]) > 0,
       logical(1)
     )
@@ -1725,6 +1789,10 @@ server <- function(input, output, session) {
     df(),
     sector
   )))
+  output$plot_instroom_domein <- renderPlotly({
+    req("domein" %in% names(df()))
+    ggplotly(pct_bar(df(), domein))
+  })
   output$plot_instroom_int <- renderPlotly(ggplotly(pct_bar(df(), int_student)))
   output$plot_instroom_geslacht <- renderPlotly(ggplotly(pct_bar(
     df(),
@@ -1795,6 +1863,11 @@ server <- function(input, output, session) {
     df(), eerstejaars_ho, rend5, "% diploma binnen 5 jaar"
   )))
 
+  output$plot_rend5_domein <- renderPlotly({
+    req("domein" %in% names(df()))
+    ggplotly(pct_per_groep(df(), domein, rend5, "% diploma binnen 5 jaar"))
+  })
+
   ## Plots uitval ----
 
   uitval1 <- \(d) waargenomen(d$uitval_1jr, "Uitgevallen binnen 1 jaar")
@@ -1804,6 +1877,11 @@ server <- function(input, output, session) {
   output$plot_uitval1_eerstejaars_ho <- renderPlotly(ggplotly(pct_per_groep(
     df(), eerstejaars_ho, uitval1, "% uitgevallen binnen 1 jaar"
   )))
+
+  output$plot_uitval1_domein <- renderPlotly({
+    req("domein" %in% names(df()))
+    ggplotly(pct_per_groep(df(), domein, uitval1, "% uitgevallen binnen 1 jaar"))
+  })
 
   output$plot_uitval_trend <- renderPlotly(
     ggplotly(uitval_trend(df()), tooltip = c("x", "y", "colour")) |>

@@ -58,3 +58,14 @@ test_that("een CSV-pad met ; en BOM werkt", {
   uit <- koppel_domeinen(analyse_demo(), pad)
   expect_equal(uit$domein, c("Bedrijf", "Bedrijf", "Mens", "Mens"))
 })
+
+test_that("voorbeeld_domeinen.csv dekt alle opleidingen in voorbeeld_1cho.csv", {
+  uit <- maak_analysebestand(
+    system.file("extdata", "voorbeeld_1cho.csv", package = "staat1cho"),
+    domeinen = system.file("extdata", "voorbeeld_domeinen.csv", package = "staat1cho")
+  )
+  expect_true("domein" %in% names(uit))
+  expect_false(anyNA(uit$domein))
+  expect_false("Onbekend" %in% uit$domein)
+  expect_gte(length(unique(uit$domein)), 2)
+})
