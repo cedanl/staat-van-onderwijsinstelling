@@ -132,7 +132,7 @@ rapport[rapport$sector == "totaal", c("inschrijvingsjaar", "n", "pct_uitval_1jr"
 
 ## Eigen domeinindeling
 
-Wil je opleidingen indelen in eigen domeinen of academies, maak dan een CSV met puntkomma's en de kolommen `opleidingscode` en `domein`. Het package bevat een voorbeeld:
+Wil je opleidingen indelen in eigen domeinen of academies, maak dan een CSV met puntkomma's en de kolommen `opleidingscode` en `domein`. Het package bevat een voorbeeld (`inst/extdata/voorbeeld_domeinen.csv`):
 
 ```
 opleidingscode;domein
@@ -144,12 +144,18 @@ opleidingscode;domein
 `koppel_domeinen()` voegt de kolom `domein` toe aan het analysebestand. Opleidingscodes die niet in de koppeltabel staan, krijgen `Onbekend`, met een waarschuwing.
 
 ```{r domeinen}
-koppel <- system.file("extdata", "voorbeeld_domeinen.csv", package = "staat1cho")
+# Voor de synthetische data hier bouwen we de koppeltabel uit de aanwezige codes.
+codes <- unique(analyse$opleidingscode)
+koppel <- data.frame(
+  opleidingscode = codes,
+  domein = rep(c("Techniek", "Economie", "Gedrag en maatschappij"),
+               length.out = length(codes))
+)
 analyse_domeinen <- koppel_domeinen(analyse, koppel)
 table(analyse_domeinen$domein)
 ```
 
-Twee beperkingen. De domeinindeling geldt nu voor alle jaren; een indeling die per jaar verschilt (bijv. van vier naar vijf domeinen) wordt nog niet ondersteund, en oudere jaren worden ingedeeld volgens de huidige indeling. En `croho_onderdeel` (in het analysebestand `sector`) is geen domein.
+Twee beperkingen. De domeinindeling geldt nu voor alle jaren; een indeling die per jaar verschilt (bijvoorbeeld van vier naar vijf domeinen) wordt nog niet ondersteund, en oudere jaren worden ingedeeld volgens de huidige indeling. En `croho_onderdeel` (in het analysebestand `sector`) is geen domein.
 
 ## Dashboard
 

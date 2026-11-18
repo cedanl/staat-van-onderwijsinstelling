@@ -166,7 +166,7 @@ Het analysebestand is wat staat1cho eigenlijk maakt; het dashboard is één mani
   schrijf_analysebestand(analyse, "analysebestand.csv")
   ```
 
-  `maak_analysebestand()` accepteert ook een data frame, bijvoorbeeld al ingelezen uit parquet of een database. Een eigen indeling in domeinen koppel je met `domeinen = `, [zie Domeinen](#domeinen).
+  `maak_analysebestand()` accepteert ook een data frame, bijvoorbeeld al ingelezen uit parquet of een database. Een eigen indeling in domeinen koppel je met het argument `domeinen`, [zie Domeinen](#domeinen).
 
 De belangrijkste kolommen:
 
@@ -204,7 +204,7 @@ analyse <- maak_analysebestand("C:/pad/naar/EV..._enriched.csv", niveau = "stude
 
 Opleidingscodes die niet in de koppeltabel staan, krijgen het domein `Onbekend`, met een waarschuwing. Een opleidingscode mag maar één domein hebben.
 
-> **Let op:** de domeinindeling geldt nu voor alle jaren; een indeling die per jaar verschilt (bijv. van vier naar vijf domeinen) wordt nog niet ondersteund — oudere jaren worden ingedeeld volgens de huidige indeling.
+> **Let op:** de domeinindeling geldt nu voor alle jaren; een indeling die per jaar verschilt (bijvoorbeeld van vier naar vijf domeinen) wordt nog niet ondersteund — oudere jaren worden ingedeeld volgens de huidige indeling.
 
 De kolom `croho_onderdeel` (in het analysebestand `sector`) is geen domein. Dat is het CROHO-onderdeel van de opleiding; gebruik je eigen indeling voor domeinen.
 

@@ -27,8 +27,21 @@ koppel_domeinen <- function(analysebestand, domeinen) {
     if (!file.exists(domeinen)) {
       cli::cli_abort("Koppeltabel {.file {domeinen}} niet gevonden.")
     }
-    domeinen <- utils::read.csv2(domeinen, fileEncoding = "UTF-8-BOM",
-                                 colClasses = "character")
+    bytes <- readBin(domeinen, "raw", file.size(domeinen))
+    if (length(bytes) >= 3 && all(bytes[1:3] == as.raw(c(0xEF, 0xBB, 0xBF)))) {
+      bytes <- bytes[-(1:3)]
+    }
+    tekst <- rawToChar(bytes)
+    if (validUTF8(tekst)) {
+      Encoding(tekst) <- "UTF-8"
+    } else {
+      tekst <- iconv(tekst, from = "windows-1252", to = "UTF-8")
+    }
+    domeinen <- utils::read.csv2(text = tekst, colClasses = "character",
+                                 check.names = FALSE)
+  }
+  if (is.data.frame(domeinen)) {
+    names(domeinen) <- tolower(trimws(names(domeinen)))
   }
   if (!is.data.frame(domeinen) ||
       !all(c("opleidingscode", "domein") %in% names(domeinen))) {
@@ -45,6 +58,8 @@ koppel_domeinen <- function(analysebestand, domeinen) {
     opleidingscode = trimws(as.character(domeinen$opleidingscode)),
     domein = trimws(as.character(domeinen$domein))
   )
+  leeg <- function(x) is.na(x) | x == ""
+  koppel <- koppel[!leeg(koppel$opleidingscode) & !leeg(koppel$domein), ]
   koppel <- dplyr::distinct(koppel)
   dubbel <- unique(koppel$opleidingscode[duplicated(koppel$opleidingscode)])
   if (length(dubbel) > 0) {
@@ -61,12 +76,13 @@ koppel_domeinen <- function(analysebestand, domeinen) {
     n <- sum(ontbreekt)
     codes <- unique(sleutel[ontbreekt])
     cli::cli_warn(c(
-      "{n} student{?en} zonder domein in de koppeltabel; ingedeeld als {.val Onbekend}.",
+      "{n} rij{?en} zonder domein in de koppeltabel; ingedeeld als {.val Onbekend}.",
       "i" = "Opleidingscodes zonder domein: {.val {codes}}."
-    ))
+    ), class = "staat1cho_domein_onbekend")
     domein[ontbreekt] <- "Onbekend"
   }
 
   analysebestand$domein <- domein
-  dplyr::relocate(analysebestand, "domein", .after = "sector")
+  na <- if ("sector" %in% names(analysebestand)) "sector" else "opleidingscode"
+  dplyr::relocate(analysebestand, "domein", .after = dplyr::all_of(na))
 }

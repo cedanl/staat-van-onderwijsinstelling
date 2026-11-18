@@ -63,7 +63,7 @@ test_that("domeinen voegt de kolom domein toe na sector", {
 test_that("domeinen = NULL geeft dezelfde uitkomst als zonder argument", {
   res <- maak_analysebestand(pad, domeinen = NULL)
   expect_false("domein" %in% names(res))
-  expect_equal(res, maak_analysebestand(pad))
+  expect_identical(res, maak_analysebestand(pad))
 })
 
 test_that("domeinen geeft hetzelfde als koppel_domeinen op het gewone bestand", {

@@ -1461,28 +1461,33 @@ server <- function(input, output, session) {
           analyse_niveau(niv)
 
           setProgress(0.20, detail = "Indicatoren berekenen")
-          ## Domeinindeling (optioneel): koppel_domeinen() draait binnen
-          ## maak_analysebestand(); de waarschuwing (onbekende codes) tonen we
-          ## als melding in plaats van die te laten verdwijnen.
-          domeinen_pad <- if (!is.null(domeinen_upload)) domeinen_upload$datapath
-          result <- withCallingHandlers(
-            maak_analysebestand(
-              bestand_upload$datapath,
-              niveau = niv,
-              domeinen = domeinen_pad
-            ),
-            warning = function(w) {
-              if (!is.null(domeinen_pad) &&
-                  grepl("domein|Onbekend", conditionMessage(w), ignore.case = TRUE)) {
+          result <- maak_analysebestand(bestand_upload$datapath, niveau = niv)
+
+          ## Domeinindeling (optioneel): een fout stopt de verwerking niet;
+          ## de waarschuwing (onbekende codes) tonen we als melding.
+          if (!is.null(domeinen_upload)) {
+            result <- tryCatch(
+              withCallingHandlers(
+                koppel_domeinen(result, domeinen_upload$datapath),
+                staat1cho_domein_onbekend = function(w) {
+                  showNotification(
+                    paste("Domeinindeling:", conditionMessage(w)),
+                    type = "warning",
+                    duration = NULL
+                  )
+                  invokeRestart("muffleWarning")
+                }
+              ),
+              error = function(e) {
                 showNotification(
-                  paste("Domeinindeling:", conditionMessage(w)),
-                  type = "warning",
+                  paste("Domeinindeling:", conditionMessage(e)),
+                  type = "error",
                   duration = NULL
                 )
-                invokeRestart("muffleWarning")
+                result
               }
-            }
-          )
+            )
+          }
           peildatum(attr(result, "peildatum"))
 
           ## VAKHAVW (optioneel) ----
@@ -1602,7 +1607,10 @@ server <- function(input, output, session) {
     req(analyse_niveau() == "student")
     actief <- vapply(
       c("opleiding_filter", "sector_filter", "locatie_filter", "domein_filter"),
-      function(id) !is.null(input[[id]]) && nchar(input[[id]]) > 0,
+      function(id) {
+        !is.null(input[[id]]) && nchar(input[[id]]) > 0 &&
+          (id != "domein_filter" || "domein" %in% names(df_data()))
+      },
       logical(1)
     )
     if (!any(actief)) {
